@@ -26,6 +26,8 @@
   --ds-input-border: #E5E7EB;
   --ds-hover-bg: #FFFFFF;
   --ds-active-bg: #F6F7F8;
+  /* 侧边栏导航选中态：取自 DeepSeek 官网用量页实测灰度 #EBEEF2 */
+  --ds-nav-active-bg: #EBEEF2;
   --ds-overlay: rgba(0,0,0,0.45);
   --ds-scrollbar: #E5E7EB;
   --ds-orange: #FF6A00;
@@ -67,6 +69,8 @@
   --ds-input-border: #2A3342;
   --ds-hover-bg: #242B36;
   --ds-active-bg: #252D3A;
+  /* 侧边栏导航选中态（深色）：保持与窄屏深色覆盖同值 */
+  --ds-nav-active-bg: #2A3342;
   --ds-overlay: rgba(0,0,0,0.65);
   --ds-scrollbar: #2A3342;
   --ds-orange: #FF7A3D;
@@ -311,7 +315,7 @@
 #aus-hamburger-btn:hover { opacity:0.7; }
 .aus-nav-item { transition: background 0.15s, color 0.15s; color: var(--ds-text-2); }
 .aus-nav-item:hover { background: var(--ds-hover-bg) !important; }
-.aus-nav-item.active { background: var(--ds-active-bg) !important; color: var(--ds-text) !important; font-weight: 600; }
+.aus-nav-item.active { background: var(--ds-nav-active-bg, var(--ds-active-bg)) !important; color: var(--ds-text) !important; font-weight: 600; }
 #aus-panel #aus-main::-webkit-scrollbar { width: 6px; }
 #aus-panel #aus-main::-webkit-scrollbar-thumb { background: var(--ds-scrollbar); border-radius: 999px; }
 #aus-main::-webkit-scrollbar { width: 6px; }
