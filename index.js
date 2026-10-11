@@ -8106,27 +8106,27 @@ function createPanel() {
       <button id="aus-mobile-panel-close" title="关闭" style="margin-left:auto;width:32px;height:32px;flex-shrink:0;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);color:var(--ds-text-2);cursor:pointer;font-size:14px;">✕</button>
     </div>
     <div id="aus-panel-body" style="flex:1;display:flex;flex-direction:row;overflow:hidden;min-height:0;">
-    <div id="aus-sidebar" style="width:220px;flex-shrink:0;background:var(--ds-sidebar-bg);border-right:1px solid var(--ds-border);display:flex;flex-direction:column;overflow:hidden;">
+    <div id="aus-sidebar" style="width:260px;flex-shrink:0;background:var(--ds-sidebar-bg);border-right:1px solid var(--ds-border);display:flex;flex-direction:column;overflow:hidden;">
       <div style="height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;flex-shrink:0;">
         <div style="display:flex;flex-direction:column;min-width:0;" id="aus-brand">
-          <span style="font-size:13px;font-weight:700;color:var(--ds-text);white-space:nowrap;">API用量统计</span>
+          <span style="font-size:15px;font-weight:700;color:var(--ds-text);white-space:nowrap;">API用量统计</span>
           <span style="font-size:11px;color:var(--ds-text-2);white-space:nowrap;">v3.1.2</span>
         </div>
-        <button id="aus-sidebar-toggle" style="width:28px;height:28px;border:1px solid var(--ds-border);border-radius:6px;background:var(--ds-card-inner);color:var(--ds-text-2);cursor:pointer;flex-shrink:0;">‹</button>
+        <button id="aus-sidebar-toggle" style="width:30px;height:30px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);color:var(--ds-text-2);cursor:pointer;flex-shrink:0;font-size:13px;padding:0;line-height:1;">‹</button>
       </div>
-      <div style="flex:1;overflow:auto;padding:8px;display:flex;flex-direction:column;gap:4px;">
-        <div class="aus-nav-group" style="display:flex;flex-direction:column;gap:2px;">
-          <div class="aus-nav-item active" data-nav="overview" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;"><span style="width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;">◈</span><span class="aus-nav-label">用量概览</span></div>
-          <div class="aus-nav-item" data-nav="stats" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;"><span style="width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;">▦</span><span class="aus-nav-label">用量统计</span></div>
-          <div class="aus-nav-item" data-nav="history" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;"><span style="width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;">≡</span><span class="aus-nav-label">历史记录</span></div>
-          <div class="aus-nav-item" data-nav="forecast" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;"><span style="width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;">⬈</span><span class="aus-nav-label">趋势预测（Beta）</span></div>
-          <div class="aus-nav-item" data-nav="wallet" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;"><span style="width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;">▣</span><span class="aus-nav-label">钱包</span></div>
+      <div style="flex:1;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:4px;">
+        <div class="aus-nav-group" style="display:flex;flex-direction:column;gap:4px;">
+          <div class="aus-nav-item active" data-nav="overview" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:14px;line-height:1.5;"><span class="aus-nav-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;font-size:16px;">◈</span><span class="aus-nav-label">用量概览</span></div>
+          <div class="aus-nav-item" data-nav="stats" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:14px;line-height:1.5;"><span class="aus-nav-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;font-size:16px;">▦</span><span class="aus-nav-label">用量统计</span></div>
+          <div class="aus-nav-item" data-nav="history" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:14px;line-height:1.5;"><span class="aus-nav-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;font-size:16px;">≡</span><span class="aus-nav-label">历史记录</span></div>
+          <div class="aus-nav-item" data-nav="forecast" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:14px;line-height:1.5;"><span class="aus-nav-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;font-size:16px;">⬈</span><span class="aus-nav-label">趋势预测（Beta）</span></div>
+          <div class="aus-nav-item" data-nav="wallet" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:14px;line-height:1.5;"><span class="aus-nav-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;font-size:16px;">▣</span><span class="aus-nav-label">钱包</span></div>
         </div>
         <div style="flex:1;"></div>
-        <div class="aus-nav-group" style="display:flex;flex-direction:column;gap:2px;border-top:1px solid var(--ds-border);padding-top:8px;">
-          <div class="aus-nav-item" data-nav="settings" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;"><span style="width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;">⚙</span><span class="aus-nav-label">设置</span></div>
-          <div class="aus-nav-item" data-nav="help" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;"><span style="width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;">?</span><span class="aus-nav-label">使用说明</span></div>
-          <div class="aus-nav-item" data-nav="about" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;"><span style="width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;">ⓘ</span><span class="aus-nav-label">关于</span></div>
+        <div class="aus-nav-group" style="display:flex;flex-direction:column;gap:4px;border-top:1px solid var(--ds-border);padding-top:10px;">
+          <div class="aus-nav-item" data-nav="settings" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:14px;line-height:1.5;"><span class="aus-nav-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;font-size:16px;">⚙</span><span class="aus-nav-label">设置</span></div>
+          <div class="aus-nav-item" data-nav="help" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:14px;line-height:1.5;"><span class="aus-nav-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;font-size:16px;">?</span><span class="aus-nav-label">使用说明</span></div>
+          <div class="aus-nav-item" data-nav="about" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:14px;line-height:1.5;"><span class="aus-nav-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;font-size:16px;">ⓘ</span><span class="aus-nav-label">关于</span></div>
         </div>
       </div>
     </div>
@@ -8411,9 +8411,9 @@ function createPanel() {
 			syncMobileSidebar();
 			return;
 		}
-		sb.style.setProperty("width", collapsed ? "60px" : "220px", "important");
-		sb.style.setProperty("min-width", collapsed ? "60px" : "220px", "important");
-		sb.style.setProperty("max-width", collapsed ? "60px" : "220px", "important");
+		sb.style.setProperty("width", collapsed ? "60px" : "260px", "important");
+		sb.style.setProperty("min-width", collapsed ? "60px" : "260px", "important");
+		sb.style.setProperty("max-width", collapsed ? "60px" : "260px", "important");
 		if (brand) brand.style.setProperty("display", collapsed ? "none" : "flex", "important");
 		if (btn) btn.textContent = collapsed ? "›" : "‹";
 		doc.querySelectorAll(".aus-nav-label").forEach((el) => {
@@ -8423,7 +8423,7 @@ function createPanel() {
 			el.style.justifyContent = collapsed ? "center" : "flex-start";
 		});
 		doc.querySelectorAll("#aus-sidebar .aus-nav-item").forEach((el) => {
-			el.style.padding = collapsed ? "10px 0" : "8px 10px";
+			el.style.padding = collapsed ? "10px 0" : "10px 12px";
 		});
 	};
 	doc.getElementById("aus-sidebar-toggle")?.addEventListener("click", () => applyCollapsed(!collapsed));

@@ -206,6 +206,8 @@
   }
   #aus-sidebar-toggle { display: none !important; }
   #aus-page-header { display: none !important; }
+  /* 窄容器抽屉同样保持紧凑导航尺寸（与 ≤760px 视口一致） */
+  #aus-sidebar .aus-nav-item { justify-content: flex-start !important; padding: 8px 10px !important; gap: 10px !important; font-size: 12px !important; border-radius: 8px !important; }
   #aus-main { padding: 12px !important; overflow-x: hidden !important; }
   #aus-overview-four { grid-template-columns: repeat(2, 1fr) !important; gap: clamp(8px, 1.5cqi, 10px) !important; }
   #aus-stats-four { grid-template-columns: repeat(2, 1fr) !important; gap: clamp(8px, 1.5cqi, 10px) !important; }
