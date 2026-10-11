@@ -1,3 +1,4 @@
+import { icon } from './icons';
 import { computeOverview, computeChatStats } from '../data/computed';
 import { renderHeatmap } from './heatmap';
 import { state } from '../store/index';
@@ -20,8 +21,8 @@ function moneyHtml(cny: number, digits = 4): string {
     
     const cur: any = getDisplayCurrency();
     const v = cur.code === 'USD' ? cny / cur.rate : cny;
-    return `${cur.symbol}${v.toFixed(digits)} <span style="font-size:11px;color:var(--ds-text-3);font-weight:400;">${cur.code}</span>`;
-  } catch { return `¥${(cny||0).toFixed(digits)} <span style="font-size:11px;color:var(--ds-text-3);font-weight:400;">CNY</span>`; }
+    return `${cur.symbol}${v.toFixed(digits)} <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);font-weight:400;">${cur.code}</span>`;
+  } catch { return `¥${(cny||0).toFixed(digits)} <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);font-weight:400;">CNY</span>`; }
 }
 
 type FourOpt = { key: OverviewFourKey; label: string };
@@ -76,19 +77,19 @@ export function getFourDisplay(key: OverviewFourKey, v: any): { title:string; ht
   switch (key) {
     case 'avg_cost': return { title, html: moneyHtml(v.avgCost||0, 4) };
     case 'avg_tokens': return { title, html: `${Math.round(v.avgTokens||0).toLocaleString('zh-CN')}` };
-    case 'avg_duration': return { title, html: `${(v.avgDuration||0).toFixed(1)} <span style="font-size:11px;color:var(--ds-text-3);font-weight:400;">s</span>` };
+    case 'avg_duration': return { title, html: `${(v.avgDuration||0).toFixed(1)} <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);font-weight:400;">s</span>` };
     case 'avg_ttft': {
       const has = (v.avgTtft||0) > 0;
-      return { title, html: has ? `${(v.avgTtft).toFixed(1)} <span style="font-size:11px;color:var(--ds-text-3);font-weight:400;">s</span>` : `<span style="color:var(--ds-text-3);">—</span>` };
+      return { title, html: has ? `${(v.avgTtft).toFixed(1)} <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);font-weight:400;">s</span>` : `<span style="color:var(--ds-text-3);">—</span>` };
     }
-    case 'avg_rate': return { title: '输出速率', html: `${Math.round(v.avgRate||0)} <span style="font-size:11px;color:var(--ds-text-3);font-weight:400;">t/s</span>` };
+    case 'avg_rate': return { title: '输出速率', html: `${Math.round(v.avgRate||0)} <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);font-weight:400;">t/s</span>` };
     case 'avg_input_cost': return { title, html: moneyHtml(v.avgInputCost||0, 4) };
     case 'avg_input_tokens': return { title, html: `${Math.round(v.avgInputTokens||0).toLocaleString('zh-CN')}` };
     case 'avg_output_cost': return { title, html: moneyHtml(v.avgOutputCost||0, 4) };
     case 'avg_output_tokens': return { title, html: `${Math.round(v.avgOutputTokens||0).toLocaleString('zh-CN')}` };
     case 'avg_think_time': {
       const has = (v.avgThinkTime||0) > 0;
-      return { title, html: has ? `${(v.avgThinkTime).toFixed(1)} <span style="font-size:11px;color:var(--ds-text-3);font-weight:400;">s</span>` : `<span style="color:var(--ds-text-3);">—</span>` };
+      return { title, html: has ? `${(v.avgThinkTime).toFixed(1)} <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);font-weight:400;">s</span>` : `<span style="color:var(--ds-text-3);">—</span>` };
     }
     case 'avg_think_tokens': {
       const has = (v.avgThinkTokens||0) > 0;
@@ -96,12 +97,12 @@ export function getFourDisplay(key: OverviewFourKey, v: any): { title:string; ht
     }
     case 'avg_hit_rate': {
       const has = (v.avgHitRate||0) > 0;
-      return { title, html: has ? `${(v.avgHitRate).toFixed(1)}<span style="font-size:11px;color:var(--ds-text-3);font-weight:400;">%</span>` : `<span style="color:var(--ds-text-3);">—</span>` };
+      return { title, html: has ? `${(v.avgHitRate).toFixed(1)}<span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);font-weight:400;">%</span>` : `<span style="color:var(--ds-text-3);">—</span>` };
     }
     case 'latest_hit_rate': {
       const val = v.latestHitRate;
       if (val == null) return { title, html: `<span style="color:var(--ds-text-3);">—</span>` };
-      return { title, html: `${val.toFixed(1)}<span style="font-size:11px;color:var(--ds-text-3);font-weight:400;">%</span>` };
+      return { title, html: `${val.toFixed(1)}<span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);font-weight:400;">%</span>` };
     }
     case 'max_output': return { title, html: `${(v.maxOutput||0).toLocaleString('zh-CN')}` };
     case 'max_input': return { title, html: `${(v.maxInput||0).toLocaleString('zh-CN')}` };
@@ -109,12 +110,12 @@ export function getFourDisplay(key: OverviewFourKey, v: any): { title:string; ht
     case 'avg_think_ratio': {
       const has = (v.avgThinkRatio||0) > 0 || (v.rounds||0) > 0;
       const val = v.avgThinkRatio||0;
-      return { title, html: has && val>0 ? `${val.toFixed(1)}<span style="font-size:11px;color:var(--ds-text-3);font-weight:400;">%</span>` : `<span style="color:var(--ds-text-3);">—</span>` };
+      return { title, html: has && val>0 ? `${val.toFixed(1)}<span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);font-weight:400;">%</span>` : `<span style="color:var(--ds-text-3);">—</span>` };
     }
     case 'truncation_rate': {
       const has = (v.rounds||0) > 0;
       const val = v.truncationRate||0;
-      return { title, html: has ? `${val.toFixed(1)}<span style="font-size:11px;color:var(--ds-text-3);font-weight:400;">%</span>` : `<span style="color:var(--ds-text-3);">—</span>` };
+      return { title, html: has ? `${val.toFixed(1)}<span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);font-weight:400;">%</span>` : `<span style="color:var(--ds-text-3);">—</span>` };
     }
     default: return { title, html: '—' };
   }
@@ -188,7 +189,7 @@ function openFourDrop(idx:number, v:any) {
   const cur = curKeys[idx];
   drop.innerHTML = FOUR_OPTIONS.map(o=>{
     const active = o.key===cur;
-    return `<div data-four="${idx}" data-key="${o.key}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:11px;${active?'background:var(--ds-card);font-weight:600;color:var(--ds-text);':''}">${o.label}</div>`;
+    return `<div data-four="${idx}" data-key="${o.key}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-sm);${active?'background:var(--ds-card);font-weight:600;color:var(--ds-text);':''}">${o.label}</div>`;
   }).join('');
   drop.querySelectorAll('[data-four]').forEach((el:any)=>{
     el.onclick = () => {
@@ -225,7 +226,7 @@ export function renderOverview(fullHistory?: any[]) {
   if (walletDrop) {
     const item = (id: string, label: string) => {
       const active = id === activeWalletId;
-      return `<div data-overview-wallet="${esc(id)}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:11px;${active ? 'background:var(--ds-card);font-weight:600;' : ''}">${esc(label)}</div>`;
+      return `<div data-overview-wallet="${esc(id)}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-sm);${active ? 'background:var(--ds-card);font-weight:600;' : ''}">${esc(label)}</div>`;
     };
     walletDrop.innerHTML = item('all', '全部钱包合计') + wallets.map((wallet) => item(wallet.id, wallet.name)).join('');
     walletDrop.querySelectorAll('[data-overview-wallet]').forEach((el: any) => {
@@ -279,8 +280,8 @@ export function renderOverview(fullHistory?: any[]) {
   const histHost = doc.getElementById('aus-overview-history');
   if (histHost) {
     histHost.innerHTML = `
-      <div style="font-size:12px;font-weight:600;color:var(--ds-text);margin-bottom:8px;">历史消耗</div>
-      <div style="display:grid;gap:10px;font-size:11px;">
+      <div style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);margin-bottom:8px;">历史消耗</div>
+      <div style="display:grid;gap:10px;font-size:var(--aus-fs-sm);">
         <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;"><span style="color:var(--ds-text-2);">Token 历史消耗</span><span style="font-weight:600;color:var(--ds-text);">${fmt(v.totalTokens)} tokens</span></div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;"><span style="color:var(--ds-text-2);">输入（命中缓存）</span><span style="font-weight:600;color:var(--ds-green);">${fmt(v.hit)} tokens</span></div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;"><span style="color:var(--ds-text-2);">输入（未命中缓存）</span><span style="font-weight:600;color:var(--ds-red);">${fmt(v.miss)} tokens</span></div>
@@ -292,11 +293,11 @@ export function renderOverview(fullHistory?: any[]) {
   const spendHost = doc.getElementById('aus-overview-spend');
   if (spendHost) {
     spendHost.innerHTML = `
-      <div style="font-size:12px;font-weight:600;color:var(--ds-text);margin-bottom:8px;">支出明细</div>
-      <div style="display:grid;gap:10px;font-size:11px;">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;"><span style="color:var(--ds-text-2);padding-top:2px;">预计节省</span><span style="text-align:right;"><div style="font-weight:600;color:var(--ds-green);">${CNY(v.savings)}</div><div style="font-size:10px;color:var(--ds-text-3);margin-top:1px;">${fmt(v.hit)} tokens</div></span></div>
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;"><span style="color:var(--ds-text-2);padding-top:2px;">支出在输入</span><span style="text-align:right;"><div style="font-weight:600;color:var(--ds-text);">${CNY(v.inputCost)}</div><div style="font-size:10px;color:var(--ds-text-3);margin-top:1px;">${fmt(v.hit + v.miss)} tokens</div></span></div>
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;"><span style="color:var(--ds-text-2);padding-top:2px;">支出在输出</span><span style="text-align:right;"><div style="font-weight:600;color:var(--ds-text);">${CNY(v.outputCost)}</div><div style="font-size:10px;color:var(--ds-text-3);margin-top:1px;">${fmt(v.output)} tokens</div></span></div>
+      <div style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);margin-bottom:8px;">支出明细</div>
+      <div style="display:grid;gap:10px;font-size:var(--aus-fs-sm);">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;"><span style="color:var(--ds-text-2);padding-top:2px;">预计节省</span><span style="text-align:right;"><div style="font-weight:600;color:var(--ds-green);">${CNY(v.savings)}</div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);margin-top:1px;">${fmt(v.hit)} tokens</div></span></div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;"><span style="color:var(--ds-text-2);padding-top:2px;">支出在输入</span><span style="text-align:right;"><div style="font-weight:600;color:var(--ds-text);">${CNY(v.inputCost)}</div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);margin-top:1px;">${fmt(v.hit + v.miss)} tokens</div></span></div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;"><span style="color:var(--ds-text-2);padding-top:2px;">支出在输出</span><span style="text-align:right;"><div style="font-weight:600;color:var(--ds-text);">${CNY(v.outputCost)}</div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);margin-top:1px;">${fmt(v.output)} tokens</div></span></div>
       </div>
     `;
   }
@@ -311,8 +312,8 @@ export function renderOverview(fullHistory?: any[]) {
       const valColor = isRate ? 'var(--ds-green)' : 'var(--ds-text)';
       return `<div class="ds-card" style="padding:14px;position:relative;overflow:visible;">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
-          <div style="font-size:11px;color:var(--ds-text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.title}</div>
-          <button id="aus-four-btn-${i}" title="切换指标" style="flex-shrink:0;padding:4px 7px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text-2);font-size:10px;cursor:pointer;line-height:1;">▼</button>
+          <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.title}</div>
+          <button id="aus-four-btn-${i}" title="切换指标" style="flex-shrink:0;padding:4px 7px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text-2);font-size:var(--aus-fs-sm);cursor:pointer;line-height:1;">${icon('chevron-down', 14)}</button>
           <div id="aus-four-drop-${i}" style="display:none;position:absolute;top:38px;right:8px;z-index:6;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);padding:6px;min-width:180px;max-height:260px;overflow:auto;"></div>
         </div>
         <div style="font-size:18px;font-weight:600;color:${valColor};margin-top:6px;word-break:break-all;">${d.html}</div>

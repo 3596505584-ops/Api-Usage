@@ -61,7 +61,7 @@ async function renderOne(id:TrendId, filtered:any[]){
 
   if (!filtered.length){
     if (charts[id]) try{ charts[id].dispose(); }catch{} charts[id]=null;
-    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--ds-text-3);font-size:11px;">暂无数据</div>';
+    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--ds-text-3);font-size:var(--aus-fs-sm);">暂无数据</div>';
     return;
   }
 
@@ -117,7 +117,7 @@ async function renderOne(id:TrendId, filtered:any[]){
     const isHidden = statsView ? (statsView.style.display==='none' || (statsView as any).offsetParent===null) : false;
     if (isHidden) return;
     const tries=(renderOne as any)._retryCount||0;
-    if (tries>=20){ el.innerHTML='<div style="text-align:center;padding:20px;color:var(--ds-text-3);font-size:11px;">图表容器未就绪</div>'; return; }
+    if (tries>=20){ el.innerHTML='<div style="text-align:center;padding:20px;color:var(--ds-text-3);font-size:var(--aus-fs-sm);">图表容器未就绪</div>'; return; }
     (renderOne as any)._retryCount=(tries+1);
     setTimeout(()=>renderOne(id, filtered),120);
     return;
@@ -151,7 +151,7 @@ async function renderOne(id:TrendId, filtered:any[]){
       backgroundColor:cCardInner,
       borderColor:cBorder,
       borderWidth:1,
-      textStyle:{ color:cText, fontSize:11 },
+      textStyle:{ color:cText, fontSize: 12 },
       formatter:(params:any)=>{
         if (!params?.length) return '';
         const idx=params[0].dataIndex;
@@ -162,22 +162,22 @@ async function renderOne(id:TrendId, filtered:any[]){
           if (Number(p.value)===0) continue;
           html+=`<div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:8px;height:8px;background:${p.color};border-radius:2px;"></span>${esc(p.seriesName)}<span style="margin-left:auto;font-weight:600;">${id==='token' ? Number(p.value).toLocaleString()+' tokens' : p.value+' 次'}</span></div>`;
         }
-        if (!params.some((p:any)=>Number(p.value)>0)) html+=`<div style="color:var(--ds-text-3);font-size:10px;">本${xKey==='day'?'日':xKey==='hour'?'时段':xKey==='week'?'周':xKey==='month'?'月':'轮次'}无数据</div>`;
+        if (!params.some((p:any)=>Number(p.value)>0)) html+=`<div style="color:var(--ds-text-3);font-size:var(--aus-fs-sm);">本${xKey==='day'?'日':xKey==='hour'?'时段':xKey==='week'?'周':xKey==='month'?'月':'轮次'}无数据</div>`;
         return `<div style="padding:4px 2px;min-width:180px;max-width:280px;">${html}</div>`;
       }
     },
     legend:{
       top: legendTop,
       type:'scroll' as any,
-      textStyle:{ fontSize:10, color:cText3 },
+      textStyle:{ fontSize: 12, color:cText3 },
       pageIconColor:cText3,
       pageTextStyle:{ color:cText3 },
       itemWidth:10, itemHeight:6,
     },
     grid:{ left:42, right:16, top: 22 + (models.length>4?8:0), bottom: 24 },
     dataZoom: needZoom ? [{ type:'inside', xAxisIndex:0, start: Math.max(0, (labels.length - maxLabels)/labels.length*100), end:100, zoomOnMouseWheel:false, moveOnMouseMove:true }] : undefined,
-    xAxis:{ type:'category', data: labels, boundaryGap:false, axisLine:{lineStyle:{color:cBorder}}, axisLabel:{ color:cText3, fontSize:10, interval: xInterval, rotate: labels.length>12?30:0, hideOverlap:false } },
-    yAxis:{ type:'value', axisLabel:{ color:cText3, fontSize:10, formatter:(v:number)=> id==='token' ? (v>=1000? (v/1000).toFixed(0)+'k' : String(v)) : String(v) }, splitLine:{lineStyle:{color:cCard}} },
+    xAxis:{ type:'category', data: labels, boundaryGap:false, axisLine:{lineStyle:{color:cBorder}}, axisLabel:{ color:cText3, fontSize: 12, interval: xInterval, rotate: labels.length>12?30:0, hideOverlap:false } },
+    yAxis:{ type:'value', axisLabel:{ color:cText3, fontSize: 12, formatter:(v:number)=> id==='token' ? (v>=1000? (v/1000).toFixed(0)+'k' : String(v)) : String(v) }, splitLine:{lineStyle:{color:cCard}} },
     series: seriesData.map(s=>({
       name: s.name,
       type:'line',
@@ -192,7 +192,7 @@ async function renderOne(id:TrendId, filtered:any[]){
   }, true);
   setTimeout(()=>{ try{ c.resize(); }catch{} }, 60);
   } catch(e:any){
-    try{ const doc2=getDoc(); const el2=doc2.getElementById(`aus-chart-model-${id}`) as HTMLElement | null; if(el2) el2.innerHTML='<div style="text-align:center;padding:20px;color:#DC2626;font-size:11px;">图表加载失败</div>'; }catch{}
+    try{ const doc2=getDoc(); const el2=doc2.getElementById(`aus-chart-model-${id}`) as HTMLElement | null; if(el2) el2.innerHTML='<div style="text-align:center;padding:20px;color:#DC2626;font-size:var(--aus-fs-sm);">图表加载失败</div>'; }catch{}
     try{ console.error('[Api-Usage] renderModelTrends failed', id, e); }catch{}
   }
 }
@@ -228,7 +228,7 @@ function renderXDrop(id:TrendId){
   if (label) label.textContent = X_OPTIONS.find(o=>o.key===cur)?.label || cur;
   drop.innerHTML = X_OPTIONS.map(o=>{
     const active=o.key===cur;
-    return `<div data-x="${o.key}" data-trend="${id}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;${active?'background:var(--ds-card);font-weight:600;':''}">${o.label}</div>`;
+    return `<div data-x="${o.key}" data-trend="${id}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${active?'background:var(--ds-card);font-weight:600;':''}">${o.label}</div>`;
   }).join('');
   drop.querySelectorAll('[data-x]').forEach((el:any)=>{
     el.onclick=()=>{

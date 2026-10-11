@@ -1,3 +1,4 @@
+import { icon } from './icons';
 import { getSelectedSave, state } from '../store/index';
 import { localDay, esc } from '../utils/date';
 import { Y_OPTIONS, X_OPTIONS, getYSelected, getXSelected, toggleY, setXSelected, aggregateForChart } from './chart-config';
@@ -54,7 +55,7 @@ function updateSummarySortHeader() {
       cur.style.color = 'var(--ds-text)';
       cur.style.fontWeight = '600';
       const ind = cur.querySelector('.aus-sort-ind') as HTMLElement | null;
-      if (ind) ind.textContent = summarySortDir === 'asc' ? ' ▲' : ' ▼';
+      if (ind) ind.innerHTML = summarySortDir === 'asc' ? icon('chevron-up', 14) : icon('chevron-down', 14);
     }
   }
 }
@@ -181,9 +182,9 @@ function renderCalendar() {
   if (!customStart) customStart = todayStr;
   if (!customEnd) customEnd = todayStr;
   cal.innerHTML = `<div style="padding:12px;min-width:260px;display:grid;gap:10px;">
-    <div><div style="font-size:11px;color:var(--ds-text-2);margin-bottom:4px;">开始日期</div><input type="date" id="aus-custom-start" value="${customStart}" max="${todayStr}" style="width:100%;padding:8px 10px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);color:var(--ds-text);font-size:12px;box-sizing:border-box;"></div>
-    <div><div style="font-size:11px;color:var(--ds-text-2);margin-bottom:4px;">结束日期</div><input type="date" id="aus-custom-end" value="${customEnd}" max="${todayStr}" style="width:100%;padding:8px 10px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);color:var(--ds-text);font-size:12px;box-sizing:border-box;"></div>
-    <button id="aus-custom-apply" style="padding:8px 12px;border-radius:999px;background:var(--ds-black);color:var(--ds-black-text);border:none;font-size:12px;cursor:pointer;">应用</button>
+    <div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-bottom:4px;">开始日期</div><input type="date" id="aus-custom-start" value="${customStart}" max="${todayStr}" style="width:100%;padding:8px 10px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-base);box-sizing:border-box;"></div>
+    <div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-bottom:4px;">结束日期</div><input type="date" id="aus-custom-end" value="${customEnd}" max="${todayStr}" style="width:100%;padding:8px 10px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-base);box-sizing:border-box;"></div>
+    <button id="aus-custom-apply" style="padding:8px 12px;border-radius:999px;background:var(--ds-black);color:var(--ds-black-text);border:none;font-size:var(--aus-fs-base);cursor:pointer;">应用</button>
   </div>`;
   const startEl = doc.getElementById('aus-custom-start') as HTMLInputElement | null;
   const endEl = doc.getElementById('aus-custom-end') as HTMLInputElement | null;
@@ -223,13 +224,13 @@ function renderModelPicker(modelsHist?: any[]) {
   const allSelected = selectedModels.length === 0;
   label.textContent = allSelected ? '全部' : selectedModels.length === 1 ? selectedModels[0] : `已选 ${selectedModels.length} 项`;
   label.title = allSelected ? '全部模型' : selectedModels.join('、');
-  let html = `<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;${allSelected?'background:var(--ds-card);font-weight:600;':''}"><input type="checkbox" data-model-all ${allSelected?'checked':''} style="accent-color:var(--ds-text);" /><span>全部模型</span></label>`;
+  let html = `<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${allSelected?'background:var(--ds-card);font-weight:600;':''}"><input type="checkbox" data-model-all ${allSelected?'checked':''} style="accent-color:var(--ds-text);" /><span>全部模型</span></label>`;
   for (const m of models) {
     const checked = selectedModels.includes(m);
     const active = checked ? 'background:var(--ds-card);font-weight:600;' : '';
-    html += `<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;${active}"><input type="checkbox" data-model="${esc(m)}" ${checked?'checked':''} style="accent-color:var(--ds-text);" /><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(m)}</span></label>`;
+    html += `<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${active}"><input type="checkbox" data-model="${esc(m)}" ${checked?'checked':''} style="accent-color:var(--ds-text);" /><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(m)}</span></label>`;
   }
-  if (!models.length) html += '<div style="padding:8px 10px;color:var(--ds-text-3);font-size:12px;">暂无模型</div>';
+  if (!models.length) html += '<div style="padding:8px 10px;color:var(--ds-text-3);font-size:var(--aus-fs-base);">暂无模型</div>';
   dropdown.innerHTML = html;
   const allInput = dropdown.querySelector('[data-model-all]') as HTMLInputElement | null;
   if (allInput) {
@@ -261,13 +262,13 @@ function renderChatPicker(chatHist?: any[]) {
   const find = list.find(c => (c.chatId ?? '__null__') === selectedChat);
   label.textContent = selectedChat === '__all__' ? '全部' : (find?.displayName || selectedChat);
   label.title = find?.chatId || find?.displayName || '';
-  let html = `<div data-chat="__all__" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;${selectedChat==='__all__'?'background:var(--ds-card);font-weight:600;':''}">全部</div>`;
+  let html = `<div data-chat="__all__" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${selectedChat==='__all__'?'background:var(--ds-card);font-weight:600;':''}">全部</div>`;
   for (const c of list) {
     const key = c.chatId ?? '__null__';
     const active = key === selectedChat ? 'background:var(--ds-card);font-weight:600;' : '';
-    html += `<div data-chat="${esc(key)}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;${active}" title="${esc(c.chatId || '')}">${esc(c.displayName)}</div>`;
+    html += `<div data-chat="${esc(key)}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${active}" title="${esc(c.chatId || '')}">${esc(c.displayName)}</div>`;
   }
-  if (!list.length) html += '<div style="padding:8px 10px;color:var(--ds-text-3);font-size:12px;">暂无对话</div>';
+  if (!list.length) html += '<div style="padding:8px 10px;color:var(--ds-text-3);font-size:var(--aus-fs-base);">暂无对话</div>';
   dropdown.innerHTML = html;
   dropdown.querySelectorAll('[data-chat]').forEach((el: any) => {
     el.onclick = () => {
@@ -295,11 +296,11 @@ function renderEndpointPicker(history?: any[]) {
   label.title = label.textContent;
   const optionHtml = (id: string, text: string, title: string) => {
     const active = id === selectedEndpoint ? 'background:var(--ds-card);font-weight:600;' : '';
-    return `<div data-endpoint="${esc(id)}" title="${esc(title)}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;${active}">${esc(text)}</div>`;
+    return `<div data-endpoint="${esc(id)}" title="${esc(title)}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${active}">${esc(text)}</div>`;
   };
   let html = optionHtml(STATS_FILTER_ALL, '全部', '全部');
   for (const option of options) html += optionHtml(option.id, option.label, option.label);
-  if (!options.length) html += '<div style="padding:8px 10px;color:var(--ds-text-3);font-size:12px;">暂无接入记录</div>';
+  if (!options.length) html += '<div style="padding:8px 10px;color:var(--ds-text-3);font-size:var(--aus-fs-base);">暂无接入记录</div>';
   dropdown.innerHTML = html;
   dropdown.querySelectorAll('[data-endpoint]').forEach((el: any) => {
     el.onclick = () => {
@@ -327,11 +328,11 @@ function renderCredentialPicker(history?: any[], endpoint = selectedEndpoint) {
   label.title = label.textContent;
   const optionHtml = (id: string, text: string, title: string) => {
     const active = id === selectedCredential ? 'background:var(--ds-card);font-weight:600;' : '';
-    return `<div data-credential="${esc(id)}" title="${esc(title)}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;${active}">${esc(text)}</div>`;
+    return `<div data-credential="${esc(id)}" title="${esc(title)}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${active}">${esc(text)}</div>`;
   };
   let html = optionHtml(STATS_FILTER_ALL, '全部', '全部');
   for (const option of options) html += optionHtml(option.id, option.label, option.label);
-  if (!options.length) html += '<div style="padding:8px 10px;color:var(--ds-text-3);font-size:12px;">暂无密钥记录</div>';
+  if (!options.length) html += '<div style="padding:8px 10px;color:var(--ds-text-3);font-size:var(--aus-fs-base);">暂无密钥记录</div>';
   dropdown.innerHTML = html;
   dropdown.querySelectorAll('[data-credential]').forEach((el: any) => {
     el.onclick = () => {
@@ -521,7 +522,7 @@ function renderChartSelectors() {
   let yHtml = '';
   for (const opt of Y_OPTIONS) {
     const checked = ySel.includes(opt.key);
-    yHtml += `<label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:11px;${checked?'background:var(--ds-card);':''}"><input type="checkbox" data-ykey="${opt.key}" ${checked?'checked':''} style="accent-color:var(--ds-text);" /><span style="display:inline-block;width:8px;height:8px;background:${opt.color};border-radius:2px;"></span>${opt.label}<span style="margin-left:auto;color:var(--ds-text-3);font-size:10px;">${opt.unit}</span></label>`;
+    yHtml += `<label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:var(--aus-fs-sm);${checked?'background:var(--ds-card);':''}"><input type="checkbox" data-ykey="${opt.key}" ${checked?'checked':''} style="accent-color:var(--ds-text);" /><span style="display:inline-block;width:8px;height:8px;background:${opt.color};border-radius:2px;"></span>${opt.label}<span style="margin-left:auto;color:var(--ds-text-3);font-size:var(--aus-fs-sm);">${opt.unit}</span></label>`;
   }
   yDrop.innerHTML = yHtml;
   yDrop.querySelectorAll('input[data-ykey]').forEach((el: any)=>{
@@ -538,7 +539,7 @@ function renderChartSelectors() {
   let xHtml = '';
   for (const opt of X_OPTIONS) {
     const active = opt.key===xSel;
-    xHtml += `<div data-xkey="${opt.key}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;${active?'background:var(--ds-card);font-weight:600;':''}">${opt.label}</div>`;
+    xHtml += `<div data-xkey="${opt.key}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${active?'background:var(--ds-card);font-weight:600;':''}">${opt.label}</div>`;
   }
   xDrop.innerHTML = xHtml;
   xDrop.querySelectorAll('[data-xkey]').forEach((el:any)=>{
@@ -589,7 +590,7 @@ async function renderChart(filteredRaw: any[]) {
   const { labels, series } = aggregateForChart(filteredRaw, yKeys, xKey);
   if (!labels.length) {
     if (chart) { try { chart.dispose(); } catch {} chart = null; }
-    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--ds-text-3);font-size:12px;">该筛选无数据（历史 ' + filteredRaw.length + ' 条）</div>';
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--ds-text-3);font-size:var(--aus-fs-base);">该筛选无数据（历史 ' + filteredRaw.length + ' 条）</div>';
     return;
   }
   const w = (el as HTMLElement).clientWidth, h = (el as HTMLElement).clientHeight;
@@ -603,7 +604,7 @@ async function renderChart(filteredRaw: any[]) {
     }
     const tries = (renderChart as any)._retryCount || 0;
     if (tries >= 80) {
-      el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--ds-text-3);font-size:11px;">图表容器未就绪，请切换视图重试</div>';
+      el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--ds-text-3);font-size:var(--aus-fs-sm);">图表容器未就绪，请切换视图重试</div>';
       return;
     }
     (renderChart as any)._retryCount = tries + 1;
@@ -621,7 +622,7 @@ async function renderChart(filteredRaw: any[]) {
       return ec;
     });
   } catch (e) {
-    el.innerHTML = '<div style="text-align:center;padding:20px;color:#DC2626;font-size:12px;">图表加载失败，请检查网络后重试</div>';
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:#DC2626;font-size:var(--aus-fs-base);">图表加载失败，请检查网络后重试</div>';
     console.error('[Api-Usage] echarts load failed', e);
     return;
   }
@@ -641,8 +642,8 @@ async function renderChart(filteredRaw: any[]) {
     for (const s of series) if (s.kind==='cost') s.data = s.data.map((v:any)=> curCur.code==='USD' ? Number((Number(v)/curCur.rate).toFixed(4)) : v);
   }
   const yAxis: any[] = [];
-  if (hasToken) yAxis.push({ type:'value', name:'tokens', position:'left', axisLine:{show:false}, splitLine:{lineStyle:{color:cCard}}, axisLabel:{color:cText3,fontSize:10} });
-  if (hasCost) yAxis.push({ type:'value', name:curCur.code, position: hasToken?'right':'left', axisLine:{show:false}, splitLine:{show:false}, axisLabel:{color:cText3,fontSize:10,formatter:(v:number)=> curCur.symbol + (curCur.code==='USD' ? (Number(v)).toFixed(4) : Number(v).toFixed(4))} });
+  if (hasToken) yAxis.push({ type:'value', name:'tokens', position:'left', axisLine:{show:false}, splitLine:{lineStyle:{color:cCard}}, axisLabel:{color:cText3,fontSize: 12} });
+  if (hasCost) yAxis.push({ type:'value', name:curCur.code, position: hasToken?'right':'left', axisLine:{show:false}, splitLine:{show:false}, axisLabel:{color:cText3,fontSize: 12,formatter:(v:number)=> curCur.symbol + (curCur.code==='USD' ? (Number(v)).toFixed(4) : Number(v).toFixed(4))} });
   // 堆叠柱仅最顶段圆角，其余直角无缝衔接（修复紫/橙/绿段间缝隙）
   const lastBarIdx = (() => {
     const indices = series.map((_, i) => i).filter(i => series[i].kind !== 'cost'); // 仅 token 堆叠取最后，深色同理；cost 单轴不在此堆
@@ -697,7 +698,7 @@ async function renderChart(filteredRaw: any[]) {
       backgroundColor: cCardInner,
       borderColor: cBorder,
       borderWidth: 1,
-      textStyle: { color: cText, fontSize: 11 },
+      textStyle: { color: cText, fontSize: 12 },
       formatter: (params:any)=>{
         if (!params?.length) return '';
         const idx = params[0].dataIndex;
@@ -715,8 +716,8 @@ async function renderChart(filteredRaw: any[]) {
     },
     grid: { left: 50, right: hasToken&&hasCost?50:20, top: 8, bottom: 28 },
     dataZoom: needZoom ? [{ type:'inside', xAxisIndex:0, start: Math.max(0, (labels.length - maxLabels) / labels.length * 100), end: 100, zoomOnMouseWheel: false, moveOnMouseMove: true }] : undefined,
-    xAxis: { type:'category', data: labels, axisLine:{lineStyle:{color:cBorder}}, axisLabel:{color:cText3,fontSize:10,interval: xInterval,rotate: labels.length>12?30:0, hideOverlap: false} },
-    yAxis: yAxis.length?yAxis:{ type:'value', axisLabel:{color:cText3,fontSize:10} },
+    xAxis: { type:'category', data: labels, axisLine:{lineStyle:{color:cBorder}}, axisLabel:{color:cText3,fontSize: 12,interval: xInterval,rotate: labels.length>12?30:0, hideOverlap: false} },
+    yAxis: yAxis.length?yAxis:{ type:'value', axisLabel:{color:cText3,fontSize: 12} },
     series: seriesOpt,
   }, true);
   setTimeout(()=>{ try{ chart.resize(); }catch{} }, 60);
@@ -909,7 +910,7 @@ function openStatsFourDrop(idx:number, v:any) {
   const cur = curKeys[idx];
   drop.innerHTML = FOUR_OPTIONS.map(o=>{
     const active = o.key===cur;
-    return `<div data-sfour="${idx}" data-key="${o.key}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:11px;${active?'background:var(--ds-card);font-weight:600;color:var(--ds-text);':''}">${o.label}</div>`;
+    return `<div data-sfour="${idx}" data-key="${o.key}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-sm);${active?'background:var(--ds-card);font-weight:600;color:var(--ds-text);':''}">${o.label}</div>`;
   }).join('');
   drop.querySelectorAll('[data-sfour]').forEach((el:any)=>{
     el.onclick = () => {
@@ -938,8 +939,8 @@ export function renderStatsFour(filtered:any[]) {
     const valColor = isRate ? 'var(--ds-green)' : 'var(--ds-text)';
     return `<div class="ds-card" style="padding:14px;position:relative;overflow:visible;">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
-        <div style="font-size:11px;color:var(--ds-text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.title}</div>
-        <button id="aus-stats-four-btn-${i}" title="切换指标" style="flex-shrink:0;padding:4px 7px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text-2);font-size:10px;cursor:pointer;line-height:1;">▼</button>
+        <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.title}</div>
+        <button id="aus-stats-four-btn-${i}" title="切换指标" style="flex-shrink:0;padding:4px 7px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text-2);font-size:var(--aus-fs-sm);cursor:pointer;line-height:1;">${icon('chevron-down', 14)}</button>
         <div id="aus-stats-four-drop-${i}" style="display:none;position:absolute;top:38px;right:8px;z-index:6;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);padding:6px;min-width:180px;max-height:260px;overflow:auto;"></div>
       </div>
       <div style="font-size:18px;font-weight:600;color:${valColor};margin-top:6px;word-break:break-all;">${d.html}</div>

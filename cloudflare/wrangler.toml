@@ -6,10 +6,16 @@ workers_dev = true
 # 关闭每次上传生成的预览 URL，减少无意义的外部暴露
 preview_urls = false
 
-# 看板页作为文本模块打包进 Worker，不需要额外的静态资源托管
+# 看板页与自托管的图表库都作为文本模块打包进 Worker，不需要额外的静态资源托管
 [[rules]]
 type = "Text"
 globs = ["**/*.html"]
+fallthrough = true
+
+# 自托管 ECharts：从自己的域名提供（/vendor/echarts.js），避免看板依赖第三方 CDN
+[[rules]]
+type = "Text"
+globs = ["**/vendor/*.js"]
 fallthrough = true
 
 [[d1_databases]]

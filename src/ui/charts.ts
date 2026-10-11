@@ -36,7 +36,7 @@ export async function renderCharts() {
   const barEl = doc.getElementById('aus-chart-bar');
   if (!barEl) return;
   const entries: any[] = s.history || [];
-  if (!entries.length) { barEl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--ds-text-3);font-size:12px;">暂无数据，发起一次对话后自动统计</div>'; return; }
+  if (!entries.length) { barEl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--ds-text-3);font-size:var(--aus-fs-base);">暂无数据，发起一次对话后自动统计</div>'; return; }
   const echarts: any = await getECharts();
   const agg = aggregateByDay(entries);
   const days = agg.map(a => a.day);
@@ -46,9 +46,9 @@ export async function renderCharts() {
   chart.setOption({
     backgroundColor: 'transparent',
     grid: { left: 32, right: 12, top: 12, bottom: 28 },
-    tooltip: { trigger: 'axis', backgroundColor: 'var(--ds-text)', textStyle: { color: 'var(--ds-card-inner)', fontSize: 11 }, borderWidth: 0 },
-    xAxis: { type: 'category', data: days, axisLine: { lineStyle: { color: 'var(--ds-border)' } }, axisLabel: { color: 'var(--ds-text-3)', fontSize: 11 }, axisTick: { show: false } },
-    yAxis: { type: 'value', axisLine: { show: false }, splitLine: { lineStyle: { color: 'var(--ds-border)' } }, axisLabel: { color: 'var(--ds-text-3)', fontSize: 11 } },
+    tooltip: { trigger: 'axis', backgroundColor: 'var(--ds-text)', textStyle: { color: 'var(--ds-card-inner)', fontSize: 12 }, borderWidth: 0 },
+    xAxis: { type: 'category', data: days, axisLine: { lineStyle: { color: 'var(--ds-border)' } }, axisLabel: { color: 'var(--ds-text-3)', fontSize: 12 }, axisTick: { show: false } },
+    yAxis: { type: 'value', axisLine: { show: false }, splitLine: { lineStyle: { color: 'var(--ds-border)' } }, axisLabel: { color: 'var(--ds-text-3)', fontSize: 12 } },
     series: [{ type: 'bar', data: costs, itemStyle: { color: '#FF6A00', borderRadius: [4, 4, 0, 0] }, barWidth: 14, emphasis: { itemStyle: { color: '#FF7A00' } } }],
   });
 
@@ -61,7 +61,7 @@ export async function renderCharts() {
       backgroundColor: 'transparent',
       tooltip: { formatter: (p: any) => `${p.data[0]}: ${p.data[1]} tokens` },
       grid: { left: 40, right: 12, top: 8, bottom: 24 },
-      xAxis: { type: 'category', data: days, axisLabel: { color: 'var(--ds-text-3)', fontSize: 10 }, axisLine: { lineStyle: { color: 'var(--ds-border)' } } },
+      xAxis: { type: 'category', data: days, axisLabel: { color: 'var(--ds-text-3)', fontSize: 12 }, axisLine: { lineStyle: { color: 'var(--ds-border)' } } },
       yAxis: { type: 'category', data: ['Tokens'], axisLabel: { color: 'var(--ds-text-3)' }, axisLine: { show: false }, splitLine: { show: false } },
       visualMap: { min: 0, max, show: false, inRange: { color: ['#FFF7ED', '#FF6A00'] } },
       series: [{ type: 'heatmap', data: agg.map((a, i) => [i, 0, a.tokens]), label: { show: false }, emphasis: { itemStyle: { shadowBlur: 6, shadowColor: 'rgba(0,0,0,0.2)' } } }],

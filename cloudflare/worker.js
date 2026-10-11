@@ -4,20 +4,42 @@
  * 路由：
  *   POST /collect       接收匿名上报（跨域简单请求，返回 204）
  *   GET  /dashboard     口令保护的数据看板页
- *   GET  /api/summary   口令保护的汇总 JSON（Cache API 缓存，减少 D1 读）
+ *   GET  /vendor/echarts.js  自托管图表库（看板同源加载，不依赖第三方 CDN）
+ *   GET  /api/summary   口令保护的总计类汇总（总计 / 画像 / 分布，Cache API 缓存）
+ *   GET  /api/trend     口令保护的趋势汇总（from/to/parts，Cache API 缓存）
  *   GET  /health        健康检查
  * 定时：每月 1 号清理超过保留期的逐设备日数据。
  *
- * 省额度要点：客户端会话内聚合后再上报（每设备每天通常 1~3 个请求）；
- * 上报体走 text/plain 简单请求，不触发 CORS 预检；看板走缓存 + day 索引。
+ * 省额度要点：
+ *   1) 客户端会话内聚合后再上报（每设备每天通常 1~3 个请求）；
+ *   2) device 表维护去标识化的累计列，看板「总计 + 画像」一次全表读即可（行数 = 设备数）；
+ *   3) device_daily 只在需要日粒度趋势时按 day 索引范围扫描（行数 = 天数 × 日活）；
+ *   4) 看板接口走 Cache API（默认 10 分钟），看板「刷新」按钮用 ?force=1 绕过并回填缓存；
+ *   5) 上报体走 text/plain 简单请求，不触发 CORS 预检；device_daily.last_seq 与 device.last_seq 双重幂等。
  */
 import dashboardHtml from './dashboard.html';
+import echartsJs from './vendor/echarts.min.js';
 import { MAX_BODY_BYTES, PAGE_KEYS, normalizePayload } from './payload.js';
+import {
+  CACHE_TTL_SECONDS,
+  beijingDayKey,
+  cumulativeGrowth,
+  durationHistogram,
+  envBreakdown,
+  estimateRenderMs,
+  normalizeWindow,
+  numberOrZero,
+  renderSampleCount,
+  sumBy,
+  tally,
+} from './summary.js';
 
-/** 逐设备日数据保留天数（设备环境快照表长期保留） */
+/** 逐设备日数据保留天数（设备维度汇总表长期保留） */
 const RETENTION_DAYS = 730;
-/** device 表 last_seen/版本的回写间隔（毫秒），避免每次上报都写这一行 */
-const DEVICE_REFRESH_MS = 7 * 24 * 60 * 60 * 1000;
+/** 渲染耗时档位下标 */
+const RENDER_INDEXES = [0, 1, 2, 3, 4];
+/** 累计列（与 schema.sql 的 *_total 一一对应） */
+const TOTAL_COLUMNS = PAGE_KEYS.map((key) => `p_${key}_total`);
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -26,15 +48,41 @@ const CORS_HEADERS = {
   'Access-Control-Max-Age': '86400',
 };
 
+/**
+ * 设备维度汇总上行：环境字段刷新为该设备最近一次上报的状态（空值不覆盖旧值），
+ * 累计列按本次上报增量累加；`WHERE excluded.last_seq > device.last_seq` 保证
+ * 重复/重发上报（同 seq）不重复累加，与 device_daily 的幂等判据一致。
+ */
 const DEVICE_UPSERT_SQL = `
 INSERT INTO device (
   device_id, first_seen, last_seen, app_version, browser, browser_major, os, arch,
-  lang, width_bucket, dark, standalone, touch, tz_offset
-) VALUES (?1, ?2, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)
+  lang, width_bucket, dark, standalone, touch, tz_offset,
+  first_day, last_seq, opens_total, dur_ms_total,
+  p_overview_total, p_stats_total, p_history_total, p_forecast_total,
+  p_wallet_total, p_settings_total, p_help_total, p_about_total
+) VALUES (
+  ?1, ?2, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13,
+  ?14, ?15, ?16, ?17,
+  ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25
+)
 ON CONFLICT(device_id) DO UPDATE SET
   last_seen = excluded.last_seen,
-  app_version = excluded.app_version
-WHERE excluded.last_seen - device.last_seen > ${DEVICE_REFRESH_MS}
+  last_seq = excluded.last_seq,
+  app_version = COALESCE(NULLIF(excluded.app_version, ''), device.app_version),
+  browser = COALESCE(NULLIF(excluded.browser, ''), device.browser),
+  browser_major = COALESCE(NULLIF(excluded.browser_major, ''), device.browser_major),
+  os = COALESCE(NULLIF(excluded.os, ''), device.os),
+  arch = CASE WHEN excluded.arch = 'unknown' THEN COALESCE(device.arch, excluded.arch) ELSE excluded.arch END,
+  lang = COALESCE(NULLIF(excluded.lang, ''), device.lang),
+  width_bucket = COALESCE(NULLIF(excluded.width_bucket, ''), device.width_bucket),
+  dark = excluded.dark,
+  standalone = excluded.standalone,
+  touch = excluded.touch,
+  tz_offset = excluded.tz_offset,
+  opens_total = device.opens_total + excluded.opens_total,
+  dur_ms_total = device.dur_ms_total + excluded.dur_ms_total,
+  ${TOTAL_COLUMNS.map((column) => `${column} = device.${column} + excluded.${column}`).join(',\n  ')}
+WHERE excluded.last_seq > device.last_seq
 `;
 
 const DEVICE_DAILY_UPSERT_SQL = `
@@ -70,6 +118,47 @@ ON CONFLICT(day, device_id) DO UPDATE SET
 WHERE device_daily.last_seq < excluded.last_seq
 `;
 
+/** 设备维度汇总：一次全表读（行数 = 设备数）覆盖总计、环境画像、版本分布与时长分布 */
+const DEVICE_SELECT_SQL = `
+SELECT app_version, browser, browser_major, os, arch, lang, width_bucket,
+       dark, standalone, touch, tz_offset, first_day, first_seen,
+       opens_total, dur_ms_total,
+       ${TOTAL_COLUMNS.join(', ')}
+FROM device
+`;
+
+/** 当日新增：只扫当天行（行数 = 当日活跃设备数） */
+const TODAY_SELECT_SQL = `
+SELECT COALESCE(SUM(opens), 0) AS opens, COALESCE(SUM(dur_ms), 0) AS dur_ms
+FROM device_daily
+WHERE day = ?1
+`;
+
+/** 日粒度趋势：按 day 索引范围扫描后按天聚合 */
+const DAILY_SELECT_SQL = `
+SELECT day,
+       COUNT(*) AS devices,
+       COALESCE(SUM(opens), 0) AS opens,
+       COALESCE(SUM(dur_ms), 0) AS dur_ms,
+       COALESCE(SUM(sessions), 0) AS sessions,
+       ${PAGE_KEYS.map((key) => `COALESCE(SUM(p_${key}), 0) AS p_${key}`).join(',\n       ')}
+FROM device_daily
+WHERE day >= ?1 AND day <= ?2
+GROUP BY day
+ORDER BY day
+`;
+
+/** 按扩展版本聚合渲染耗时分桶（客户端只上报 5 档，均值由 summary.js 估算） */
+const RENDER_SELECT_SQL = `
+SELECT app_version AS version,
+       COUNT(*) AS device_days,
+       COALESCE(SUM(r0 + r1 + r2 + r3 + r4), 0) AS samples,
+       ${RENDER_INDEXES.map((index) => `COALESCE(SUM(r${index}), 0) AS r${index}`).join(',\n       ')}
+FROM device_daily
+WHERE day >= ?1 AND day <= ?2
+GROUP BY app_version
+`;
+
 export default {
   async fetch(request, env, ctx) {
     let url;
@@ -87,6 +176,18 @@ export default {
     if (path === '/health') {
       return jsonResponse({ ok: true, time: Date.now() }, { status: 200, headers: noStore() });
     }
+    // 自托管图表库：同源、无需口令（公开库），避免看板依赖第三方 CDN 的可达性
+    if (path === '/vendor/echarts.js') {
+      return new Response(echartsJs, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/javascript; charset=UTF-8',
+          'X-Content-Type-Options': 'nosniff',
+          // 内容随 Worker 部署变化，看板按版本号带 ?v= 查询串，可放心长缓存
+          'Cache-Control': 'public, max-age=86400',
+        },
+      });
+    }
     if (!isAuthorized(request, env)) return unauthorized();
     if (path === '/dashboard' || path === '/') {
       return new Response(dashboardHtml, {
@@ -94,7 +195,8 @@ export default {
         headers: { 'Content-Type': 'text/html; charset=UTF-8', 'Cache-Control': 'no-store' },
       });
     }
-    if (path === '/api/summary') return handleSummary(url, env);
+    if (path === '/api/summary') return handleSummary(request, env);
+    if (path === '/api/trend') return handleTrend(request, env);
     return new Response('Not Found', { status: 404 });
   },
 
@@ -145,6 +247,10 @@ async function writeRow(db, payload, now) {
     payload.id, now, payload.app,
     env.b, env.bv, env.os, env.arch, env.lang,
     env.w, env.dark, env.standalone, env.touch, payload.tz,
+    payload.day, payload.seq,
+    counters.opens, counters.dur_ms,
+    counters.pages.overview, counters.pages.stats, counters.pages.history, counters.pages.forecast,
+    counters.pages.wallet, counters.pages.settings, counters.pages.help, counters.pages.about,
   );
   const dailyStmt = db.prepare(DEVICE_DAILY_UPSERT_SQL).bind(
     payload.day, payload.id,
@@ -157,188 +263,189 @@ async function writeRow(db, payload, now) {
   await db.batch([deviceStmt, dailyStmt]);
 }
 
-/* ---------------------------------- /api/summary ---------------------------------- */
+/* ---------------------------------- 看板接口 ---------------------------------- */
+
+function handleSummary(request, env) {
+  return respondWithCache(request, env, () => buildSummary(env));
+}
+
+function handleTrend(request, env) {
+  return respondWithCache(request, env, async () => {
+    const url = new URL(request.url);
+    const window = normalizeWindow(url.searchParams.get('from'), url.searchParams.get('to'), Date.now());
+    const parts = String(url.searchParams.get('parts') || 'both');
+    return buildTrend(env, window, {
+      daily: parts === 'both' || parts === 'daily',
+      render: parts === 'both' || parts === 'render',
+    });
+  });
+}
 
 /**
- * 看板汇总接口。这里刻意不做任何缓存（包括 Cache API 与 HTTP 缓存）：
- * 不同时间范围各自缓存时会停留在不同时刻的快照上，让「近 7 天」与「近 30 天」看起来互相矛盾，
- * 而两者其实读的是同一份数据。看板由开发者手动查看，请求量极低，实时查询的读放大可以接受。
+ * 总计类汇总：设备表一次全表读 + 一次当日聚合。
+ * 「当日」按北京时间计算，与多数用户客户端上报的本地日期一致。
  */
-async function handleSummary(url, env) {
-  const days = clampDays(url.searchParams.get('days'));
-  try {
-    const data = await buildSummary(env, days);
-    return jsonResponse(data, { status: 200, headers: noStore() });
-  } catch (error) {
-    return jsonResponse({ ok: false, error: '查询失败' }, { status: 500, headers: noStore() });
-  }
-}
-
-function clampDays(value) {
-  const num = Number(value);
-  if (!Number.isFinite(num)) return 30;
-  return Math.min(365, Math.max(1, Math.floor(num)));
-}
-
-function dayKey(offsetDays = 0, now = Date.now()) {
-  return new Date(now - offsetDays * 86400000).toISOString().slice(0, 10);
-}
-
-async function queryAll(env, sql, params = []) {
-  const stmt = params.length ? env.DB.prepare(sql).bind(...params) : env.DB.prepare(sql);
-  const res = await stmt.all();
-  return res?.results || [];
-}
-
-function numberOrZero(value) {
-  const num = Number(value);
-  return Number.isFinite(num) ? num : 0;
-}
-
-function tally(rows, key, limit = 12) {
-  const map = new Map();
-  for (const row of rows) {
-    const raw = row?.[key];
-    const label = raw === null || raw === undefined || raw === '' ? '未知' : String(raw);
-    map.set(label, (map.get(label) || 0) + 1);
-  }
-  return Array.from(map.entries())
-    .map(([label, count]) => ({ label, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, limit);
-}
-
-async function buildSummary(env, days) {
-  const since = dayKey(days - 1);
-  const today = dayKey(0);
-  const since7 = dayKey(6);
-  const since30 = dayKey(29);
-
-  const [
-    totalRows,
-    windowRows,
-    todayRows,
-    weekRows,
-    monthRows,
-    usageRows,
-    dailyRows,
-    versionRows,
-    deviceRows,
-  ] = await Promise.all([
-    queryAll(env, 'SELECT COUNT(*) AS c FROM device'),
-    queryAll(env, 'SELECT COUNT(DISTINCT device_id) AS c FROM device_daily WHERE day >= ?1', [since]),
-    queryAll(env, 'SELECT COUNT(DISTINCT device_id) AS c FROM device_daily WHERE day = ?1', [today]),
-    queryAll(env, 'SELECT COUNT(DISTINCT device_id) AS c FROM device_daily WHERE day >= ?1', [since7]),
-    queryAll(env, 'SELECT COUNT(DISTINCT device_id) AS c FROM device_daily WHERE day >= ?1', [since30]),
-    queryAll(
-      env,
-      `SELECT SUM(sessions) AS sessions, SUM(opens) AS opens, SUM(dur_ms) AS dur_ms,
-              ${PAGE_KEYS.map((key) => `SUM(p_${key}) AS p_${key}`).join(', ')},
-              SUM(r0) AS r0, SUM(r1) AS r1, SUM(r2) AS r2, SUM(r3) AS r3, SUM(r4) AS r4
-       FROM device_daily WHERE day >= ?1`,
-      [since],
-    ),
-    queryAll(
-      env,
-      `SELECT day, COUNT(DISTINCT device_id) AS devices, SUM(opens) AS opens, SUM(sessions) AS sessions,
-              SUM(dur_ms) AS dur_ms,
-              ${PAGE_KEYS.map((key) => `SUM(p_${key}) AS p_${key}`).join(', ')}
-       FROM device_daily WHERE day >= ?1 GROUP BY day ORDER BY day`,
-      [since],
-    ),
-    queryAll(
-      env,
-      // 每台设备只归入它在范围内最后上报的版本，避免同一设备跨版本重复计数
-      `SELECT version, COUNT(*) AS c FROM (
-         SELECT app_version AS version,
-                ROW_NUMBER() OVER (PARTITION BY device_id ORDER BY day DESC, last_seq DESC) AS rn
-         FROM device_daily WHERE day >= ?1
-       ) WHERE rn = 1 GROUP BY version ORDER BY c DESC LIMIT 10`,
-      [since],
-    ),
-    // 环境维度按设备快照聚合：一次性取回后在 Worker 内统计，避免多次全表扫描
-    queryAll(
-      env,
-      `SELECT browser, os, arch, lang, width_bucket, dark, standalone, touch, tz_offset FROM device`,
-    ),
+async function buildSummary(env) {
+  const now = Date.now();
+  const today = beijingDayKey(now);
+  const [deviceRows, todayRows] = await Promise.all([
+    queryAll(env, DEVICE_SELECT_SQL),
+    queryAll(env, TODAY_SELECT_SQL, [today]),
   ]);
 
-  const usage = usageRows[0] || {};
+  const users = deviceRows.length;
+  const opens = sumBy(deviceRows, 'opens_total');
+  const durMs = sumBy(deviceRows, 'dur_ms_total');
+
   const pages = {};
   let pageTotal = 0;
   for (const key of PAGE_KEYS) {
-    const value = numberOrZero(usage[`p_${key}`]);
+    const value = sumBy(deviceRows, `p_${key}_total`);
     pages[key] = value;
     pageTotal += value;
   }
 
+  // 首次出现日期：优先用回填/首次上报写入的 first_day，缺失时用服务端首次见到的时间兜底
+  const growthCounts = new Map();
+  for (const row of deviceRows) {
+    const rawDay = typeof row?.first_day === 'string' ? row.first_day : '';
+    const day = /^\d{4}-\d{2}-\d{2}$/.test(rawDay)
+      ? rawDay
+      : (Number.isFinite(Number(row?.first_seen)) ? beijingDayKey(Number(row.first_seen)) : '');
+    if (!day) continue;
+    growthCounts.set(day, (growthCounts.get(day) || 0) + 1);
+  }
+  const userGrowth = cumulativeGrowth(
+    Array.from(growthCounts.entries()).map(([day, count]) => ({ day, count })),
+  );
+
+  const todayAgg = todayRows[0] || {};
   return {
-    generatedAt: Date.now(),
-    days,
-    devices: {
-      total: numberOrZero(totalRows[0]?.c),
-      dau: numberOrZero(todayRows[0]?.c),
-      wau: numberOrZero(weekRows[0]?.c),
-      mau: numberOrZero(monthRows[0]?.c),
-      window: numberOrZero(windowRows[0]?.c),
+    generatedAt: now,
+    today,
+    totals: {
+      users,
+      opens,
+      durMs,
+      avgDurMsPerUser: users > 0 ? Math.round(durMs / users) : 0,
+      todayUsers: growthCounts.get(today) || 0,
+      todayOpens: numberOrZero(todayAgg.opens),
+      todayDurMs: numberOrZero(todayAgg.dur_ms),
     },
-    usage: {
-      sessions: numberOrZero(usage.sessions),
-      opens: numberOrZero(usage.opens),
-      durMs: numberOrZero(usage.dur_ms),
-    },
+    userGrowth,
     pages: { ...pages, total: pageTotal },
-    daily: dailyRows.map((row) => {
-      const dayPages = {};
-      let pageTotal = 0;
-      for (const key of PAGE_KEYS) {
-        const value = numberOrZero(row[`p_${key}`]);
-        dayPages[key] = value;
-        pageTotal += value;
-      }
-      return {
-        day: String(row.day),
-        devices: numberOrZero(row.devices),
-        opens: numberOrZero(row.opens),
-        sessions: numberOrZero(row.sessions),
-        durMs: numberOrZero(row.dur_ms),
-        pageTotal,
-        pages: dayPages,
-      };
-    }),
-    versions: versionRows.map((row) => ({
-      label: row.version ? String(row.version) : '未知',
-      count: numberOrZero(row.c),
-    })),
-    render: [0, 1, 2, 3, 4].map((index) => numberOrZero(usage[`r${index}`])),
-    env: {
-      browser: tally(deviceRows, 'browser'),
-      os: tally(deviceRows, 'os'),
-      arch: tally(deviceRows, 'arch'),
-      lang: tally(deviceRows, 'lang'),
-      width: tally(deviceRows, 'width_bucket'),
-      tz: tally(deviceRows.map((row) => ({ ...row, tz_label: `UTC${row.tz_offset >= 0 ? '+' : ''}${row.tz_offset}` })), 'tz_label'),
-      dark: [
-        { label: '深色偏好', count: deviceRows.filter((row) => Number(row.dark) === 1).length },
-        { label: '浅色偏好', count: deviceRows.filter((row) => Number(row.dark) !== 1).length },
-      ],
-      standalone: [
-        { label: 'standalone', count: deviceRows.filter((row) => Number(row.standalone) === 1).length },
-        { label: '浏览器标签', count: deviceRows.filter((row) => Number(row.standalone) !== 1).length },
-      ],
-      touch: [
-        { label: '触屏/粗指针', count: deviceRows.filter((row) => Number(row.touch) === 1).length },
-        { label: '鼠标/精确指针', count: deviceRows.filter((row) => Number(row.touch) !== 1).length },
-      ],
-    },
+    versions: tally(deviceRows.map((row) => row?.app_version), { limit: 12 }),
+    env: envBreakdown(deviceRows),
+    durationHistogram: durationHistogram(deviceRows.map((row) => row?.dur_ms_total)),
   };
+}
+
+/** 趋势类汇总：按天聚合（一次范围扫描）+ 按版本聚合渲染耗时（一次范围扫描） */
+async function buildTrend(env, window, parts) {
+  const payload = {
+    generatedAt: Date.now(),
+    window: { from: window.from, to: window.to, days: window.days },
+  };
+  const tasks = [];
+
+  if (parts.daily) {
+    tasks.push(queryAll(env, DAILY_SELECT_SQL, [window.from, window.to]).then((rows) => {
+      payload.daily = rows.map((row) => {
+        const dayPages = {};
+        let dayTotal = 0;
+        for (const key of PAGE_KEYS) {
+          const value = numberOrZero(row[`p_${key}`]);
+          dayPages[key] = value;
+          dayTotal += value;
+        }
+        return {
+          day: String(row.day),
+          devices: numberOrZero(row.devices),
+          opens: numberOrZero(row.opens),
+          durMs: numberOrZero(row.dur_ms),
+          sessions: numberOrZero(row.sessions),
+          pageTotal: dayTotal,
+          pages: dayPages,
+        };
+      });
+    }));
+  }
+
+  if (parts.render) {
+    tasks.push(queryAll(env, RENDER_SELECT_SQL, [window.from, window.to]).then((rows) => {
+      payload.renderByVersion = rows
+        .map((row) => {
+          const buckets = RENDER_INDEXES.map((index) => numberOrZero(row[`r${index}`]));
+          return {
+            version: row.version ? String(row.version) : '未知',
+            deviceDays: numberOrZero(row.device_days),
+            samples: numberOrZero(row.samples) || renderSampleCount(buckets),
+            buckets,
+            avgMs: estimateRenderMs(buckets),
+          };
+        })
+        .sort((a, b) => {
+          if (a.avgMs === null && b.avgMs === null) return b.samples - a.samples;
+          if (a.avgMs === null) return 1;
+          if (b.avgMs === null) return -1;
+          return b.avgMs - a.avgMs;
+        });
+    }));
+  }
+
+  await Promise.all(tasks);
+  return payload;
+}
+
+/**
+ * Cache API 包装：默认按 URL（不含 force 参数）缓存 CACHE_TTL_SECONDS 秒。
+ * 命中直接返回缓存快照；?force=1 绕过缓存重新查询并回填，便于看板「刷新」按钮取实时数据。
+ */
+async function respondWithCache(request, env, producer) {
+  const url = new URL(request.url);
+  const force = url.searchParams.get('force') === '1';
+  const keyUrl = new URL(url.toString());
+  keyUrl.searchParams.delete('force');
+  const cache = typeof caches !== 'undefined' && caches && caches.default ? caches.default : null;
+  const cacheKey = cache ? new Request(keyUrl.toString(), { method: 'GET' }) : null;
+
+  if (cache && !force) {
+    try {
+      const hit = await cache.match(cacheKey);
+      if (hit) {
+        const body = await hit.text();
+        return jsonText(body, { headers: { ...noStore(), 'X-Cache': 'HIT' } });
+      }
+    } catch {}
+  }
+
+  let data;
+  try {
+    data = await producer();
+  } catch {
+    return jsonResponse({ ok: false, error: '查询失败' }, { status: 500, headers: noStore() });
+  }
+  const body = JSON.stringify(data);
+
+  if (cache) {
+    try {
+      await cache.put(cacheKey, new Response(body, {
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Cache-Control': `max-age=${CACHE_TTL_SECONDS}`,
+        },
+      }));
+    } catch {}
+  }
+
+  return jsonText(body, { headers: { ...noStore(), 'X-Cache': force ? 'BYPASS' : 'MISS' } });
 }
 
 /* ---------------------------------- 定时清理 ---------------------------------- */
 
 async function prune(env) {
   if (!env?.DB) return;
-  const cutoff = dayKey(RETENTION_DAYS);
+  const cutoff = beijingDayKey(Date.now() - RETENTION_DAYS * 86400000);
   try {
     await env.DB.prepare('DELETE FROM device_daily WHERE day < ?1').bind(cutoff).run();
   } catch {}
@@ -346,9 +453,19 @@ async function prune(env) {
 
 /* ---------------------------------- 工具 ---------------------------------- */
 
+async function queryAll(env, sql, params = []) {
+  const stmt = params.length ? env.DB.prepare(sql).bind(...params) : env.DB.prepare(sql);
+  const res = await stmt.all();
+  return res?.results || [];
+}
+
 function jsonResponse(data, init = {}) {
+  return jsonText(JSON.stringify(data), init);
+}
+
+function jsonText(body, init = {}) {
   const headers = { 'Content-Type': 'application/json; charset=UTF-8', ...(init.headers || {}) };
-  return new Response(JSON.stringify(data), { status: init.status || 200, headers });
+  return new Response(body, { status: init.status || 200, headers });
 }
 
 function noStore() {

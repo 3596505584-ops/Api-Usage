@@ -21,7 +21,7 @@ export function renderHeatmap(filtered: any[]) {
   if (!container) return;
 
   if (!filtered || filtered.length === 0) {
-    container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--ds-text-3);font-size:12px">暂无数据</div>';
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--ds-text-3);font-size:var(--aus-fs-base)">暂无数据</div>';
     if (legendEl) legendEl.innerHTML = '';
     if (labelsEl) labelsEl.innerHTML = '';
     return;
@@ -89,13 +89,13 @@ export function renderHeatmap(filtered: any[]) {
     lhtml += '<div style="height:16px;width:28px;"></div>';
     for (let d = 0; d < 7; d++) {
       const lh = cs + 2;
-      lhtml += '<div style="height:' + lh + 'px;width:28px;padding:0 4px 0 0;line-height:' + lh + 'px;font-size:9px;color:var(--ds-text-3);text-align:right;box-sizing:border-box">' + (d % 2 === 0 ? dl[d] : '') + '</div>';
+      lhtml += '<div style="height:' + lh + 'px;width:28px;padding:0 4px 0 0;line-height:' + lh + 'px;font-size:var(--aus-fs-xs);color:var(--ds-text-3);text-align:right;box-sizing:border-box">' + (d % 2 === 0 ? dl[d] : '') + '</div>';
     }
     lhtml += '</div>';
     labelsEl.innerHTML = lhtml;
   }
 
-  let html = '<table style="border-collapse:collapse;font-size:10px;color:var(--ds-text-3)"><tr><td style="height:16px;padding:0;line-height:16px"></td>';
+  let html = '<table style="border-collapse:collapse;font-size:var(--aus-fs-sm);color:var(--ds-text-3)"><tr><td style="height:16px;padding:0;line-height:16px"></td>';
   let lastM = -1;
   for (let w = 0; w < totalWeeks; w++) {
     const ws = new Date(startDate); ws.setDate(startDate.getDate() + w * 7);
@@ -108,7 +108,7 @@ export function renderHeatmap(filtered: any[]) {
       }
       let label = mn[ws.getMonth()];
       if (ws.getMonth() === 0) label = ws.getFullYear() + '年';
-      html += '<td colspan="' + span + '" style="padding:0 0 0 2px;line-height:16px;height:16px;font-size:10px;color:var(--ds-text-3);white-space:nowrap">' + label + '</td>';
+      html += '<td colspan="' + span + '" style="padding:0 0 0 2px;line-height:16px;height:16px;font-size:var(--aus-fs-sm);color:var(--ds-text-3);white-space:nowrap">' + label + '</td>';
       lastM = mk;
     }
   }
