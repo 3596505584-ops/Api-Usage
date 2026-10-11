@@ -285,6 +285,32 @@ function triggerImport() {
 	inputEl.click();
 }
 //#endregion
+//#region src/ui/icons.ts
+var PATHS = {
+	overview: "<rect width=\"7\" height=\"9\" x=\"3\" y=\"3\" rx=\"1\"/><rect width=\"7\" height=\"5\" x=\"14\" y=\"3\" rx=\"1\"/><rect width=\"7\" height=\"9\" x=\"14\" y=\"12\" rx=\"1\"/><rect width=\"7\" height=\"5\" x=\"3\" y=\"16\" rx=\"1\"/>",
+	stats: "<path d=\"M3 3v16a2 2 0 0 0 2 2h16\"/><path d=\"M18 17V9\"/><path d=\"M13 17V5\"/><path d=\"M8 17v-3\"/>",
+	history: "<path d=\"M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8\"/><path d=\"M3 3v5h5\"/><path d=\"M12 7v5l4 2\"/>",
+	forecast: "<path d=\"M16 7h6v6\"/><path d=\"m22 7-8.5 8.5-5-5L2 17\"/>",
+	wallet: "<path d=\"M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1\"/><path d=\"M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4\"/>",
+	settings: "<path d=\"M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/>",
+	help: "<circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3\"/><path d=\"M12 17h.01\"/>",
+	about: "<circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M12 16v-4\"/><path d=\"M12 8h.01\"/>",
+	"chevron-down": "<path d=\"m6 9 6 6 6-6\"/>",
+	"chevron-up": "<path d=\"m18 15-6-6-6 6\"/>",
+	"chevron-left": "<path d=\"m15 18-6-6 6-6\"/>",
+	"chevron-right": "<path d=\"m9 18 6-6-6-6\"/>",
+	refresh: "<path d=\"M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8\"/><path d=\"M21 3v5h-5\"/><path d=\"M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16\"/><path d=\"M8 16H3v5\"/>",
+	close: "<path d=\"M18 6 6 18\"/><path d=\"m6 6 12 12\"/>",
+	menu: "<path d=\"M4 6h16\"/><path d=\"M4 12h16\"/><path d=\"M4 18h16\"/>"
+};
+/**
+* 生成内联 SVG；尺寸默认 20px、线宽 1.9，颜色继承 currentColor。
+* 用 inline-block + vertical-align 保证既能进 flex 容器居中，也能跟在文字旁边不换行。
+*/
+function icon(name, size = 20, strokeWidth = 1.9) {
+	return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="display:inline-block;vertical-align:middle;flex-shrink:0;">${PATHS[name]}</svg>`;
+}
+//#endregion
 //#region src/services/sync.ts
 function b64(s) {
 	try {
@@ -1444,91 +1470,91 @@ function renderSettings(doc) {
     <div style="display:grid;gap:12px;">
       <!-- 匿名使用统计（默认开启，可随时关闭） -->
       <div class="ds-card">
-        <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:12px;font-weight:600;color:var(--ds-text);">匿名使用统计</span><label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;"><input type="checkbox" id="aus-telemetry-enabled" style="opacity:0;width:0;height:0;"><span style="position:absolute;inset:0;background:var(--ds-border);border-radius:12px;transition:0.2s;"><span id="aus-telemetry-slider" style="position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:var(--ds-card-inner);border-radius:50%;transition:0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.15);"></span></span></label></div>
-        <div style="font-size:11px;color:var(--ds-text-2);margin-top:6px;line-height:1.6;">仅匿名上报浏览器环境参数（浏览器名与版本、系统、架构、语言、窄屏分桶、standalone、时区）、扩展版本与面板渲染耗时分桶等开发数据；<strong>不含对话内容、密钥等任何隐私信息，数据经过匿名化处理，仅用于开发与完善兼容性。</strong>关闭后立即停止采集与上报。<a href="https://janmk1453.github.io/Api-Usage/#privacy" target="_blank" rel="noreferrer" style="color:var(--ds-text);text-decoration:underline;">隐私声明</a></div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;flex-wrap:wrap;"><span id="aus-telemetry-id" style="font-size:11px;color:var(--ds-text-3);">匿名标识：待生成</span><button id="aus-telemetry-reset" style="padding:6px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:11px;cursor:pointer;">重置匿名标识</button></div>
-        <div id="aus-telemetry-status" style="font-size:11px;color:var(--ds-text-3);margin-top:6px;"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);">匿名使用统计</span><label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;"><input type="checkbox" id="aus-telemetry-enabled" style="opacity:0;width:0;height:0;"><span style="position:absolute;inset:0;background:var(--ds-border);border-radius:12px;transition:0.2s;"><span id="aus-telemetry-slider" style="position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:var(--ds-card-inner);border-radius:50%;transition:0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.15);"></span></span></label></div>
+        <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-top:6px;line-height:1.6;">仅匿名上报浏览器环境参数（浏览器名与版本、系统、架构、语言、窄屏分桶、standalone、时区）、扩展版本与面板渲染耗时分桶等开发数据；<strong>不含对话内容、密钥等任何隐私信息，数据经过匿名化处理，仅用于开发与完善兼容性。</strong>关闭后立即停止采集与上报。<a href="https://janmk1453.github.io/Api-Usage/#privacy" target="_blank" rel="noreferrer" style="color:var(--ds-text);text-decoration:underline;">隐私声明</a></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;flex-wrap:wrap;"><span id="aus-telemetry-id" style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);">匿名标识：待生成</span><button id="aus-telemetry-reset" style="padding:6px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:var(--aus-fs-sm);cursor:pointer;">重置匿名标识</button></div>
+        <div id="aus-telemetry-status" style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);margin-top:6px;"></div>
       </div>
       <!-- 颜色模式（与用量统计·模型选择一致的胶囊下拉） -->
-      <div class="ds-card" style="position:relative;"><div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:12px;font-weight:600;color:var(--ds-text);">颜色模式</span><div id="aus-theme-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:12px;cursor:pointer;"><span style="color:var(--ds-text-2);">模式</span><span id="aus-theme-label" style="font-weight:600;color:var(--ds-text);">浅色</span><span style="font-size:10px;">▼</span></div></div><div id="aus-theme-dropdown" style="display:none;position:absolute;top:44px;right:12px;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:140px;padding:8px;"></div><div style="font-size:11px;color:var(--ds-text-2);margin-top:6px;">切换后立即生效，深色模式针对夜间可读性优化</div></div>
+      <div class="ds-card" style="position:relative;"><div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);">颜色模式</span><div id="aus-theme-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);cursor:pointer;"><span style="color:var(--ds-text-2);">模式</span><span id="aus-theme-label" style="font-weight:600;color:var(--ds-text);">浅色</span>${icon("chevron-down", 14)}</div></div><div id="aus-theme-dropdown" style="display:none;position:absolute;top:44px;right:12px;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:140px;padding:8px;"></div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-top:6px;">切换后立即生效，深色模式针对夜间可读性优化</div></div>
 
       <!-- 历史显示范围 -->
-      <div class="ds-card" style="position:relative;"><div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:12px;font-weight:600;color:var(--ds-text);">历史显示范围</span><div id="aus-history-scope-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:12px;cursor:pointer;"><span style="color:var(--ds-text-2);">范围</span><span id="aus-history-scope-label" style="font-weight:600;color:var(--ds-text);">全部历史</span><span style="font-size:10px;">▼</span></div></div><div id="aus-history-scope-dropdown" style="display:none;position:absolute;top:44px;right:12px;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:160px;padding:8px;"></div><div style="font-size:11px;color:var(--ds-text-2);margin-top:6px;">全部历史展示所有对话的记录，当前对话仅展示与当前聊天文件关联的记录</div></div>
+      <div class="ds-card" style="position:relative;"><div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);">历史显示范围</span><div id="aus-history-scope-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);cursor:pointer;"><span style="color:var(--ds-text-2);">范围</span><span id="aus-history-scope-label" style="font-weight:600;color:var(--ds-text);">全部历史</span>${icon("chevron-down", 14)}</div></div><div id="aus-history-scope-dropdown" style="display:none;position:absolute;top:44px;right:12px;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:160px;padding:8px;"></div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-top:6px;">全部历史展示所有对话的记录，当前对话仅展示与当前聊天文件关联的记录</div></div>
 
       <!-- API 密钥 -->
-      <div class="ds-card" style="display:none;"><div style="font-size:11px;color:var(--ds-text-2);font-weight:500;margin-bottom:6px;">API 密钥</div><div style="display:flex;gap:8px;"><input id="aus-api-key" type="password" placeholder="输入 DeepSeek API 密钥" style="flex:1;padding:8px 10px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:12px;outline:none;" /><button id="aus-save-key" class="ds-btn-pill" style="padding:8px 14px;">保存</button></div><div id="aus-key-status" style="font-size:11px;color:var(--ds-text-2);margin-top:6px;"></div></div>
+      <div class="ds-card" style="display:none;"><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);font-weight:500;margin-bottom:6px;">API 密钥</div><div style="display:flex;gap:8px;"><input id="aus-api-key" type="password" placeholder="输入 DeepSeek API 密钥" style="flex:1;padding:8px 10px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);outline:none;" /><button id="aus-save-key" class="ds-btn-pill" style="padding:8px 14px;">保存</button></div><div id="aus-key-status" style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-top:6px;"></div></div>
 
       <!-- 余额 -->
       <div class="ds-card">
-        <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:12px;font-weight:600;color:var(--ds-text);">自动校准余额（全局开关）</span><label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;"><input type="checkbox" id="aus-auto-balance" style="opacity:0;width:0;height:0;"><span style="position:absolute;inset:0;background:var(--ds-border);border-radius:12px;transition:0.2s;"><span id="aus-auto-balance-slider" style="position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:var(--ds-card-inner);border-radius:50%;transition:0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.15);"></span></span></label></div>
-        <div id="aus-auto-balance-interval" style="display:${s.autoBalance ? "block" : "none"};margin-top:8px;"><div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:12px;color:var(--ds-text);">校准间隔（分钟）</span><input type="number" id="aus-balance-interval" min="1" max="1440" style="width:90px;padding:6px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:12px;text-align:center;" /></div></div>
-        <div style="font-size:10px;color:var(--ds-text-3);margin-top:6px;">仅钱包页中启用了自动校准且支持该能力的钱包会在间隔到期后查询。</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);">自动校准余额（全局开关）</span><label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;"><input type="checkbox" id="aus-auto-balance" style="opacity:0;width:0;height:0;"><span style="position:absolute;inset:0;background:var(--ds-border);border-radius:12px;transition:0.2s;"><span id="aus-auto-balance-slider" style="position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:var(--ds-card-inner);border-radius:50%;transition:0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.15);"></span></span></label></div>
+        <div id="aus-auto-balance-interval" style="display:${s.autoBalance ? "block" : "none"};margin-top:8px;"><div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:var(--aus-fs-base);color:var(--ds-text);">校准间隔（分钟）</span><input type="number" id="aus-balance-interval" min="1" max="1440" style="width:90px;padding:6px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);text-align:center;" /></div></div>
+        <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);margin-top:6px;">仅钱包页中启用了自动校准且支持该能力的钱包会在间隔到期后查询。</div>
         <div style="display:none;margin-top:12px;"><input id="aus-custom-balance" /><button id="aus-save-balance"></button><button id="aus-clear-balance"></button><div id="aus-balance-status"></div></div>
       </div>
 
       <!-- 高峰时段 -->
-      <div class="ds-card"><div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:12px;font-weight:600;color:var(--ds-text);">新钱包默认峰谷时段</span><button id="aus-btn-add-peak-hour" style="padding:6px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:11px;cursor:pointer;">+ 添加</button></div><div id="aus-peak-hours-list" style="display:grid;gap:6px;margin-top:8px;"></div><div style="font-size:10px;color:var(--ds-text-3);margin-top:6px;line-height:1.6;">支持跨天（如 22:00-02:00）；钱包页可分别覆盖时段和周末规则。<br />DeepSeek 官方规则：周一至周五（不含中国法定节假日）9:00-12:00、14:00-18:00 为高峰，其余时段（含周末和法定节假日全天）为空闲；调休上班的周末同样按空闲计费。</div><div style="margin-top:10px;"><div style="font-size:11px;font-weight:600;color:var(--ds-text);">额外空闲日期</div><textarea id="aus-extra-off-days" rows="3" placeholder="每行一个日期，如 2027-01-01" style="width:100%;margin-top:6px;padding:7px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:12px;resize:vertical;box-sizing:border-box;"></textarea><div style="font-size:10px;color:var(--ds-text-3);margin-top:4px;">内置法定节假日数据覆盖 ${CN_HOLIDAY_COVERAGE_LABEL}；超出范围的日期可按 YYYY-MM-DD 每行一条补充，全天按空闲计费。</div></div></div>
+      <div class="ds-card"><div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);">新钱包默认峰谷时段</span><button id="aus-btn-add-peak-hour" style="padding:6px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:var(--aus-fs-sm);cursor:pointer;">+ 添加</button></div><div id="aus-peak-hours-list" style="display:grid;gap:6px;margin-top:8px;"></div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);margin-top:6px;line-height:1.6;">支持跨天（如 22:00-02:00）；钱包页可分别覆盖时段和周末规则。<br />DeepSeek 官方规则：周一至周五（不含中国法定节假日）9:00-12:00、14:00-18:00 为高峰，其余时段（含周末和法定节假日全天）为空闲；调休上班的周末同样按空闲计费。</div><div style="margin-top:10px;"><div style="font-size:var(--aus-fs-sm);font-weight:600;color:var(--ds-text);">额外空闲日期</div><textarea id="aus-extra-off-days" rows="3" placeholder="每行一个日期，如 2027-01-01" style="width:100%;margin-top:6px;padding:7px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);resize:vertical;box-sizing:border-box;"></textarea><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);margin-top:4px;">内置法定节假日数据覆盖 ${CN_HOLIDAY_COVERAGE_LABEL}；超出范围的日期可按 YYYY-MM-DD 每行一条补充，全天按空闲计费。</div></div></div>
 
       <!-- 模型与价格（可折叠，默认收起） -->
-      <div class="ds-card" style="display:none;"><div id="aus-models-header" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;"><span style="font-size:12px;font-weight:600;color:var(--ds-text);">模型与价格（<span id="aus-model-price-unit">${getDisplayCurrency().code}/百万 tokens</span>）</span><div style="display:flex;align-items:center;gap:8px;"><button id="aus-btn-clear-custom-models" style="padding:6px 10px;border:1px solid var(--ds-red-border);border-radius:999px;background:var(--ds-red-bg);color:var(--ds-red);font-size:11px;cursor:pointer;">清空自定义模型</button><button id="aus-btn-add-model" style="padding:6px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:11px;cursor:pointer;">+ 自定义模型</button><span id="aus-models-toggle" style="flex-shrink:0;padding:6px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:11px;cursor:pointer;user-select:none;line-height:1;">▼ 展开</span></div></div><div id="aus-models-sync-note" style="display:none;margin-top:8px;padding:8px 10px;border:1px dashed var(--ds-border);border-radius:10px;background:var(--ds-sidebar-bg);font-size:11px;color:var(--ds-text-2);line-height:1.6;"></div><div id="aus-custom-models-list" style="display:grid;gap:8px;margin-top:8px;"></div></div>
+      <div class="ds-card" style="display:none;"><div id="aus-models-header" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;"><span style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);">模型与价格（<span id="aus-model-price-unit">${getDisplayCurrency().code}/百万 tokens</span>）</span><div style="display:flex;align-items:center;gap:8px;"><button id="aus-btn-clear-custom-models" style="padding:6px 10px;border:1px solid var(--ds-red-border);border-radius:999px;background:var(--ds-red-bg);color:var(--ds-red);font-size:var(--aus-fs-sm);cursor:pointer;">清空自定义模型</button><button id="aus-btn-add-model" style="padding:6px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:var(--aus-fs-sm);cursor:pointer;">+ 自定义模型</button><span id="aus-models-toggle" style="flex-shrink:0;padding:6px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;user-select:none;line-height:1;">${icon("chevron-down", 14)} 展开</span></div></div><div id="aus-models-sync-note" style="display:none;margin-top:8px;padding:8px 10px;border:1px dashed var(--ds-border);border-radius:10px;background:var(--ds-sidebar-bg);font-size:var(--aus-fs-sm);color:var(--ds-text-2);line-height:1.6;"></div><div id="aus-custom-models-list" style="display:grid;gap:8px;margin-top:8px;"></div></div>
 
       <!-- 模型价格自动同步（models.dev） -->
-      <div class="ds-card" style="position:relative;"><div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:12px;font-weight:600;color:var(--ds-text);">模型价格自动同步（models.dev）</span><label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;"><input type="checkbox" id="aus-pricing-sync-enabled" style="opacity:0;width:0;height:0;"><span style="position:absolute;inset:0;background:var(--ds-border);border-radius:12px;transition:0.2s;"><span id="aus-pricing-sync-slider" style="position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:var(--ds-card-inner);border-radius:50%;transition:0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.15);"></span></span></label></div>
+      <div class="ds-card" style="position:relative;"><div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);">模型价格自动同步（models.dev）</span><label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;"><input type="checkbox" id="aus-pricing-sync-enabled" style="opacity:0;width:0;height:0;"><span style="position:absolute;inset:0;background:var(--ds-border);border-radius:12px;transition:0.2s;"><span id="aus-pricing-sync-slider" style="position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:var(--ds-card-inner);border-radius:50%;transition:0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.15);"></span></span></label></div>
         <div id="aus-pricing-sync-panel" style="display:${s.pricingSync?.enabled ? "grid" : "none"};margin-top:10px;gap:10px;">
-          <div style="font-size:11px;color:var(--ds-text-2);line-height:1.6;">开启后所有价格、余额、图表将以 <b style="color:var(--ds-text);">美元 $/USD</b> 展示（按汇率动态换算），自动从 <a href="https://models.dev" target="_blank" style="color:var(--ds-text);text-decoration:underline;">models.dev</a> 拉取模型价格。各钱包在钱包页选择“价格来源供应商”，同步只写入对应钱包；DeepSeek 峰价按谷价 2× 合成。功能默认关闭。<br />钱包中锁定或手工维护的价格受同步模式保护；<b style="color:var(--ds-text);">关闭本开关会移除未锁定的同步价格</b>。</div>
-          <div style="display:flex;align-items:center;justify-content:space-between;position:relative;"><span style="font-size:12px;color:var(--ds-text);">同步模式</span><div id="aus-pricing-sync-mode-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:12px;cursor:pointer;"><span id="aus-pricing-sync-mode-label" style="font-weight:600;color:var(--ds-text);">仅新增</span><span style="font-size:10px;">▼</span></div><div id="aus-pricing-sync-mode-dropdown" style="display:none;position:absolute;top:40px;right:0;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:160px;padding:8px;"></div></div>
+          <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);line-height:1.6;">开启后所有价格、余额、图表将以 <b style="color:var(--ds-text);">美元 $/USD</b> 展示（按汇率动态换算），自动从 <a href="https://models.dev" target="_blank" style="color:var(--ds-text);text-decoration:underline;">models.dev</a> 拉取模型价格。各钱包在钱包页选择“价格来源供应商”，同步只写入对应钱包；DeepSeek 峰价按谷价 2× 合成。功能默认关闭。<br />钱包中锁定或手工维护的价格受同步模式保护；<b style="color:var(--ds-text);">关闭本开关会移除未锁定的同步价格</b>。</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;position:relative;"><span style="font-size:var(--aus-fs-base);color:var(--ds-text);">同步模式</span><div id="aus-pricing-sync-mode-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);cursor:pointer;"><span id="aus-pricing-sync-mode-label" style="font-weight:600;color:var(--ds-text);">仅新增</span>${icon("chevron-down", 14)}</div><div id="aus-pricing-sync-mode-dropdown" style="display:none;position:absolute;top:40px;right:0;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:160px;padding:8px;"></div></div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <div><div style="font-size:11px;color:var(--ds-text-2);margin-bottom:4px;">汇率 USD→CNY</div><input id="aus-exchange-rate" type="number" step="0.0001" min="0" style="width:100%;padding:7px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:12px;" /></div>
-            <div><div style="font-size:11px;color:var(--ds-text-2);margin-bottom:4px;">自动同步间隔</div><div id="aus-pricing-sync-interval-btn" style="display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:12px;cursor:pointer;"><span id="aus-pricing-sync-interval-label" style="font-weight:600;">仅手动</span><span style="font-size:10px;">▼</span></div><div id="aus-pricing-sync-interval-dropdown" style="display:none;position:absolute;right:12px;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:140px;padding:8px;"></div></div>
+            <div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-bottom:4px;">汇率 USD→CNY</div><input id="aus-exchange-rate" type="number" step="0.0001" min="0" style="width:100%;padding:7px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);" /></div>
+            <div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-bottom:4px;">自动同步间隔</div><div id="aus-pricing-sync-interval-btn" style="display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);cursor:pointer;"><span id="aus-pricing-sync-interval-label" style="font-weight:600;">仅手动</span>${icon("chevron-down", 14)}</div><div id="aus-pricing-sync-interval-dropdown" style="display:none;position:absolute;right:12px;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:140px;padding:8px;"></div></div>
           </div>
-          <div style="display:flex;align-items:center;gap:8px;"><label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ds-text-2);cursor:pointer;"><input type="checkbox" id="aus-use-live-rate" style="accent-color:var(--ds-text);" /> 每24小时自动联网获取最新汇率</label><button id="aus-fetch-rate" style="padding:6px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:11px;cursor:pointer;">立即获取</button></div>
-          <div id="aus-rate-status" style="font-size:10px;color:var(--ds-text-3);"></div>
-          <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ds-text-2);cursor:pointer;"><input type="checkbox" id="aus-recalc-on-sync" style="accent-color:var(--ds-text);" /> 同步后重算历史费用（否则仅新请求生效）</label>
-          <div style="display:flex;gap:8px;"><button id="aus-btn-sync-pricing" class="ds-btn-pill" style="flex:1;">立即同步</button><button id="aus-btn-preview-pricing" style="flex:1;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:11px;cursor:pointer;">预览</button></div>
-          <div id="aus-pricing-sync-status" style="font-size:11px;color:var(--ds-text-2);"></div>
-          <div id="aus-pricing-sync-preview" style="display:none;max-height:160px;overflow:auto;border:1px solid var(--ds-border);border-radius:8px;padding:8px;background:var(--ds-sidebar-bg);font-size:11px;"></div>
+          <div style="display:flex;align-items:center;gap:8px;"><label style="display:flex;align-items:center;gap:6px;font-size:var(--aus-fs-sm);color:var(--ds-text-2);cursor:pointer;"><input type="checkbox" id="aus-use-live-rate" style="accent-color:var(--ds-text);" /> 每24小时自动联网获取最新汇率</label><button id="aus-fetch-rate" style="padding:6px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:var(--aus-fs-sm);cursor:pointer;">立即获取</button></div>
+          <div id="aus-rate-status" style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);"></div>
+          <label style="display:flex;align-items:center;gap:6px;font-size:var(--aus-fs-sm);color:var(--ds-text-2);cursor:pointer;"><input type="checkbox" id="aus-recalc-on-sync" style="accent-color:var(--ds-text);" /> 同步后重算历史费用（否则仅新请求生效）</label>
+          <div style="display:flex;gap:8px;"><button id="aus-btn-sync-pricing" class="ds-btn-pill" style="flex:1;">立即同步</button><button id="aus-btn-preview-pricing" style="flex:1;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:var(--aus-fs-sm);cursor:pointer;">预览</button></div>
+          <div id="aus-pricing-sync-status" style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);"></div>
+          <div id="aus-pricing-sync-preview" style="display:none;max-height:160px;overflow:auto;border:1px solid var(--ds-border);border-radius:8px;padding:8px;background:var(--ds-sidebar-bg);font-size:var(--aus-fs-sm);"></div>
         </div>
       </div>
 
       <!-- 调试 -->
       <div class="ds-card">
-        <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:12px;font-weight:600;color:var(--ds-text);">调试模式（模拟数据，不计费）</span><label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;"><input type="checkbox" id="aus-debug-mode" style="opacity:0;width:0;height:0;"><span style="position:absolute;inset:0;background:var(--ds-border);border-radius:12px;transition:0.2s;"><span id="aus-debug-mode-slider" style="position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:var(--ds-card-inner);border-radius:50%;transition:0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.15);"></span></span></label></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);">调试模式（模拟数据，不计费）</span><label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;"><input type="checkbox" id="aus-debug-mode" style="opacity:0;width:0;height:0;"><span style="position:absolute;inset:0;background:var(--ds-border);border-radius:12px;transition:0.2s;"><span id="aus-debug-mode-slider" style="position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:var(--ds-card-inner);border-radius:50%;transition:0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.15);"></span></span></label></div>
         <div id="aus-debug-panel" style="display:${s.debug ? "grid" : "none"};margin-top:10px;gap:8px;">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><div><div style="font-size:11px;color:var(--ds-text-2);margin-bottom:4px;">命中</div><input type="number" id="aus-debug-hit" style="width:100%;padding:7px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:12px;" /></div><div><div style="font-size:11px;color:var(--ds-text-2);margin-bottom:4px;">未命中</div><input type="number" id="aus-debug-miss" style="width:100%;padding:7px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:12px;" /></div></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><div><div style="font-size:11px;color:var(--ds-text-2);margin-bottom:4px;">输出</div><input type="number" id="aus-debug-output" style="width:100%;padding:7px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:12px;" /></div><div><div style="font-size:11px;color:var(--ds-text-2);margin-bottom:4px;">模型</div><select id="aus-debug-model" style="width:100%;padding:7px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:12px;"></select></div></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;"><input type="date" id="aus-debug-date-start" style="padding:7px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:12px;" /><input type="date" id="aus-debug-date-end" style="padding:7px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:12px;" /><input type="number" id="aus-debug-batch-count" min="1" placeholder="条数" style="padding:7px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:12px;" /></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-bottom:4px;">命中</div><input type="number" id="aus-debug-hit" style="width:100%;padding:7px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);" /></div><div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-bottom:4px;">未命中</div><input type="number" id="aus-debug-miss" style="width:100%;padding:7px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);" /></div></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-bottom:4px;">输出</div><input type="number" id="aus-debug-output" style="width:100%;padding:7px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);" /></div><div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-bottom:4px;">模型</div><select id="aus-debug-model" style="width:100%;padding:7px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);"></select></div></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;"><input type="date" id="aus-debug-date-start" style="padding:7px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);" /><input type="date" id="aus-debug-date-end" style="padding:7px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);" /><input type="number" id="aus-debug-batch-count" min="1" placeholder="条数" style="padding:7px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);" /></div>
           <button id="aus-btn-debug-batch" class="ds-btn-pill" style="width:100%;">生成模拟数据</button>
-          <button id="aus-btn-debug-clear" style="width:100%;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:11px;cursor:pointer;">清除调试数据</button><div id="aus-debug-status" style="font-size:11px;color:var(--ds-text-2);"></div>
+          <button id="aus-btn-debug-clear" style="width:100%;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:var(--aus-fs-sm);cursor:pointer;">清除调试数据</button><div id="aus-debug-status" style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);"></div>
         </div>
       </div>
 
       <!-- 峰值圆点 -->
-      <div class="ds-card"><div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:12px;font-weight:600;color:var(--ds-text);">峰值提示小圆点</span><label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;"><input type="checkbox" id="aus-peak-dot" style="opacity:0;width:0;height:0;"><span style="position:absolute;inset:0;background:var(--ds-border);border-radius:12px;transition:0.2s;"><span id="aus-peak-dot-slider" style="position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:var(--ds-card-inner);border-radius:50%;transition:0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.15);"></span></span></label></div><button id="aus-reset-dot" style="margin-top:8px;padding:6px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:11px;cursor:pointer;">重置位置</button></div>
+      <div class="ds-card"><div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);">峰值提示小圆点</span><label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;"><input type="checkbox" id="aus-peak-dot" style="opacity:0;width:0;height:0;"><span style="position:absolute;inset:0;background:var(--ds-border);border-radius:12px;transition:0.2s;"><span id="aus-peak-dot-slider" style="position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:var(--ds-card-inner);border-radius:50%;transition:0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.15);"></span></span></label></div><button id="aus-reset-dot" style="margin-top:8px;padding:6px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:var(--aus-fs-sm);cursor:pointer;">重置位置</button></div>
 
       <!-- 记录数据管理 -->
       <div class="ds-card">
-        <div style="font-size:12px;font-weight:600;color:var(--ds-text);margin-bottom:6px;">按范围删除记录</div>
-        <div style="font-size:11px;color:var(--ds-text-2);line-height:1.7;margin-bottom:8px;">可删除全部记录，或按日期、模型、对话缩小范围。日期留空表示不限；模型与对话需完全匹配，留空表示不限。删除会同时处理热记录与冷记录，并立即重算统计。</div>
+        <div style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);margin-bottom:6px;">按范围删除记录</div>
+        <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);line-height:1.7;margin-bottom:8px;">可删除全部记录，或按日期、模型、对话缩小范围。日期留空表示不限；模型与对话需完全匹配，留空表示不限。删除会同时处理热记录与冷记录，并立即重算统计。</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-          <div><div style="font-size:11px;color:var(--ds-text-2);margin-bottom:4px;">开始日期</div><input type="date" id="aus-delete-start" style="width:100%;padding:7px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:12px;box-sizing:border-box;" /></div>
-          <div><div style="font-size:11px;color:var(--ds-text-2);margin-bottom:4px;">结束日期</div><input type="date" id="aus-delete-end" style="width:100%;padding:7px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:12px;box-sizing:border-box;" /></div>
-          <div><div style="font-size:11px;color:var(--ds-text-2);margin-bottom:4px;">模型</div><input id="aus-delete-model" placeholder="如 deepseek-flash" style="width:100%;padding:7px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:12px;box-sizing:border-box;" /></div>
-          <div><div style="font-size:11px;color:var(--ds-text-2);margin-bottom:4px;">对话</div><input id="aus-delete-chat" placeholder="对话名称或 chatId" style="width:100%;padding:7px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:12px;box-sizing:border-box;" /></div>
+          <div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-bottom:4px;">开始日期</div><input type="date" id="aus-delete-start" style="width:100%;padding:7px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);box-sizing:border-box;" /></div>
+          <div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-bottom:4px;">结束日期</div><input type="date" id="aus-delete-end" style="width:100%;padding:7px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);box-sizing:border-box;" /></div>
+          <div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-bottom:4px;">模型</div><input id="aus-delete-model" placeholder="如 deepseek-flash" style="width:100%;padding:7px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);box-sizing:border-box;" /></div>
+          <div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-bottom:4px;">对话</div><input id="aus-delete-chat" placeholder="对话名称或 chatId" style="width:100%;padding:7px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);box-sizing:border-box;" /></div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button id="aus-delete-preview" style="padding:7px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:11px;cursor:pointer;">统计匹配记录</button>
-          <button id="aus-delete-run" style="padding:7px 12px;border:1px solid var(--ds-red-border);border-radius:999px;background:var(--ds-red-bg);color:var(--ds-red);font-size:11px;cursor:pointer;">删除匹配记录</button>
+          <button id="aus-delete-preview" style="padding:7px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;">统计匹配记录</button>
+          <button id="aus-delete-run" style="padding:7px 12px;border:1px solid var(--ds-red-border);border-radius:999px;background:var(--ds-red-bg);color:var(--ds-red);font-size:var(--aus-fs-sm);cursor:pointer;">删除匹配记录</button>
         </div>
-        <div id="aus-delete-status" style="font-size:11px;color:var(--ds-text-2);margin-top:8px;"></div>
+        <div id="aus-delete-status" style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-top:8px;"></div>
       </div>
 
       <!-- WebDAV -->
-      <div class="ds-card"><div style="font-size:12px;font-weight:600;color:var(--ds-text);margin-bottom:6px;">WebDAV 云同步</div><div style="font-size:11px;color:var(--ds-text-2);margin-bottom:8px;">双向合并，仅同步统计/设置/余额，不含聊天内容与密钥。强制 https。</div>
+      <div class="ds-card"><div style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);margin-bottom:6px;">WebDAV 云同步</div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-bottom:8px;">双向合并，仅同步统计/设置/余额，不含聊天内容与密钥。强制 https。</div>
         <div style="display:grid;gap:8px;">
-          <input id="aus-webdav-url" placeholder="https://dav.jianguoyun.com/dav/" style="padding:8px 10px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:12px;" />
-          <div style="display:flex;gap:8px;"><input id="aus-webdav-user" placeholder="用户名" style="flex:1;padding:8px 10px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:12px;" /><input id="aus-webdav-pass" type="password" placeholder="应用密码" style="flex:1;padding:8px 10px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:12px;" /><button id="aus-webdav-pass-clear" type="button" style="padding:8px 12px;border:1px solid var(--ds-red-border);border-radius:999px;background:var(--ds-red-bg);color:var(--ds-red);font-size:11px;cursor:pointer;">清除密码</button></div>
-          <input id="aus-webdav-path" placeholder="远程子路径（可空）" style="padding:8px 10px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:12px;" />
-          <input id="aus-webdav-proxy" placeholder="CORS 代理（可选，http://127.0.0.1:8000/proxy?url=）" style="padding:8px 10px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:12px;" />
+          <input id="aus-webdav-url" placeholder="https://dav.jianguoyun.com/dav/" style="padding:8px 10px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);" />
+          <div style="display:flex;gap:8px;"><input id="aus-webdav-user" placeholder="用户名" style="flex:1;padding:8px 10px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);" /><input id="aus-webdav-pass" type="password" placeholder="应用密码" style="flex:1;padding:8px 10px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);" /><button id="aus-webdav-pass-clear" type="button" style="padding:8px 12px;border:1px solid var(--ds-red-border);border-radius:999px;background:var(--ds-red-bg);color:var(--ds-red);font-size:var(--aus-fs-sm);cursor:pointer;">清除密码</button></div>
+          <input id="aus-webdav-path" placeholder="远程子路径（可空）" style="padding:8px 10px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);" />
+          <input id="aus-webdav-proxy" placeholder="CORS 代理（可选，http://127.0.0.1:8000/proxy?url=）" style="padding:8px 10px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);" />
           <button id="aus-webdav-sync" class="ds-btn-pill">☁️ 立即同步</button>
         </div>
       </div>
@@ -1598,7 +1624,7 @@ function renderSettings(doc) {
 			l: "深色"
 		}].map((o) => {
 			const active = o.v === cur ? "background:var(--ds-card);font-weight:600;" : "";
-			return `<div data-theme="${o.v}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;${active}">${o.l}</div>`;
+			return `<div data-theme="${o.v}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${active}">${o.l}</div>`;
 		}).join("");
 		dropdown.querySelectorAll("[data-theme]").forEach((el) => {
 			el.onclick = () => {
@@ -1638,7 +1664,7 @@ function renderSettings(doc) {
 			l: "当前对话"
 		}].map((o) => {
 			const active = o.v === cur ? "background:var(--ds-card);font-weight:600;" : "";
-			return `<div data-scope="${o.v}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;${active}">${o.l}</div>`;
+			return `<div data-scope="${o.v}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${active}">${o.l}</div>`;
 		}).join("");
 		dropdown.querySelectorAll("[data-scope]").forEach((el) => {
 			el.onclick = () => {
@@ -1866,14 +1892,14 @@ function renderSettings(doc) {
 		};
 		if (modeLabel) modeLabel.textContent = modeMap[ps.mode] || "仅新增";
 		if (modeDrop) {
-			modeDrop.innerHTML = Object.entries(modeMap).map(([k, l]) => `<div data-mode="${k}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;${ps.mode === k ? "background:var(--ds-card);font-weight:600;" : ""}">${l}</div>`).join("");
+			modeDrop.innerHTML = Object.entries(modeMap).map(([k, l]) => `<div data-mode="${k}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${ps.mode === k ? "background:var(--ds-card);font-weight:600;" : ""}">${l}</div>`).join("");
 			modeDrop.querySelectorAll("[data-mode]").forEach((el) => {
 				el.onclick = () => {
 					state$2.settings.pricingSync.mode = el.getAttribute("data-mode");
 					saveHot({ settings: state$2.settings });
 					modeDrop.style.display = "none";
 					if (modeLabel) modeLabel.textContent = modeMap[state$2.settings.pricingSync.mode] || el.getAttribute("data-mode");
-					modeDrop.innerHTML = Object.entries(modeMap).map(([k, l]) => `<div data-mode="${k}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;${state$2.settings.pricingSync.mode === k ? "background:var(--ds-card);font-weight:600;" : ""}">${l}</div>`).join("");
+					modeDrop.innerHTML = Object.entries(modeMap).map(([k, l]) => `<div data-mode="${k}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${state$2.settings.pricingSync.mode === k ? "background:var(--ds-card);font-weight:600;" : ""}">${l}</div>`).join("");
 				};
 			});
 		}
@@ -1896,7 +1922,7 @@ function renderSettings(doc) {
 		};
 		if (intervalLabel) intervalLabel.textContent = intervalMap[String(ps.autoIntervalHours ?? 0)] || "仅手动";
 		if (intervalDrop) {
-			intervalDrop.innerHTML = Object.entries(intervalMap).map(([k, l]) => `<div data-interval="${k}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;${String(ps.autoIntervalHours) === k ? "background:var(--ds-card);font-weight:600;" : ""}">${l}</div>`).join("");
+			intervalDrop.innerHTML = Object.entries(intervalMap).map(([k, l]) => `<div data-interval="${k}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${String(ps.autoIntervalHours) === k ? "background:var(--ds-card);font-weight:600;" : ""}">${l}</div>`).join("");
 			intervalDrop.querySelectorAll("[data-interval]").forEach((el) => {
 				el.onclick = () => {
 					state$2.settings.pricingSync.autoIntervalHours = parseInt(el.getAttribute("data-interval")) || 0;
@@ -2020,7 +2046,7 @@ function renderSettings(doc) {
 				const catalog = await fetchModelsDevCatalog();
 				const p = previewSync(catalog);
 				previewHost.style.display = "block";
-				previewHost.innerHTML = `<div style="font-weight:600;margin-bottom:6px;">共 ${p.total} 模型 · 新增 ${p.added} 更新 ${p.updated} 跳过 ${p.skipped}</div>` + p.samples.map((s) => `<div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--ds-border);padding:4px 0;"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px;">${esc(s.model)}</span><span>${s.hit.toFixed(4)}/${s.miss.toFixed(4)}/${s.output.toFixed(4)}</span></div>`).join("") + `<div style="font-size:10px;color:var(--ds-text-3);margin-top:6px;">单位 ${getDisplayCurrency().code}/百万 · 峰价为谷价 2×（DeepSeek）</div>`;
+				previewHost.innerHTML = `<div style="font-weight:600;margin-bottom:6px;">共 ${p.total} 模型 · 新增 ${p.added} 更新 ${p.updated} 跳过 ${p.skipped}</div>` + p.samples.map((s) => `<div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--ds-border);padding:4px 0;"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px;">${esc(s.model)}</span><span>${s.hit.toFixed(4)}/${s.miss.toFixed(4)}/${s.output.toFixed(4)}</span></div>`).join("") + `<div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);margin-top:6px;">单位 ${getDisplayCurrency().code}/百万 · 峰价为谷价 2×（DeepSeek）</div>`;
 			} catch (e) {
 				previewHost.style.display = "block";
 				previewHost.textContent = "预览失败：" + (e?.message || e);
@@ -2040,14 +2066,14 @@ function renderSettings(doc) {
 		const addBtn = doc.getElementById("aus-btn-add-model");
 		const collapsed = s.modelsPricingCollapsed !== false;
 		if (listEl) listEl.style.display = collapsed ? "none" : "grid";
-		if (toggleEl) toggleEl.textContent = collapsed ? "▼ 展开" : "▲ 收起";
+		if (toggleEl) toggleEl.innerHTML = collapsed ? icon("chevron-down", 14) + " 展开" : icon("chevron-up", 14) + " 收起";
 		const applyCollapsed = (next) => {
 			state$2.settings.modelsPricingCollapsed = next;
 			try {
 				saveHot({ settings: state$2.settings });
 			} catch {}
 			if (listEl) listEl.style.display = next ? "none" : "grid";
-			if (toggleEl) toggleEl.textContent = next ? "▼ 展开" : "▲ 收起";
+			if (toggleEl) toggleEl.innerHTML = next ? icon("chevron-down", 14) + " 展开" : icon("chevron-up", 14) + " 收起";
 		};
 		if (toggleEl) toggleEl.onclick = (e) => {
 			e.stopPropagation();
@@ -2097,7 +2123,7 @@ function renderSettings(doc) {
 				const l = doc.getElementById("aus-custom-models-list");
 				const t = doc.getElementById("aus-models-toggle");
 				if (l) l.style.display = "grid";
-				if (t) t.textContent = "▲ 收起";
+				if (t) t.innerHTML = icon("chevron-up", 14) + " 收起";
 			}, 30);
 		});
 	} catch {}
@@ -2107,10 +2133,10 @@ function renderPeakHoursEditor(doc) {
 	if (!list) return;
 	list.innerHTML = (state$2.settings.peakHours || []).map((h, i) => `
     <div style="display:flex;align-items:center;gap:6px;">
-      <input type="time" value="${esc(h.start || "")}" data-idx="${i}" data-field="start" style="flex:1;padding:6px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:12px;" />
-      <span style="font-size:11px;color:var(--ds-text-2);">至</span>
-      <input type="time" value="${esc(h.end || "")}" data-idx="${i}" data-field="end" style="flex:1;padding:6px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:12px;" />
-      <button data-del="${i}" style="padding:6px 8px;border:1px solid var(--ds-red-border);border-radius:8px;background:var(--ds-red-bg);color:var(--ds-red);font-size:11px;cursor:pointer;">删除</button>
+      <input type="time" value="${esc(h.start || "")}" data-idx="${i}" data-field="start" style="flex:1;padding:6px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);" />
+      <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);">至</span>
+      <input type="time" value="${esc(h.end || "")}" data-idx="${i}" data-field="end" style="flex:1;padding:6px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);" />
+      <button data-del="${i}" style="padding:6px 8px;border:1px solid var(--ds-red-border);border-radius:8px;background:var(--ds-red-bg);color:var(--ds-red);font-size:var(--aus-fs-sm);cursor:pointer;">删除</button>
     </div>
   `).join("");
 	list.querySelectorAll("input[type=\"time\"]").forEach((el) => {
@@ -2239,8 +2265,8 @@ function renderModelsSyncNote(doc, syncedCount, showSynced) {
 	note.style.display = "block";
 	note.innerHTML = `已从 models.dev 同步 <b style="color:var(--ds-text);">${syncedCount}</b> 个模型价格，默认隐藏不显示（仍照常参与计费）。
     <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
-      <button id="aus-toggle-synced-models" style="padding:5px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:11px;cursor:pointer;">${showSynced ? "隐藏同步模型" : "显示同步模型"}</button>
-      <button id="aus-clear-synced-models" style="padding:5px 10px;border:1px solid var(--ds-red-border);border-radius:999px;background:var(--ds-red-bg);color:var(--ds-red);font-size:11px;cursor:pointer;">移除全部同步模型</button>
+      <button id="aus-toggle-synced-models" style="padding:5px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;">${showSynced ? "隐藏同步模型" : "显示同步模型"}</button>
+      <button id="aus-clear-synced-models" style="padding:5px 10px;border:1px solid var(--ds-red-border);border-radius:999px;background:var(--ds-red-bg);color:var(--ds-red);font-size:var(--aus-fs-sm);cursor:pointer;">移除全部同步模型</button>
     </div>`;
 	const toggleBtn = doc.getElementById("aus-toggle-synced-models");
 	if (toggleBtn) toggleBtn.onclick = () => {
@@ -2293,26 +2319,26 @@ function modelRow(model, p, isBuiltin, usePeak, synced = false) {
 	const hit = (v) => v !== void 0 && v !== "" ? toDisplay(v) : "";
 	return `<div data-model="${esc(model)}" data-builtin="${isBuiltin ? "1" : "0"}" data-synced="${synced ? "1" : "0"}" style="border:1px solid var(--ds-border);border-radius:10px;padding:10px;background:var(--ds-card-inner);display:grid;gap:8px;">
     <div style="display:flex;align-items:center;gap:8px;">
-      <input value="${esc(model)}" ${isBuiltin ? "readonly" : ""} style="flex:1;padding:6px 8px;border:1px solid var(--ds-border);border-radius:8px;background:${isBuiltin ? "var(--ds-sidebar-bg)" : "var(--ds-card-inner)"};font-size:12px;" />
-      ${synced ? "<span title=\"来自 models.dev 自动同步\" style=\"flex-shrink:0;padding:2px 8px;border-radius:999px;background:var(--ds-green-bg);color:var(--ds-green);font-size:10px;font-weight:600;\">已同步</span>" : ""}
-      <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ds-text-2);cursor:pointer;"><input type="checkbox" class="aus-cm-peak" ${usePeak ? "checked" : ""} /> 峰谷</label>
-      ${isBuiltin ? "" : "<button data-del=\"1\" style=\"padding:4px 8px;border:1px solid var(--ds-red-border);border-radius:6px;background:var(--ds-red-bg);color:var(--ds-red);font-size:11px;cursor:pointer;\">删除</button>"}
+      <input value="${esc(model)}" ${isBuiltin ? "readonly" : ""} style="flex:1;padding:6px 8px;border:1px solid var(--ds-border);border-radius:8px;background:${isBuiltin ? "var(--ds-sidebar-bg)" : "var(--ds-card-inner)"};font-size:var(--aus-fs-base);" />
+      ${synced ? "<span title=\"来自 models.dev 自动同步\" style=\"flex-shrink:0;padding:2px 8px;border-radius:999px;background:var(--ds-green-bg);color:var(--ds-green);font-size:var(--aus-fs-sm);font-weight:600;\">已同步</span>" : ""}
+      <label style="display:flex;align-items:center;gap:6px;font-size:var(--aus-fs-sm);color:var(--ds-text-2);cursor:pointer;"><input type="checkbox" class="aus-cm-peak" ${usePeak ? "checked" : ""} /> 峰谷</label>
+      ${isBuiltin ? "" : "<button data-del=\"1\" style=\"padding:4px 8px;border:1px solid var(--ds-red-border);border-radius:6px;background:var(--ds-red-bg);color:var(--ds-red);font-size:var(--aus-fs-sm);cursor:pointer;\">删除</button>"}
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
       <div style="background:var(--ds-sidebar-bg);border-radius:8px;padding:8px;display:grid;gap:6px;">
-        <div style="font-size:10px;font-weight:600;color:var(--ds-green);">非峰</div>
+        <div style="font-size:var(--aus-fs-sm);font-weight:600;color:var(--ds-green);">非峰</div>
         ${field("offpeak.hit", hit(p.offpeak.hit))}${field("offpeak.miss", hit(p.offpeak.miss))}${field("offpeak.output", hit(p.offpeak.output))}
       </div>
       <div style="background:var(--ds-card-inner);border-radius:8px;padding:8px;display:grid;gap:6px;${usePeak ? "" : "opacity:0.45;pointer-events:none;"}">
-        <div style="font-size:10px;font-weight:600;color:#D97706;">高峰</div>
+        <div style="font-size:var(--aus-fs-sm);font-weight:600;color:#D97706;">高峰</div>
         ${field("peak.hit", hit(p.peak.hit))}${field("peak.miss", hit(p.peak.miss))}${field("peak.output", hit(p.peak.output))}
       </div>
     </div>
-    <div style="font-size:10px;color:var(--ds-text-3);">单位：${cur.code}/百万 tokens（${cur.symbol}）· ${synced ? "同步模型：手动改价后转为自定义模型" : "内置模型不可删除，价格可覆盖"}</div>
+    <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);">单位：${cur.code}/百万 tokens（${cur.symbol}）· ${synced ? "同步模型：手动改价后转为自定义模型" : "内置模型不可删除，价格可覆盖"}</div>
   </div>`;
 }
 function field(key, val) {
-	return `<div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:var(--ds-text-2);width:44px;">${key.endsWith(".hit") ? "命中" : key.endsWith(".miss") ? "未命中" : "输出"}</span><input type="number" step="0.001" min="0" data-price="${key}" value="${esc(val)}" style="flex:1;padding:6px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:12px;" /></div>`;
+	return `<div style="display:flex;align-items:center;gap:6px;"><span style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);width:44px;">${key.endsWith(".hit") ? "命中" : key.endsWith(".miss") ? "未命中" : "输出"}</span><input type="number" step="0.001" min="0" data-price="${key}" value="${esc(val)}" style="flex:1;padding:6px 8px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);" /></div>`;
 }
 function readRow(row) {
 	const out = {
@@ -2980,7 +3006,7 @@ function renderHeatmap(filtered) {
 	const scrollEl = doc.getElementById("aus-heatmap-scroll-overview") || doc.getElementById("aus-heatmap-scroll");
 	if (!container) return;
 	if (!filtered || filtered.length === 0) {
-		container.innerHTML = "<div style=\"text-align:center;padding:20px;color:var(--ds-text-3);font-size:12px\">暂无数据</div>";
+		container.innerHTML = "<div style=\"text-align:center;padding:20px;color:var(--ds-text-3);font-size:var(--aus-fs-base)\">暂无数据</div>";
 		if (legendEl) legendEl.innerHTML = "";
 		if (labelsEl) labelsEl.innerHTML = "";
 		return;
@@ -3070,11 +3096,11 @@ function renderHeatmap(filtered) {
 	if (labelsEl) {
 		let lhtml = "<div style=\"display:flex;flex-direction:column\">";
 		lhtml += "<div style=\"height:16px;width:28px;\"></div>";
-		for (let d = 0; d < 7; d++) lhtml += "<div style=\"height:14px;width:28px;padding:0 4px 0 0;line-height:14px;font-size:9px;color:var(--ds-text-3);text-align:right;box-sizing:border-box\">" + (d % 2 === 0 ? dl[d] : "") + "</div>";
+		for (let d = 0; d < 7; d++) lhtml += "<div style=\"height:14px;width:28px;padding:0 4px 0 0;line-height:14px;font-size:var(--aus-fs-xs);color:var(--ds-text-3);text-align:right;box-sizing:border-box\">" + (d % 2 === 0 ? dl[d] : "") + "</div>";
 		lhtml += "</div>";
 		labelsEl.innerHTML = lhtml;
 	}
-	let html = "<table style=\"border-collapse:collapse;font-size:10px;color:var(--ds-text-3)\"><tr><td style=\"height:16px;padding:0;line-height:16px\"></td>";
+	let html = "<table style=\"border-collapse:collapse;font-size:var(--aus-fs-sm);color:var(--ds-text-3)\"><tr><td style=\"height:16px;padding:0;line-height:16px\"></td>";
 	let lastM = -1;
 	for (let w = 0; w < totalWeeks; w++) {
 		const ws = new Date(startDate);
@@ -3090,7 +3116,7 @@ function renderHeatmap(filtered) {
 			}
 			let label = mn[ws.getMonth()];
 			if (ws.getMonth() === 0) label = ws.getFullYear() + "年";
-			html += "<td colspan=\"" + span + "\" style=\"padding:0 0 0 2px;line-height:16px;height:16px;font-size:10px;color:var(--ds-text-3);white-space:nowrap\">" + label + "</td>";
+			html += "<td colspan=\"" + span + "\" style=\"padding:0 0 0 2px;line-height:16px;height:16px;font-size:var(--aus-fs-sm);color:var(--ds-text-3);white-space:nowrap\">" + label + "</td>";
 			lastM = mk;
 		}
 	}
@@ -3138,9 +3164,9 @@ function moneyHtml(cny, digits = 4) {
 	try {
 		const cur = getDisplayCurrency();
 		const v = cur.code === "USD" ? cny / cur.rate : cny;
-		return `${cur.symbol}${v.toFixed(digits)} <span style="font-size:11px;color:var(--ds-text-3);font-weight:400;">${cur.code}</span>`;
+		return `${cur.symbol}${v.toFixed(digits)} <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);font-weight:400;">${cur.code}</span>`;
 	} catch {
-		return `¥${(cny || 0).toFixed(digits)} <span style="font-size:11px;color:var(--ds-text-3);font-weight:400;">CNY</span>`;
+		return `¥${(cny || 0).toFixed(digits)} <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);font-weight:400;">CNY</span>`;
 	}
 }
 var FOUR_OPTIONS = [
@@ -3268,15 +3294,15 @@ function getFourDisplay(key, v) {
 		};
 		case "avg_duration": return {
 			title,
-			html: `${(v.avgDuration || 0).toFixed(1)} <span style="font-size:11px;color:var(--ds-text-3);font-weight:400;">s</span>`
+			html: `${(v.avgDuration || 0).toFixed(1)} <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);font-weight:400;">s</span>`
 		};
 		case "avg_ttft": return {
 			title,
-			html: (v.avgTtft || 0) > 0 ? `${v.avgTtft.toFixed(1)} <span style="font-size:11px;color:var(--ds-text-3);font-weight:400;">s</span>` : `<span style="color:var(--ds-text-3);">—</span>`
+			html: (v.avgTtft || 0) > 0 ? `${v.avgTtft.toFixed(1)} <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);font-weight:400;">s</span>` : `<span style="color:var(--ds-text-3);">—</span>`
 		};
 		case "avg_rate": return {
 			title: "输出速率",
-			html: `${Math.round(v.avgRate || 0)} <span style="font-size:11px;color:var(--ds-text-3);font-weight:400;">t/s</span>`
+			html: `${Math.round(v.avgRate || 0)} <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);font-weight:400;">t/s</span>`
 		};
 		case "avg_input_cost": return {
 			title,
@@ -3296,7 +3322,7 @@ function getFourDisplay(key, v) {
 		};
 		case "avg_think_time": return {
 			title,
-			html: (v.avgThinkTime || 0) > 0 ? `${v.avgThinkTime.toFixed(1)} <span style="font-size:11px;color:var(--ds-text-3);font-weight:400;">s</span>` : `<span style="color:var(--ds-text-3);">—</span>`
+			html: (v.avgThinkTime || 0) > 0 ? `${v.avgThinkTime.toFixed(1)} <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);font-weight:400;">s</span>` : `<span style="color:var(--ds-text-3);">—</span>`
 		};
 		case "avg_think_tokens": return {
 			title,
@@ -3304,7 +3330,7 @@ function getFourDisplay(key, v) {
 		};
 		case "avg_hit_rate": return {
 			title,
-			html: (v.avgHitRate || 0) > 0 ? `${v.avgHitRate.toFixed(1)}<span style="font-size:11px;color:var(--ds-text-3);font-weight:400;">%</span>` : `<span style="color:var(--ds-text-3);">—</span>`
+			html: (v.avgHitRate || 0) > 0 ? `${v.avgHitRate.toFixed(1)}<span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);font-weight:400;">%</span>` : `<span style="color:var(--ds-text-3);">—</span>`
 		};
 		case "latest_hit_rate": {
 			const val = v.latestHitRate;
@@ -3314,7 +3340,7 @@ function getFourDisplay(key, v) {
 			};
 			return {
 				title,
-				html: `${val.toFixed(1)}<span style="font-size:11px;color:var(--ds-text-3);font-weight:400;">%</span>`
+				html: `${val.toFixed(1)}<span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);font-weight:400;">%</span>`
 			};
 		}
 		case "max_output": return {
@@ -3334,7 +3360,7 @@ function getFourDisplay(key, v) {
 			const val = v.avgThinkRatio || 0;
 			return {
 				title,
-				html: has && val > 0 ? `${val.toFixed(1)}<span style="font-size:11px;color:var(--ds-text-3);font-weight:400;">%</span>` : `<span style="color:var(--ds-text-3);">—</span>`
+				html: has && val > 0 ? `${val.toFixed(1)}<span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);font-weight:400;">%</span>` : `<span style="color:var(--ds-text-3);">—</span>`
 			};
 		}
 		case "truncation_rate": {
@@ -3342,7 +3368,7 @@ function getFourDisplay(key, v) {
 			const val = v.truncationRate || 0;
 			return {
 				title,
-				html: has ? `${val.toFixed(1)}<span style="font-size:11px;color:var(--ds-text-3);font-weight:400;">%</span>` : `<span style="color:var(--ds-text-3);">—</span>`
+				html: has ? `${val.toFixed(1)}<span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);font-weight:400;">%</span>` : `<span style="color:var(--ds-text-3);">—</span>`
 			};
 		}
 		default: return {
@@ -3413,7 +3439,7 @@ function openFourDrop(idx, v) {
 	const cur = ensureFour()[idx];
 	drop.innerHTML = FOUR_OPTIONS.map((o) => {
 		const active = o.key === cur;
-		return `<div data-four="${idx}" data-key="${o.key}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:11px;${active ? "background:var(--ds-card);font-weight:600;color:var(--ds-text);" : ""}">${o.label}</div>`;
+		return `<div data-four="${idx}" data-key="${o.key}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-sm);${active ? "background:var(--ds-card);font-weight:600;color:var(--ds-text);" : ""}">${o.label}</div>`;
 	}).join("");
 	drop.querySelectorAll("[data-four]").forEach((el) => {
 		el.onclick = () => {
@@ -3445,7 +3471,7 @@ function renderOverview(fullHistory) {
 	if (walletDrop) {
 		const item = (id, label) => {
 			const active = id === activeWalletId;
-			return `<div data-overview-wallet="${esc$1(id)}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:11px;${active ? "background:var(--ds-card);font-weight:600;" : ""}">${esc$1(label)}</div>`;
+			return `<div data-overview-wallet="${esc$1(id)}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-sm);${active ? "background:var(--ds-card);font-weight:600;" : ""}">${esc$1(label)}</div>`;
 		};
 		walletDrop.innerHTML = item("all", "全部钱包合计") + wallets.map((wallet) => item(wallet.id, wallet.name)).join("");
 		walletDrop.querySelectorAll("[data-overview-wallet]").forEach((el) => {
@@ -3494,8 +3520,8 @@ function renderOverview(fullHistory) {
 	if (tokEl) tokEl.textContent = fmt(v.totalTokens) + " tokens";
 	const histHost = doc.getElementById("aus-overview-history");
 	if (histHost) histHost.innerHTML = `
-      <div style="font-size:12px;font-weight:600;color:var(--ds-text);margin-bottom:8px;">历史消耗</div>
-      <div style="display:grid;gap:10px;font-size:11px;">
+      <div style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);margin-bottom:8px;">历史消耗</div>
+      <div style="display:grid;gap:10px;font-size:var(--aus-fs-sm);">
         <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;"><span style="color:var(--ds-text-2);">Token 历史消耗</span><span style="font-weight:600;color:var(--ds-text);">${fmt(v.totalTokens)} tokens</span></div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;"><span style="color:var(--ds-text-2);">输入（命中缓存）</span><span style="font-weight:600;color:var(--ds-green);">${fmt(v.hit)} tokens</span></div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;"><span style="color:var(--ds-text-2);">输入（未命中缓存）</span><span style="font-weight:600;color:var(--ds-red);">${fmt(v.miss)} tokens</span></div>
@@ -3504,11 +3530,11 @@ function renderOverview(fullHistory) {
     `;
 	const spendHost = doc.getElementById("aus-overview-spend");
 	if (spendHost) spendHost.innerHTML = `
-      <div style="font-size:12px;font-weight:600;color:var(--ds-text);margin-bottom:8px;">支出明细</div>
-      <div style="display:grid;gap:10px;font-size:11px;">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;"><span style="color:var(--ds-text-2);padding-top:2px;">预计节省</span><span style="text-align:right;"><div style="font-weight:600;color:var(--ds-green);">${CNY(v.savings)}</div><div style="font-size:10px;color:var(--ds-text-3);margin-top:1px;">${fmt(v.hit)} tokens</div></span></div>
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;"><span style="color:var(--ds-text-2);padding-top:2px;">支出在输入</span><span style="text-align:right;"><div style="font-weight:600;color:var(--ds-text);">${CNY(v.inputCost)}</div><div style="font-size:10px;color:var(--ds-text-3);margin-top:1px;">${fmt(v.hit + v.miss)} tokens</div></span></div>
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;"><span style="color:var(--ds-text-2);padding-top:2px;">支出在输出</span><span style="text-align:right;"><div style="font-weight:600;color:var(--ds-text);">${CNY(v.outputCost)}</div><div style="font-size:10px;color:var(--ds-text-3);margin-top:1px;">${fmt(v.output)} tokens</div></span></div>
+      <div style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);margin-bottom:8px;">支出明细</div>
+      <div style="display:grid;gap:10px;font-size:var(--aus-fs-sm);">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;"><span style="color:var(--ds-text-2);padding-top:2px;">预计节省</span><span style="text-align:right;"><div style="font-weight:600;color:var(--ds-green);">${CNY(v.savings)}</div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);margin-top:1px;">${fmt(v.hit)} tokens</div></span></div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;"><span style="color:var(--ds-text-2);padding-top:2px;">支出在输入</span><span style="text-align:right;"><div style="font-weight:600;color:var(--ds-text);">${CNY(v.inputCost)}</div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);margin-top:1px;">${fmt(v.hit + v.miss)} tokens</div></span></div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;"><span style="color:var(--ds-text-2);padding-top:2px;">支出在输出</span><span style="text-align:right;"><div style="font-weight:600;color:var(--ds-text);">${CNY(v.outputCost)}</div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);margin-top:1px;">${fmt(v.output)} tokens</div></span></div>
       </div>
     `;
 	const fourHost = doc.getElementById("aus-overview-four");
@@ -3520,8 +3546,8 @@ function renderOverview(fullHistory) {
 			const valColor = k === "avg_rate" ? "var(--ds-green)" : "var(--ds-text)";
 			return `<div class="ds-card" style="padding:14px;position:relative;overflow:visible;">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
-          <div style="font-size:11px;color:var(--ds-text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.title}</div>
-          <button id="aus-four-btn-${i}" title="切换指标" style="flex-shrink:0;padding:4px 7px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text-2);font-size:10px;cursor:pointer;line-height:1;">▼</button>
+          <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.title}</div>
+          <button id="aus-four-btn-${i}" title="切换指标" style="flex-shrink:0;padding:4px 7px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text-2);font-size:var(--aus-fs-sm);cursor:pointer;line-height:1;">${icon("chevron-down", 14)}</button>
           <div id="aus-four-drop-${i}" style="display:none;position:absolute;top:38px;right:8px;z-index:6;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);padding:6px;min-width:180px;max-height:260px;overflow:auto;"></div>
         </div>
         <div style="font-size:18px;font-weight:600;color:${valColor};margin-top:6px;word-break:break-all;">${d.html}</div>
@@ -3588,22 +3614,6 @@ function renderChatSummaryOverview(fullHistory) {
 			if (fullRows.length !== hotRows.length || fullRows.some((r, i) => r.total !== hotRows[i]?.total)) renderRows(fullRows);
 		} catch {}
 	})();
-}
-//#endregion
-//#region src/ui/icons.ts
-var PATHS = {
-	overview: "<rect width=\"7\" height=\"9\" x=\"3\" y=\"3\" rx=\"1\"/><rect width=\"7\" height=\"5\" x=\"14\" y=\"3\" rx=\"1\"/><rect width=\"7\" height=\"9\" x=\"14\" y=\"12\" rx=\"1\"/><rect width=\"7\" height=\"5\" x=\"3\" y=\"16\" rx=\"1\"/>",
-	stats: "<path d=\"M3 3v16a2 2 0 0 0 2 2h16\"/><path d=\"M18 17V9\"/><path d=\"M13 17V5\"/><path d=\"M8 17v-3\"/>",
-	history: "<path d=\"M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8\"/><path d=\"M3 3v5h5\"/><path d=\"M12 7v5l4 2\"/>",
-	forecast: "<path d=\"M16 7h6v6\"/><path d=\"m22 7-8.5 8.5-5-5L2 17\"/>",
-	wallet: "<path d=\"M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1\"/><path d=\"M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4\"/>",
-	settings: "<path d=\"M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/>",
-	help: "<circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3\"/><path d=\"M12 17h.01\"/>",
-	about: "<circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M12 16v-4\"/><path d=\"M12 8h.01\"/>"
-};
-/** 生成内联 SVG；尺寸默认 20px，颜色继承 currentColor */
-function navIcon(name, size = 20) {
-	return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="display:block;">${PATHS[name]}</svg>`;
 }
 //#endregion
 //#region src/ui/chart-config.ts
@@ -4008,14 +4018,14 @@ async function renderOne$1(id, filtered) {
 					backgroundColor: themeColor$2("--ds-card-inner", "#FFFFFF"),
 					borderColor: themeColor$2("--ds-border", "#E5E7EB"),
 					textStyle: {
-						fontSize: 11,
+						fontSize: 12,
 						color: themeColor$2("--ds-text", "#111827")
 					}
 				},
 				legend: {
 					bottom: 0,
 					textStyle: {
-						fontSize: 10,
+						fontSize: 12,
 						color: themeColor$2("--ds-text-2", "#6B7280")
 					}
 				},
@@ -4027,7 +4037,7 @@ async function renderOne$1(id, filtered) {
 						borderColor: themeColor$2("--ds-card-inner", "#FFFFFF"),
 						borderWidth: 2
 					},
-					label: { fontSize: 11 },
+					label: { fontSize: 12 },
 					data
 				}]
 			}, true);
@@ -4036,7 +4046,7 @@ async function renderOne$1(id, filtered) {
 		const yKeys = Array.from(state$1[id].y);
 		const xKey = state$1[id].x;
 		if (!yKeys.length) {
-			el.innerHTML = "<div style=\"text-align:center;padding:30px;color:var(--ds-text-3);font-size:11px;\">请选择 Y 轴</div>";
+			el.innerHTML = "<div style=\"text-align:center;padding:30px;color:var(--ds-text-3);font-size:var(--aus-fs-sm);\">请选择 Y 轴</div>";
 			return;
 		}
 		if (xKey === "round") {
@@ -4113,7 +4123,7 @@ async function renderOne$1(id, filtered) {
 	} catch (e) {
 		try {
 			const el2 = getDoc$6().getElementById(`aus-chart-${id}`);
-			if (el2) el2.innerHTML = "<div style=\"text-align:center;padding:20px;color:#DC2626;font-size:11px;\">图表加载失败: " + (e?.message || e) + "</div>";
+			if (el2) el2.innerHTML = "<div style=\"text-align:center;padding:20px;color:#DC2626;font-size:var(--aus-fs-sm);\">图表加载失败: " + (e?.message || e) + "</div>";
 		} catch {}
 		try {
 			console.error("[Api-Usage] renderOne failed", id, e);
@@ -4157,7 +4167,7 @@ async function drawBarLine(el, id, labels, series) {
 				trigger: "axis",
 				backgroundColor: themeColor$2("--ds-card-inner", "#FFFFFF"),
 				borderColor: themeColor$2("--ds-border", "#E5E7EB"),
-				textStyle: { fontSize: 11 }
+				textStyle: { fontSize: 12 }
 			},
 			grid: {
 				left: 40,
@@ -4170,7 +4180,7 @@ async function drawBarLine(el, id, labels, series) {
 				data: labels,
 				axisLine: { lineStyle: { color: themeColor$2("--ds-border", "#E5E7EB") } },
 				axisLabel: {
-					fontSize: 10,
+					fontSize: 12,
 					color: themeColor$2("--ds-text-3", "#9CA3AF"),
 					rotate: labels.length > 12 ? 30 : 0,
 					interval,
@@ -4180,7 +4190,7 @@ async function drawBarLine(el, id, labels, series) {
 			yAxis: {
 				type: "value",
 				axisLabel: {
-					fontSize: 10,
+					fontSize: 12,
 					color: themeColor$2("--ds-text-3", "#9CA3AF")
 				},
 				splitLine: { lineStyle: { color: themeColor$2("--ds-card", "#F6F7F8") } }
@@ -4243,7 +4253,7 @@ async function drawBarLine(el, id, labels, series) {
 			opts.yAxis = {
 				type: "value",
 				axisLabel: {
-					fontSize: 10,
+					fontSize: 12,
 					color: themeColor$2("--ds-text-3", "#9CA3AF"),
 					formatter: (v) => curCur.symbol + Number(v).toFixed(2)
 				},
@@ -4253,7 +4263,7 @@ async function drawBarLine(el, id, labels, series) {
 				trigger: "axis",
 				backgroundColor: themeColor$2("--ds-card-inner", "#FFFFFF"),
 				borderColor: themeColor$2("--ds-border", "#E5E7EB"),
-				textStyle: { fontSize: 11 },
+				textStyle: { fontSize: 12 },
 				formatter: (params) => {
 					let html = `<div style="font-weight:600;margin-bottom:6px;">${params[0]?.axisValueLabel || ""}</div>`;
 					for (const p of params) html += `<div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:8px;height:8px;background:${p.color};border-radius:2px;"></span>${p.seriesName}<span style="margin-left:auto;font-weight:600;">${curCur.symbol}${Number(p.value).toFixed(4)} ${curCur.code}</span></div>`;
@@ -4285,7 +4295,7 @@ async function drawBarLine(el, id, labels, series) {
 				name: "耗时 s",
 				position: "left",
 				axisLabel: {
-					fontSize: 10,
+					fontSize: 12,
 					color: themeColor$2("--ds-text-3", "#9CA3AF")
 				},
 				splitLine: { lineStyle: { color: themeColor$2("--ds-card", "#F6F7F8") } }
@@ -4294,7 +4304,7 @@ async function drawBarLine(el, id, labels, series) {
 				name: "速率 t/s",
 				position: "right",
 				axisLabel: {
-					fontSize: 10,
+					fontSize: 12,
 					color: themeColor$2("--ds-text-3", "#9CA3AF")
 				},
 				splitLine: { show: false }
@@ -4320,7 +4330,7 @@ async function drawBarLine(el, id, labels, series) {
 		c.setOption(opts, true);
 	} catch (e) {
 		try {
-			el.innerHTML = "<div style=\"text-align:center;padding:20px;color:#DC2626;font-size:11px;\">图表渲染失败</div>";
+			el.innerHTML = "<div style=\"text-align:center;padding:20px;color:#DC2626;font-size:var(--aus-fs-sm);\">图表渲染失败</div>";
 		} catch {}
 		try {
 			console.error("[Api-Usage] drawBarLine failed", id, e);
@@ -4373,7 +4383,7 @@ function renderExtraY(id) {
 	if (label) label.textContent = sel.size ? `${sel.size} 项` : "选择";
 	drop.innerHTML = opts.map((o) => {
 		const checked = sel.has(o.key);
-		return `<label style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:11px;${checked ? "background:var(--ds-active-bg);" : ""}"><input type="checkbox" data-y="${o.key}" data-chart="${id}" ${checked ? "checked" : ""} style="accent-color:var(--ds-text);" /><span style="width:8px;height:8px;background:${o.color};border-radius:2px;"></span>${o.label}</label>`;
+		return `<label style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:var(--aus-fs-sm);${checked ? "background:var(--ds-active-bg);" : ""}"><input type="checkbox" data-y="${o.key}" data-chart="${id}" ${checked ? "checked" : ""} style="accent-color:var(--ds-text);" /><span style="width:8px;height:8px;background:${o.color};border-radius:2px;"></span>${o.label}</label>`;
 	}).join("");
 	drop.querySelectorAll("input[data-y]").forEach((el) => {
 		el.onchange = () => {
@@ -4396,7 +4406,7 @@ function renderExtraX(id) {
 	if (label) label.textContent = options.find((o) => o.key === cur)?.label || cur;
 	drop.innerHTML = options.map((o) => {
 		const active = o.key === cur;
-		return `<div data-x="${o.key}" data-chart="${id}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;${active ? "background:var(--ds-active-bg);font-weight:600;" : ""}">${o.label}</div>`;
+		return `<div data-x="${o.key}" data-chart="${id}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${active ? "background:var(--ds-active-bg);font-weight:600;" : ""}">${o.label}</div>`;
 	}).join("");
 	drop.querySelectorAll("[data-x]").forEach((el) => {
 		el.onclick = () => {
@@ -4498,7 +4508,7 @@ async function renderOne(id, filtered) {
 				charts[id].dispose();
 			} catch {}
 			charts[id] = null;
-			el.innerHTML = "<div style=\"text-align:center;padding:40px;color:var(--ds-text-3);font-size:11px;\">暂无数据</div>";
+			el.innerHTML = "<div style=\"text-align:center;padding:40px;color:var(--ds-text-3);font-size:var(--aus-fs-sm);\">暂无数据</div>";
 			return;
 		}
 		const modelSet = /* @__PURE__ */ new Set();
@@ -4552,7 +4562,7 @@ async function renderOne(id, filtered) {
 			if (statsView ? statsView.style.display === "none" || statsView.offsetParent === null : false) return;
 			const tries = renderOne._retryCount || 0;
 			if (tries >= 20) {
-				el.innerHTML = "<div style=\"text-align:center;padding:20px;color:var(--ds-text-3);font-size:11px;\">图表容器未就绪</div>";
+				el.innerHTML = "<div style=\"text-align:center;padding:20px;color:var(--ds-text-3);font-size:var(--aus-fs-sm);\">图表容器未就绪</div>";
 				return;
 			}
 			renderOne._retryCount = tries + 1;
@@ -4586,7 +4596,7 @@ async function renderOne(id, filtered) {
 				borderWidth: 1,
 				textStyle: {
 					color: cText,
-					fontSize: 11
+					fontSize: 12
 				},
 				formatter: (params) => {
 					if (!params?.length) return "";
@@ -4599,7 +4609,7 @@ async function renderOne(id, filtered) {
 						if (Number(p.value) === 0) continue;
 						html += `<div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:8px;height:8px;background:${p.color};border-radius:2px;"></span>${esc$1(p.seriesName)}<span style="margin-left:auto;font-weight:600;">${id === "token" ? Number(p.value).toLocaleString() + " tokens" : p.value + " 次"}</span></div>`;
 					}
-					if (!params.some((p) => Number(p.value) > 0)) html += `<div style="color:var(--ds-text-3);font-size:10px;">本${xKey === "day" ? "日" : xKey === "hour" ? "时段" : xKey === "week" ? "周" : xKey === "month" ? "月" : "轮次"}无数据</div>`;
+					if (!params.some((p) => Number(p.value) > 0)) html += `<div style="color:var(--ds-text-3);font-size:var(--aus-fs-sm);">本${xKey === "day" ? "日" : xKey === "hour" ? "时段" : xKey === "week" ? "周" : xKey === "month" ? "月" : "轮次"}无数据</div>`;
 					return `<div style="padding:4px 2px;min-width:180px;max-width:280px;">${html}</div>`;
 				}
 			},
@@ -4607,7 +4617,7 @@ async function renderOne(id, filtered) {
 				top: legendTop,
 				type: "scroll",
 				textStyle: {
-					fontSize: 10,
+					fontSize: 12,
 					color: cText3
 				},
 				pageIconColor: cText3,
@@ -4636,7 +4646,7 @@ async function renderOne(id, filtered) {
 				axisLine: { lineStyle: { color: cBorder } },
 				axisLabel: {
 					color: cText3,
-					fontSize: 10,
+					fontSize: 12,
 					interval: xInterval,
 					rotate: labels.length > 12 ? 30 : 0,
 					hideOverlap: false
@@ -4646,7 +4656,7 @@ async function renderOne(id, filtered) {
 				type: "value",
 				axisLabel: {
 					color: cText3,
-					fontSize: 10,
+					fontSize: 12,
 					formatter: (v) => id === "token" ? v >= 1e3 ? (v / 1e3).toFixed(0) + "k" : String(v) : String(v)
 				},
 				splitLine: { lineStyle: { color: cCard } }
@@ -4677,7 +4687,7 @@ async function renderOne(id, filtered) {
 	} catch (e) {
 		try {
 			const el2 = getDoc$5().getElementById(`aus-chart-model-${id}`);
-			if (el2) el2.innerHTML = "<div style=\"text-align:center;padding:20px;color:#DC2626;font-size:11px;\">图表加载失败</div>";
+			if (el2) el2.innerHTML = "<div style=\"text-align:center;padding:20px;color:#DC2626;font-size:var(--aus-fs-sm);\">图表加载失败</div>";
 		} catch {}
 		try {
 			console.error("[Api-Usage] renderModelTrends failed", id, e);
@@ -4712,7 +4722,7 @@ function renderXDrop(id) {
 	if (label) label.textContent = X_OPTIONS.find((o) => o.key === cur)?.label || cur;
 	drop.innerHTML = X_OPTIONS.map((o) => {
 		const active = o.key === cur;
-		return `<div data-x="${o.key}" data-trend="${id}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;${active ? "background:var(--ds-card);font-weight:600;" : ""}">${o.label}</div>`;
+		return `<div data-x="${o.key}" data-trend="${id}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${active ? "background:var(--ds-card);font-weight:600;" : ""}">${o.label}</div>`;
 	}).join("");
 	drop.querySelectorAll("[data-x]").forEach((el) => {
 		el.onclick = () => {
@@ -4756,7 +4766,7 @@ function updateSummarySortHeader() {
 			cur.style.color = "var(--ds-text)";
 			cur.style.fontWeight = "600";
 			const ind = cur.querySelector(".aus-sort-ind");
-			if (ind) ind.textContent = summarySortDir === "asc" ? " ▲" : " ▼";
+			if (ind) ind.innerHTML = summarySortDir === "asc" ? icon("chevron-up", 14) : icon("chevron-down", 14);
 		}
 	}
 }
@@ -4928,9 +4938,9 @@ function renderCalendar() {
 	if (!customStart) customStart = todayStr;
 	if (!customEnd) customEnd = todayStr;
 	cal.innerHTML = `<div style="padding:12px;min-width:260px;display:grid;gap:10px;">
-    <div><div style="font-size:11px;color:var(--ds-text-2);margin-bottom:4px;">开始日期</div><input type="date" id="aus-custom-start" value="${customStart}" max="${todayStr}" style="width:100%;padding:8px 10px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);color:var(--ds-text);font-size:12px;box-sizing:border-box;"></div>
-    <div><div style="font-size:11px;color:var(--ds-text-2);margin-bottom:4px;">结束日期</div><input type="date" id="aus-custom-end" value="${customEnd}" max="${todayStr}" style="width:100%;padding:8px 10px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);color:var(--ds-text);font-size:12px;box-sizing:border-box;"></div>
-    <button id="aus-custom-apply" style="padding:8px 12px;border-radius:999px;background:var(--ds-black);color:var(--ds-black-text);border:none;font-size:12px;cursor:pointer;">应用</button>
+    <div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-bottom:4px;">开始日期</div><input type="date" id="aus-custom-start" value="${customStart}" max="${todayStr}" style="width:100%;padding:8px 10px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-base);box-sizing:border-box;"></div>
+    <div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-bottom:4px;">结束日期</div><input type="date" id="aus-custom-end" value="${customEnd}" max="${todayStr}" style="width:100%;padding:8px 10px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-base);box-sizing:border-box;"></div>
+    <button id="aus-custom-apply" style="padding:8px 12px;border-radius:999px;background:var(--ds-black);color:var(--ds-black-text);border:none;font-size:var(--aus-fs-base);cursor:pointer;">应用</button>
   </div>`;
 	const startEl = doc.getElementById("aus-custom-start");
 	const endEl = doc.getElementById("aus-custom-end");
@@ -4981,12 +4991,12 @@ function renderModelPicker(modelsHist) {
 	const allSelected = selectedModels.length === 0;
 	label.textContent = allSelected ? "全部" : selectedModels.length === 1 ? selectedModels[0] : `已选 ${selectedModels.length} 项`;
 	label.title = allSelected ? "全部模型" : selectedModels.join("、");
-	let html = `<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;${allSelected ? "background:var(--ds-card);font-weight:600;" : ""}"><input type="checkbox" data-model-all ${allSelected ? "checked" : ""} style="accent-color:var(--ds-text);" /><span>全部模型</span></label>`;
+	let html = `<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${allSelected ? "background:var(--ds-card);font-weight:600;" : ""}"><input type="checkbox" data-model-all ${allSelected ? "checked" : ""} style="accent-color:var(--ds-text);" /><span>全部模型</span></label>`;
 	for (const m of models) {
 		const checked = selectedModels.includes(m);
-		html += `<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;${checked ? "background:var(--ds-card);font-weight:600;" : ""}"><input type="checkbox" data-model="${esc$1(m)}" ${checked ? "checked" : ""} style="accent-color:var(--ds-text);" /><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc$1(m)}</span></label>`;
+		html += `<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${checked ? "background:var(--ds-card);font-weight:600;" : ""}"><input type="checkbox" data-model="${esc$1(m)}" ${checked ? "checked" : ""} style="accent-color:var(--ds-text);" /><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc$1(m)}</span></label>`;
 	}
-	if (!models.length) html += "<div style=\"padding:8px 10px;color:var(--ds-text-3);font-size:12px;\">暂无模型</div>";
+	if (!models.length) html += "<div style=\"padding:8px 10px;color:var(--ds-text-3);font-size:var(--aus-fs-base);\">暂无模型</div>";
 	dropdown.innerHTML = html;
 	const allInput = dropdown.querySelector("[data-model-all]");
 	if (allInput) allInput.onchange = () => {
@@ -5013,13 +5023,13 @@ function renderChatPicker(chatHist) {
 	const find = list.find((c) => (c.chatId ?? "__null__") === selectedChat);
 	label.textContent = selectedChat === "__all__" ? "全部" : find?.displayName || selectedChat;
 	label.title = find?.chatId || find?.displayName || "";
-	let html = `<div data-chat="__all__" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;${selectedChat === "__all__" ? "background:var(--ds-card);font-weight:600;" : ""}">全部</div>`;
+	let html = `<div data-chat="__all__" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${selectedChat === "__all__" ? "background:var(--ds-card);font-weight:600;" : ""}">全部</div>`;
 	for (const c of list) {
 		const key = c.chatId ?? "__null__";
 		const active = key === selectedChat ? "background:var(--ds-card);font-weight:600;" : "";
-		html += `<div data-chat="${esc$1(key)}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;${active}" title="${esc$1(c.chatId || "")}">${esc$1(c.displayName)}</div>`;
+		html += `<div data-chat="${esc$1(key)}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${active}" title="${esc$1(c.chatId || "")}">${esc$1(c.displayName)}</div>`;
 	}
-	if (!list.length) html += "<div style=\"padding:8px 10px;color:var(--ds-text-3);font-size:12px;\">暂无对话</div>";
+	if (!list.length) html += "<div style=\"padding:8px 10px;color:var(--ds-text-3);font-size:var(--aus-fs-base);\">暂无对话</div>";
 	dropdown.innerHTML = html;
 	dropdown.querySelectorAll("[data-chat]").forEach((el) => {
 		el.onclick = () => {
@@ -5042,11 +5052,11 @@ function renderEndpointPicker(history) {
 	label.title = label.textContent;
 	const optionHtml = (id, text, title) => {
 		const active = id === selectedEndpoint ? "background:var(--ds-card);font-weight:600;" : "";
-		return `<div data-endpoint="${esc$1(id)}" title="${esc$1(title)}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;${active}">${esc$1(text)}</div>`;
+		return `<div data-endpoint="${esc$1(id)}" title="${esc$1(title)}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${active}">${esc$1(text)}</div>`;
 	};
 	let html = optionHtml(STATS_FILTER_ALL, "全部", "全部");
 	for (const option of options) html += optionHtml(option.id, option.label, option.label);
-	if (!options.length) html += "<div style=\"padding:8px 10px;color:var(--ds-text-3);font-size:12px;\">暂无接入记录</div>";
+	if (!options.length) html += "<div style=\"padding:8px 10px;color:var(--ds-text-3);font-size:var(--aus-fs-base);\">暂无接入记录</div>";
 	dropdown.innerHTML = html;
 	dropdown.querySelectorAll("[data-endpoint]").forEach((el) => {
 		el.onclick = () => {
@@ -5069,11 +5079,11 @@ function renderCredentialPicker$1(history, endpoint = selectedEndpoint) {
 	label.title = label.textContent;
 	const optionHtml = (id, text, title) => {
 		const active = id === selectedCredential ? "background:var(--ds-card);font-weight:600;" : "";
-		return `<div data-credential="${esc$1(id)}" title="${esc$1(title)}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;${active}">${esc$1(text)}</div>`;
+		return `<div data-credential="${esc$1(id)}" title="${esc$1(title)}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${active}">${esc$1(text)}</div>`;
 	};
 	let html = optionHtml(STATS_FILTER_ALL, "全部", "全部");
 	for (const option of options) html += optionHtml(option.id, option.label, option.label);
-	if (!options.length) html += "<div style=\"padding:8px 10px;color:var(--ds-text-3);font-size:12px;\">暂无密钥记录</div>";
+	if (!options.length) html += "<div style=\"padding:8px 10px;color:var(--ds-text-3);font-size:var(--aus-fs-base);\">暂无密钥记录</div>";
 	dropdown.innerHTML = html;
 	dropdown.querySelectorAll("[data-credential]").forEach((el) => {
 		el.onclick = () => {
@@ -5250,7 +5260,7 @@ function renderChartSelectors() {
 	let yHtml = "";
 	for (const opt of Y_OPTIONS) {
 		const checked = ySel.includes(opt.key);
-		yHtml += `<label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:11px;${checked ? "background:var(--ds-card);" : ""}"><input type="checkbox" data-ykey="${opt.key}" ${checked ? "checked" : ""} style="accent-color:var(--ds-text);" /><span style="display:inline-block;width:8px;height:8px;background:${opt.color};border-radius:2px;"></span>${opt.label}<span style="margin-left:auto;color:var(--ds-text-3);font-size:10px;">${opt.unit}</span></label>`;
+		yHtml += `<label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:var(--aus-fs-sm);${checked ? "background:var(--ds-card);" : ""}"><input type="checkbox" data-ykey="${opt.key}" ${checked ? "checked" : ""} style="accent-color:var(--ds-text);" /><span style="display:inline-block;width:8px;height:8px;background:${opt.color};border-radius:2px;"></span>${opt.label}<span style="margin-left:auto;color:var(--ds-text-3);font-size:var(--aus-fs-sm);">${opt.unit}</span></label>`;
 	}
 	yDrop.innerHTML = yHtml;
 	yDrop.querySelectorAll("input[data-ykey]").forEach((el) => {
@@ -5272,7 +5282,7 @@ function renderChartSelectors() {
 	let xHtml = "";
 	for (const opt of X_OPTIONS) {
 		const active = opt.key === xSel;
-		xHtml += `<div data-xkey="${opt.key}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;${active ? "background:var(--ds-card);font-weight:600;" : ""}">${opt.label}</div>`;
+		xHtml += `<div data-xkey="${opt.key}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${active ? "background:var(--ds-card);font-weight:600;" : ""}">${opt.label}</div>`;
 	}
 	xDrop.innerHTML = xHtml;
 	xDrop.querySelectorAll("[data-xkey]").forEach((el) => {
@@ -5342,7 +5352,7 @@ async function renderChart(filteredRaw) {
 			} catch {}
 			chart = null;
 		}
-		el.innerHTML = "<div style=\"text-align:center;padding:40px;color:var(--ds-text-3);font-size:12px;\">该筛选无数据（历史 " + filteredRaw.length + " 条）</div>";
+		el.innerHTML = "<div style=\"text-align:center;padding:40px;color:var(--ds-text-3);font-size:var(--aus-fs-base);\">该筛选无数据（历史 " + filteredRaw.length + " 条）</div>";
 		return;
 	}
 	const w = el.clientWidth, h = el.clientHeight;
@@ -5357,7 +5367,7 @@ async function renderChart(filteredRaw) {
 		}
 		const tries = renderChart._retryCount || 0;
 		if (tries >= 80) {
-			el.innerHTML = "<div style=\"text-align:center;padding:20px;color:var(--ds-text-3);font-size:11px;\">图表容器未就绪，请切换视图重试</div>";
+			el.innerHTML = "<div style=\"text-align:center;padding:20px;color:var(--ds-text-3);font-size:var(--aus-fs-sm);\">图表容器未就绪，请切换视图重试</div>";
 			return;
 		}
 		renderChart._retryCount = tries + 1;
@@ -5381,7 +5391,7 @@ async function renderChart(filteredRaw) {
 			return ec;
 		});
 	} catch (e) {
-		el.innerHTML = "<div style=\"text-align:center;padding:20px;color:#DC2626;font-size:12px;\">图表加载失败，请检查网络后重试</div>";
+		el.innerHTML = "<div style=\"text-align:center;padding:20px;color:#DC2626;font-size:var(--aus-fs-base);\">图表加载失败，请检查网络后重试</div>";
 		console.error("[Api-Usage] echarts load failed", e);
 		return;
 	}
@@ -5417,7 +5427,7 @@ async function renderChart(filteredRaw) {
 		splitLine: { lineStyle: { color: cCard } },
 		axisLabel: {
 			color: cText3,
-			fontSize: 10
+			fontSize: 12
 		}
 	});
 	if (hasCost) yAxis.push({
@@ -5428,7 +5438,7 @@ async function renderChart(filteredRaw) {
 		splitLine: { show: false },
 		axisLabel: {
 			color: cText3,
-			fontSize: 10,
+			fontSize: 12,
 			formatter: (v) => curCur.symbol + (curCur.code === "USD" ? Number(v).toFixed(4) : Number(v).toFixed(4))
 		}
 	});
@@ -5498,7 +5508,7 @@ async function renderChart(filteredRaw) {
 			borderWidth: 1,
 			textStyle: {
 				color: cText,
-				fontSize: 11
+				fontSize: 12
 			},
 			formatter: (params) => {
 				if (!params?.length) return "";
@@ -5534,7 +5544,7 @@ async function renderChart(filteredRaw) {
 			axisLine: { lineStyle: { color: cBorder } },
 			axisLabel: {
 				color: cText3,
-				fontSize: 10,
+				fontSize: 12,
 				interval: xInterval,
 				rotate: labels.length > 12 ? 30 : 0,
 				hideOverlap: false
@@ -5544,7 +5554,7 @@ async function renderChart(filteredRaw) {
 			type: "value",
 			axisLabel: {
 				color: cText3,
-				fontSize: 10
+				fontSize: 12
 			}
 		},
 		series: seriesOpt
@@ -5779,7 +5789,7 @@ function openStatsFourDrop(idx, v) {
 	const cur = ensureStatsFour()[idx];
 	drop.innerHTML = FOUR_OPTIONS.map((o) => {
 		const active = o.key === cur;
-		return `<div data-sfour="${idx}" data-key="${o.key}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:11px;${active ? "background:var(--ds-card);font-weight:600;color:var(--ds-text);" : ""}">${o.label}</div>`;
+		return `<div data-sfour="${idx}" data-key="${o.key}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-sm);${active ? "background:var(--ds-card);font-weight:600;color:var(--ds-text);" : ""}">${o.label}</div>`;
 	}).join("");
 	drop.querySelectorAll("[data-sfour]").forEach((el) => {
 		el.onclick = () => {
@@ -5809,8 +5819,8 @@ function renderStatsFour(filtered) {
 		const valColor = k === "avg_rate" ? "var(--ds-green)" : "var(--ds-text)";
 		return `<div class="ds-card" style="padding:14px;position:relative;overflow:visible;">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
-        <div style="font-size:11px;color:var(--ds-text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.title}</div>
-        <button id="aus-stats-four-btn-${i}" title="切换指标" style="flex-shrink:0;padding:4px 7px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text-2);font-size:10px;cursor:pointer;line-height:1;">▼</button>
+        <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.title}</div>
+        <button id="aus-stats-four-btn-${i}" title="切换指标" style="flex-shrink:0;padding:4px 7px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text-2);font-size:var(--aus-fs-sm);cursor:pointer;line-height:1;">${icon("chevron-down", 14)}</button>
         <div id="aus-stats-four-drop-${i}" style="display:none;position:absolute;top:38px;right:8px;z-index:6;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);padding:6px;min-width:180px;max-height:260px;overflow:auto;"></div>
       </div>
       <div style="font-size:18px;font-weight:600;color:${valColor};margin-top:6px;word-break:break-all;">${d.html}</div>
@@ -6326,14 +6336,14 @@ function renderForecastChatPicker(fullHist) {
 	label.textContent = getForecastLabel(fullHist);
 	const chats = getRecordedChatsForForecast(fullHist);
 	let html = "";
-	html += `<div data-fchat="__current__" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;${selectedForecastKey === "__current__" ? "background:var(--ds-card);font-weight:600;" : ""}">当前对话</div>`;
-	html += `<div data-fchat="__all__" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;${selectedForecastKey === "__all__" ? "background:var(--ds-card);font-weight:600;" : ""}">全部</div>`;
+	html += `<div data-fchat="__current__" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${selectedForecastKey === "__current__" ? "background:var(--ds-card);font-weight:600;" : ""}">当前对话</div>`;
+	html += `<div data-fchat="__all__" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${selectedForecastKey === "__all__" ? "background:var(--ds-card);font-weight:600;" : ""}">全部</div>`;
 	for (const c of chats) {
 		const key = c.chatId ?? "__null__";
 		const active = key === selectedForecastKey ? "background:var(--ds-card);font-weight:600;" : "";
-		html += `<div data-fchat="${esc$1(key)}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;${active}" title="${esc$1(c.chatId || "")}">${esc$1(c.displayName)}</div>`;
+		html += `<div data-fchat="${esc$1(key)}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${active}" title="${esc$1(c.chatId || "")}">${esc$1(c.displayName)}</div>`;
 	}
-	if (!chats.length) html += "<div style=\"padding:8px 10px;color:var(--ds-text-3);font-size:12px;\">暂无对话</div>";
+	if (!chats.length) html += "<div style=\"padding:8px 10px;color:var(--ds-text-3);font-size:var(--aus-fs-base);\">暂无对话</div>";
 	dropdown.innerHTML = html;
 	dropdown.querySelectorAll("[data-fchat]").forEach((el) => {
 		el.onclick = () => {
@@ -6381,12 +6391,12 @@ async function renderForecastView() {
 	const renderCard = (host) => {
 		if (!host) return;
 		if (effectiveHist.length < 3) {
-			host.innerHTML = `<div style="text-align:center;padding:16px;color:var(--ds-text-3);font-size:12px;">继续对话以启用预测（需 ≥3 轮当前对话样本）</div>`;
+			host.innerHTML = `<div style="text-align:center;padding:16px;color:var(--ds-text-3);font-size:var(--aus-fs-base);">继续对话以启用预测（需 ≥3 轮当前对话样本）</div>`;
 			return;
 		}
 		const fit = fitSegments(effectiveHist, null);
 		if (!fit) {
-			host.innerHTML = `<div style="padding:12px;color:var(--ds-text-2);font-size:12px;">暂无数据</div>`;
+			host.innerHTML = `<div style="padding:12px;color:var(--ds-text-2);font-size:var(--aus-fs-base);">暂无数据</div>`;
 			return;
 		}
 		const bal = balanceNum();
@@ -6408,8 +6418,8 @@ async function renderForecastView() {
 		const deltaTok = Math.round(fit.delta);
 		const cNext = costAt(fit.segLen, fit, p);
 		host.innerHTML = `<div style="line-height:1.6;">
-      <div style="font-size:13px;font-weight:700;color:var(--ds-text);">预计还可 <span style="color:var(--ds-green);">~${rShow} 轮</span>（余额口径）· ±${Math.abs(R.R_high - R.R_low) / 2 | 0}</div>
-      <div style="font-size:11px;color:var(--ds-text-2);margin-top:4px;">每轮新增 ≈ ${deltaTok.toLocaleString()} tok · 命中率(近5) ${hitPct}% · 下一轮成本 ≈ ${(() => {
+      <div style="font-size:var(--aus-fs-base);font-weight:700;color:var(--ds-text);">预计还可 <span style="color:var(--ds-green);">~${rShow} 轮</span>（余额口径）· ±${Math.abs(R.R_high - R.R_low) / 2 | 0}</div>
+      <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-top:4px;">每轮新增 ≈ ${deltaTok.toLocaleString()} tok · 命中率(近5) ${hitPct}% · 下一轮成本 ≈ ${(() => {
 			try {
 				return formatMoney(cNext, 4);
 			} catch {
@@ -6420,8 +6430,8 @@ async function renderForecastView() {
         <div style="flex:1;background:var(--ds-card);border-radius:6px;height:8px;position:relative;overflow:hidden;"><div style="position:absolute;left:0;top:0;bottom:0;width:${Math.min(100, R.R / Math.max(10, R.R + (rCtx || 0)) * 100)}%;background:var(--ds-green);"></div></div>
         <div style="flex:1;background:var(--ds-card);border-radius:6px;height:8px;position:relative;overflow:hidden;"><div style="position:absolute;left:0;top:0;bottom:0;width:${rCtx != null ? Math.min(100, rCtx / Math.max(10, rCtx) * 100) : 0}%;background:${rCtx != null && rCtx < rShow ? "var(--ds-red)" : "var(--ds-purple-bg)"};"></div></div>
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--ds-text-3);margin-top:4px;"><span>R(余额) ${R.R}</span><span>R(ctx ${ctxLim != null ? `${ctxLim / 1e3 | 0}k` : "未知"}) ${rCtx ?? "—"}</span></div>
-      ${rCtx != null && rCtx < rShow ? `<div style="font-size:11px;color:var(--ds-red);margin-top:6px;">⚠ ${rCtx} 轮后 prompt 达上限 ${ctxLim?.toLocaleString()} tok，建议压缩上下文</div>` : ""}
+      <div style="display:flex;justify-content:space-between;font-size:var(--aus-fs-sm);color:var(--ds-text-3);margin-top:4px;"><span>R(余额) ${R.R}</span><span>R(ctx ${ctxLim != null ? `${ctxLim / 1e3 | 0}k` : "未知"}) ${rCtx ?? "—"}</span></div>
+      ${rCtx != null && rCtx < rShow ? `<div style="font-size:var(--aus-fs-sm);color:var(--ds-red);margin-top:6px;">⚠ ${rCtx} 轮后 prompt 达上限 ${ctxLim?.toLocaleString()} tok，建议压缩上下文</div>` : ""}
     </div>`;
 	};
 	renderCard(doc.getElementById("aus-forecast-card"));
@@ -6450,13 +6460,13 @@ async function renderForecastView() {
 		const idx = grades.indexOf(grade);
 		badgeHost.innerHTML = `<div style="display:flex;gap:12px;align-items:center;justify-content:flex-start;">
       <div style="display:flex;flex-direction:column;gap:2px;flex:none;">
-        ${grades.map((g, i) => `<div style="display:flex;align-items:center;gap:6px;"><span style="width:28px;height:22px;border-radius:4px;background:${colors[g]};color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;">${g}</span>${i === idx ? `<span style="color:${colors[g]};font-weight:700;">◀ 当前</span>` : ""}</div>`).join("")}
+        ${grades.map((g, i) => `<div style="display:flex;align-items:center;gap:6px;"><span style="width:28px;height:22px;border-radius:4px;background:${colors[g]};color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:var(--aus-fs-base);">${g}</span>${i === idx ? `<span style="color:${colors[g]};font-weight:700;">◀ 当前</span>` : ""}</div>`).join("")}
       </div>
-        <div style="flex:0 1 300px;min-width:210px;max-width:340px;display:grid;gap:6px;font-size:11px;">
+        <div style="flex:0 1 300px;min-width:210px;max-width:340px;display:grid;gap:6px;font-size:var(--aus-fs-sm);">
         <div style="display:flex;justify-content:space-between;gap:16px;"><span style="color:var(--ds-text-2);">增速 Δ</span><span style="font-weight:600;white-space:nowrap;">${Math.round(r.metrics.delta).toLocaleString()} tok/轮</span></div>
         <div style="display:flex;justify-content:space-between;gap:16px;"><span style="color:var(--ds-text-2);">输出</span><span style="font-weight:600;white-space:nowrap;">${Math.round(r.metrics.out).toLocaleString()} tok/轮</span></div>
         <div style="display:flex;justify-content:space-between;gap:16px;"><span style="color:var(--ds-text-2);">效率</span><span style="font-weight:600;white-space:nowrap;">${(r.metrics.efficiency * 100).toFixed(1)}%</span></div>
-        <div style="font-size:10px;color:var(--ds-text-3);margin-top:4px;">综合评分 ${r.score.toFixed(0)} · ${grade} 级 · 样本 ${effectiveHist.length} 轮 · ${esc$1(getForecastLabel(hist))}</div>
+        <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);margin-top:4px;">综合评分 ${r.score.toFixed(0)} · ${grade} 级 · 样本 ${effectiveHist.length} 轮 · ${esc$1(getForecastLabel(hist))}</div>
       </div>
     </div>`;
 	}
@@ -6531,7 +6541,7 @@ async function renderForecastChart(history, chatId) {
 			axisLine: { lineStyle: { color: cBorder } },
 			axisLabel: {
 				color: cText3,
-				fontSize: 10,
+				fontSize: 12,
 				interval: Math.ceil(labels.length / 12) - 1
 			}
 		},
@@ -6539,7 +6549,7 @@ async function renderForecastChart(history, chatId) {
 			type: "value",
 			axisLabel: {
 				color: cText3,
-				fontSize: 10
+				fontSize: 12
 			},
 			splitLine: { lineStyle: { color: cBorder } }
 		},
@@ -6610,7 +6620,7 @@ function renderSensitivity(history, chatId) {
 		const fit = fitSegments(history, chatId);
 		return fit ? Math.round(fit.hitEwma * 100) : 50;
 	})();
-	host.innerHTML = `<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:11px;color:var(--ds-text-2);">假设命中率</span><input id="aus-sens-hit" type="range" min="0" max="100" value="${hitInit}" style="flex:1;"><span id="aus-sens-hit-val" style="font-weight:600;min-width:36px;text-align:right;">${hitInit}%</span></div><div id="aus-sens-result" style="font-size:11px;color:var(--ds-text-2);margin-top:6px;"></div>`;
+	host.innerHTML = `<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);">假设命中率</span><input id="aus-sens-hit" type="range" min="0" max="100" value="${hitInit}" style="flex:1;"><span id="aus-sens-hit-val" style="font-weight:600;min-width:36px;text-align:right;">${hitInit}%</span></div><div id="aus-sens-result" style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-top:6px;"></div>`;
 	const slider = host.querySelector("#aus-sens-hit");
 	const valEl = host.querySelector("#aus-sens-hit-val");
 	const resEl = host.querySelector("#aus-sens-result");
@@ -6648,15 +6658,15 @@ function renderCompare(history) {
 	if (!host) return;
 	const list = topPowerChats(history, 8);
 	if (!list.length) {
-		host.innerHTML = `<div style="padding:12px;color:var(--ds-text-3);font-size:11px;">暂无对话</div>`;
+		host.innerHTML = `<div style="padding:12px;color:var(--ds-text-3);font-size:var(--aus-fs-sm);">暂无对话</div>`;
 		return;
 	}
 	host.innerHTML = list.map((r) => {
 		const name = r.chatId || "全部/未分组";
 		const pct = Math.max(6, Math.min(100, r.delta / 8e3 * 100));
-		return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--ds-border);font-size:11px;">
+		return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--ds-border);font-size:var(--aus-fs-sm);">
       <span style="min-width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc$1(name)}</span>
-      <span style="width:18px;height:18px;border-radius:999px;background:${gradeColor(r.grade)};color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:10px;">${r.grade}</span>
+      <span style="width:18px;height:18px;border-radius:999px;background:${gradeColor(r.grade)};color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:var(--aus-fs-sm);">${r.grade}</span>
       <span style="flex:1;height:6px;background:var(--ds-card);border-radius:999px;position:relative;overflow:hidden;"><span style="position:absolute;left:0;top:0;bottom:0;width:${pct}%;background:var(--ds-purple-bg);"></span></span>
       <span style="min-width:60px;text-align:right;">${Math.round(r.delta).toLocaleString()} tok/轮</span>
     </div>`;
@@ -6719,7 +6729,7 @@ function closeOtherDropdowns(id) {
 function dropdownHtml(walletId, kind, options) {
 	return options.map((option) => `
     <div data-wallet-select="${esc$1(kind)}" data-wallet-id="${esc$1(walletId)}" data-value="${esc$1(option.id)}"
-      style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:11px;${option.active ? "background:var(--ds-card);font-weight:600;" : ""}">
+      style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-sm);${option.active ? "background:var(--ds-card);font-weight:600;" : ""}">
       ${esc$1(option.label)}
     </div>
   `).join("");
@@ -6733,7 +6743,7 @@ function sourceLabel(model) {
 function priceField(walletId, modelId, tier, key, value) {
 	return `<input type="number" step="0.000001" min="0" data-wallet-price="1" data-wallet-id="${esc$1(walletId)}"
     data-model-id="${esc$1(modelId)}" data-tier="${tier}" data-key="${key}" value="${esc$1(cnyToDisplay(value))}"
-    style="width:100%;min-width:72px;padding:5px 6px;border:1px solid var(--ds-border);border-radius:7px;background:var(--ds-card-inner);color:var(--ds-text);font-size:10px;" />`;
+    style="width:100%;min-width:72px;padding:5px 6px;border:1px solid var(--ds-border);border-radius:7px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);" />`;
 }
 function renderModelRows(wallet) {
 	const models = [...wallet.models].sort((a, b) => {
@@ -6748,17 +6758,17 @@ function renderModelRows(wallet) {
         <td style="padding:8px 6px;min-width:180px;">
           <input data-wallet-model-name="1" data-wallet-id="${esc$1(wallet.id)}" data-model-id="${esc$1(model.id)}"
             value="${esc$1(model.model)}"
-            style="width:100%;padding:6px 7px;border:1px solid var(--ds-border);border-radius:7px;background:${model.source === "builtin" ? "var(--ds-sidebar-bg)" : "var(--ds-card-inner)"};color:var(--ds-text);font-size:11px;" />
-          <div style="font-size:10px;color:var(--ds-text-3);margin-top:3px;">${esc$1(model.sourceModel)}${model.aliases.length ? ` · 别名 ${esc$1(model.aliases.join("、"))}` : ""}</div>
-          <label style="display:flex;align-items:center;gap:5px;margin-top:5px;font-size:10px;color:var(--ds-text-3);">
+            style="width:100%;padding:6px 7px;border:1px solid var(--ds-border);border-radius:7px;background:${model.source === "builtin" ? "var(--ds-sidebar-bg)" : "var(--ds-card-inner)"};color:var(--ds-text);font-size:var(--aus-fs-sm);" />
+          <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);margin-top:3px;">${esc$1(model.sourceModel)}${model.aliases.length ? ` · 别名 ${esc$1(model.aliases.join("、"))}` : ""}</div>
+          <label style="display:flex;align-items:center;gap:5px;margin-top:5px;font-size:var(--aus-fs-sm);color:var(--ds-text-3);">
             上下文上限
             <input type="number" min="1" step="1000" data-wallet-context-limit="1" data-wallet-id="${esc$1(wallet.id)}" data-model-id="${esc$1(model.id)}"
               value="${model.contextLimit ?? ""}" placeholder="未知"
-              style="width:80px;padding:3px 5px;border:1px solid var(--ds-border);border-radius:6px;background:var(--ds-card-inner);color:var(--ds-text);font-size:10px;" />
+              style="width:80px;padding:3px 5px;border:1px solid var(--ds-border);border-radius:6px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);" />
           </label>
         </td>
         <td style="padding:8px 6px;white-space:nowrap;">
-          <span style="padding:2px 7px;border-radius:999px;background:${pending ? "var(--ds-red-bg)" : model.source === "sync" ? "var(--ds-green-bg)" : "var(--ds-card)"};color:${pending ? "var(--ds-red)" : model.source === "sync" ? "var(--ds-green)" : "var(--ds-text-2)"};font-size:10px;">${sourceLabel(model)}</span>
+          <span style="padding:2px 7px;border-radius:999px;background:${pending ? "var(--ds-red-bg)" : model.source === "sync" ? "var(--ds-green-bg)" : "var(--ds-card)"};color:${pending ? "var(--ds-red)" : model.source === "sync" ? "var(--ds-green)" : "var(--ds-text-2)"};font-size:var(--aus-fs-sm);">${sourceLabel(model)}</span>
         </td>
         <td style="padding:8px 6px;min-width:224px;">
           <div style="display:grid;grid-template-columns:repeat(3,minmax(68px,1fr));gap:4px;">${priceField(wallet.id, model.id, "offpeak", "hit", model.price.offpeak.hit)}${priceField(wallet.id, model.id, "offpeak", "miss", model.price.offpeak.miss)}${priceField(wallet.id, model.id, "offpeak", "output", model.price.offpeak.output)}</div>
@@ -6768,28 +6778,28 @@ function renderModelRows(wallet) {
         </td>
         <td style="padding:8px 6px;text-align:center;"><input type="checkbox" data-wallet-model-peak="1" data-wallet-id="${esc$1(wallet.id)}" data-model-id="${esc$1(model.id)}" ${model.price.usePeakPricing ? "checked" : ""} /></td>
         <td style="padding:8px 6px;text-align:center;"><input type="checkbox" data-wallet-model-lock="1" data-wallet-id="${esc$1(wallet.id)}" data-model-id="${esc$1(model.id)}" ${model.locked ? "checked" : ""} /></td>
-        <td style="padding:8px 6px;text-align:center;">${canDelete ? `<button data-wallet-model-delete="1" data-wallet-id="${esc$1(wallet.id)}" data-model-id="${esc$1(model.id)}" style="padding:4px 8px;border:1px solid var(--ds-red-border);border-radius:7px;background:var(--ds-red-bg);color:var(--ds-red);font-size:10px;cursor:pointer;">删除</button>` : "—"}</td>
+        <td style="padding:8px 6px;text-align:center;">${canDelete ? `<button data-wallet-model-delete="1" data-wallet-id="${esc$1(wallet.id)}" data-model-id="${esc$1(model.id)}" style="padding:4px 8px;border:1px solid var(--ds-red-border);border-radius:7px;background:var(--ds-red-bg);color:var(--ds-red);font-size:var(--aus-fs-sm);cursor:pointer;">删除</button>` : "—"}</td>
       </tr>`;
 	}).join("");
 }
 function renderPeakRows(wallet) {
-	if (!wallet.peakHours.length) return "<div style=\"font-size:11px;color:var(--ds-text-3);\">暂无高峰时段</div>";
+	if (!wallet.peakHours.length) return "<div style=\"font-size:var(--aus-fs-sm);color:var(--ds-text-3);\">暂无高峰时段</div>";
 	return wallet.peakHours.map((item, index) => `
     <div style="display:flex;align-items:center;gap:6px;">
-      <input type="time" data-wallet-peak="1" data-wallet-id="${esc$1(wallet.id)}" data-peak-index="${index}" data-peak-field="start" value="${esc$1(item.start)}" style="flex:1;padding:6px 8px;border:1px solid var(--ds-border);border-radius:7px;background:var(--ds-card-inner);color:var(--ds-text);font-size:11px;" />
-      <span style="font-size:10px;color:var(--ds-text-3);">至</span>
-      <input type="time" data-wallet-peak="1" data-wallet-id="${esc$1(wallet.id)}" data-peak-index="${index}" data-peak-field="end" value="${esc$1(item.end)}" style="flex:1;padding:6px 8px;border:1px solid var(--ds-border);border-radius:7px;background:var(--ds-card-inner);color:var(--ds-text);font-size:11px;" />
-      <button data-wallet-peak-delete="1" data-wallet-id="${esc$1(wallet.id)}" data-peak-index="${index}" style="padding:5px 8px;border:1px solid var(--ds-red-border);border-radius:7px;background:var(--ds-red-bg);color:var(--ds-red);font-size:10px;cursor:pointer;">删除</button>
+      <input type="time" data-wallet-peak="1" data-wallet-id="${esc$1(wallet.id)}" data-peak-index="${index}" data-peak-field="start" value="${esc$1(item.start)}" style="flex:1;padding:6px 8px;border:1px solid var(--ds-border);border-radius:7px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);" />
+      <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);">至</span>
+      <input type="time" data-wallet-peak="1" data-wallet-id="${esc$1(wallet.id)}" data-peak-index="${index}" data-peak-field="end" value="${esc$1(item.end)}" style="flex:1;padding:6px 8px;border:1px solid var(--ds-border);border-radius:7px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);" />
+      <button data-wallet-peak-delete="1" data-wallet-id="${esc$1(wallet.id)}" data-peak-index="${index}" style="padding:5px 8px;border:1px solid var(--ds-red-border);border-radius:7px;background:var(--ds-red-bg);color:var(--ds-red);font-size:var(--aus-fs-sm);cursor:pointer;">删除</button>
     </div>
   `).join("");
 }
 function renderCredentialPicker(wallet) {
 	const current = wallet.credentials.find((item) => item.id === wallet.balance.primaryCredentialId);
 	return `
-    <button data-wallet-credential-btn="1" data-wallet-id="${esc$1(wallet.id)}" style="display:flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:11px;cursor:pointer;max-width:100%;">
+    <button data-wallet-credential-btn="1" data-wallet-id="${esc$1(wallet.id)}" style="display:flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;max-width:100%;">
       <span style="color:var(--ds-text-2);">主密钥</span>
       <span style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px;">${esc$1(current?.label || "未指定")}</span>
-      <span>▼</span>
+      ${icon("chevron-down", 14)}
     </button>
     <div id="aus-wallet-credential-drop-${esc$1(wallet.id)}" data-wallet-dropdown="1" style="display:none;position:absolute;top:38px;left:0;z-index:30;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);padding:6px;min-width:220px;max-width:320px;">
       ${dropdownHtml(wallet.id, "credential", [{
@@ -6806,10 +6816,10 @@ function renderCredentialPicker(wallet) {
 function renderCatalogPicker(wallet) {
 	const current = WALLET_CATALOG_PROVIDERS.find((item) => item.id === wallet.catalogProvider);
 	return `
-    <button data-wallet-catalog-btn="1" data-wallet-id="${esc$1(wallet.id)}" style="display:flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:11px;cursor:pointer;">
+    <button data-wallet-catalog-btn="1" data-wallet-id="${esc$1(wallet.id)}" style="display:flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;">
       <span style="color:var(--ds-text-2);">价格来源</span>
       <span style="font-weight:600;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc$1(current?.label || "不自动同步")}</span>
-      <span>▼</span>
+      ${icon("chevron-down", 14)}
     </button>
     <div id="aus-wallet-catalog-drop-${esc$1(wallet.id)}" data-wallet-dropdown="1" style="display:none;position:absolute;top:38px;right:0;z-index:30;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);padding:6px;min-width:180px;max-height:260px;overflow:auto;">
       ${dropdownHtml(wallet.id, "catalog", [{
@@ -6848,8 +6858,8 @@ function renderWalletCard(wallet, history) {
         <div class="aus-wallet-identity">
           <div class="aus-wallet-name-row">
             <input data-wallet-name="1" data-wallet-id="${esc$1(wallet.id)}" value="${esc$1(wallet.name)}" />
-            <span class="${isOfficial ? "aus-wallet-badge-official" : "aus-wallet-badge-relay"}" style="padding:3px 8px;border-radius:999px;background:${isOfficial ? "var(--ds-green-bg)" : "var(--ds-card-inner)"};color:${isOfficial ? "var(--ds-green)" : "var(--ds-text-2)"};font-size:10px;white-space:nowrap;">${isOfficial ? "DeepSeek 官方" : "中转/自定义"}</span>
-            ${pending ? `<span style="padding:3px 8px;border-radius:999px;background:var(--ds-red-bg);color:var(--ds-red);font-size:10px;white-space:nowrap;">${pending} 个待定价</span>` : ""}
+            <span class="${isOfficial ? "aus-wallet-badge-official" : "aus-wallet-badge-relay"}" style="padding:3px 8px;border-radius:999px;background:${isOfficial ? "var(--ds-green-bg)" : "var(--ds-card-inner)"};color:${isOfficial ? "var(--ds-green)" : "var(--ds-text-2)"};font-size:var(--aus-fs-sm);white-space:nowrap;">${isOfficial ? "DeepSeek 官方" : "中转/自定义"}</span>
+            ${pending ? `<span style="padding:3px 8px;border-radius:999px;background:var(--ds-red-bg);color:var(--ds-red);font-size:var(--aus-fs-sm);white-space:nowrap;">${pending} 个待定价</span>` : ""}
           </div>
           <div class="aus-wallet-sub">${esc$1(wallet.endpointDisplay || wallet.endpointLabel || "本机官方接口")} · ${esc$1(wallet.sourceType || "未识别")}</div>
         </div>
@@ -6857,9 +6867,9 @@ function renderWalletCard(wallet, history) {
           ${metrics.map((item) => `<div class="aus-wallet-metric" title="${esc$1(item.title)}"><div class="aus-wallet-metric-label">${esc$1(item.label)}</div><div class="aus-wallet-metric-value">${esc$1(item.value)}</div></div>`).join("")}
         </div>
         <div class="aus-wallet-actions">
-          <button class="aus-wallet-icon-btn" data-wallet-toggle="1" data-wallet-id="${esc$1(wallet.id)}" title="${collapsed ? "展开钱包详情" : "收起钱包详情"}" aria-label="${collapsed ? "展开钱包详情" : "收起钱包详情"}">${collapsed ? "▼" : "▲"}</button>
-          ${wallet.catalogProvider ? `<button class="aus-wallet-icon-btn" data-wallet-sync="1" data-wallet-id="${esc$1(wallet.id)}" title="按价格来源同步模型价格" aria-label="同步价格">↻</button>` : ""}
-          ${isOfficial ? "" : `<button class="aus-wallet-icon-btn is-danger" data-wallet-ignore="1" data-wallet-id="${esc$1(wallet.id)}" title="忽略该钱包（历史与统计保留）" aria-label="忽略钱包">✕</button>`}
+          <button class="aus-wallet-icon-btn" data-wallet-toggle="1" data-wallet-id="${esc$1(wallet.id)}" title="${collapsed ? "展开钱包详情" : "收起钱包详情"}" aria-label="${collapsed ? "展开钱包详情" : "收起钱包详情"}">${collapsed ? icon("chevron-down", 16) : icon("chevron-up", 16)}</button>
+          ${wallet.catalogProvider ? `<button class="aus-wallet-icon-btn" data-wallet-sync="1" data-wallet-id="${esc$1(wallet.id)}" title="按价格来源同步模型价格" aria-label="同步价格">${icon("refresh", 16)}</button>` : ""}
+          ${isOfficial ? "" : `<button class="aus-wallet-icon-btn is-danger" data-wallet-ignore="1" data-wallet-id="${esc$1(wallet.id)}" title="忽略该钱包（历史与统计保留）" aria-label="忽略钱包">${icon("close", 16)}</button>`}
         </div>
       </div>
 
@@ -6867,14 +6877,14 @@ function renderWalletCard(wallet, history) {
       <div class="aus-wallet-two-col" style="display:grid;grid-template-columns:minmax(250px,1fr) minmax(260px,1fr);gap:10px;">
         <div style="border:1px solid var(--ds-border);border-radius:10px;padding:10px;display:grid;gap:8px;">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-            <div><div style="font-size:11px;color:var(--ds-text-2);">钱包余额</div><div style="font-size:17px;font-weight:700;color:var(--ds-text);">${esc$1(walletBalanceText(wallet))}</div></div>
-            <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ds-text-2);cursor:${isOfficial ? "pointer" : "not-allowed"};">
+            <div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);">钱包余额</div><div style="font-size:17px;font-weight:700;color:var(--ds-text);">${esc$1(walletBalanceText(wallet))}</div></div>
+            <label style="display:flex;align-items:center;gap:6px;font-size:var(--aus-fs-sm);color:var(--ds-text-2);cursor:${isOfficial ? "pointer" : "not-allowed"};">
               <input type="checkbox" data-wallet-auto-balance="1" data-wallet-id="${esc$1(wallet.id)}" ${wallet.balance.mode === "auto" ? "checked" : ""} ${isOfficial ? "" : "disabled"} /> 自动校准
             </label>
           </div>
           <div style="display:flex;gap:6px;align-items:center;position:relative;">
-            <input data-wallet-balance-amount="1" data-wallet-id="${esc$1(wallet.id)}" value="${esc$1(wallet.balance.amount ?? "")}" placeholder="手工余额" style="flex:1;min-width:0;padding:7px 9px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);color:var(--ds-text);font-size:11px;" />
-            <button data-wallet-currency-btn="1" data-wallet-id="${esc$1(wallet.id)}" style="padding:7px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:11px;cursor:pointer;">${wallet.balance.currency} ▼</button>
+            <input data-wallet-balance-amount="1" data-wallet-id="${esc$1(wallet.id)}" value="${esc$1(wallet.balance.amount ?? "")}" placeholder="手工余额" style="flex:1;min-width:0;padding:7px 9px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);" />
+            <button data-wallet-currency-btn="1" data-wallet-id="${esc$1(wallet.id)}" style="padding:7px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;">${wallet.balance.currency}${icon("chevron-down", 14)}</button>
             <div id="aus-wallet-currency-drop-${esc$1(wallet.id)}" data-wallet-dropdown="1" style="display:none;position:absolute;top:38px;right:0;z-index:30;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:10px;padding:6px;min-width:110px;">
               ${dropdownHtml(wallet.id, "currency", [{
 		id: "CNY",
@@ -6890,38 +6900,38 @@ function renderWalletCard(wallet, history) {
           ${isOfficial ? `
             <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;position:relative;">
               ${renderCredentialPicker(wallet)}
-              <button data-wallet-calibrate="1" data-wallet-id="${esc$1(wallet.id)}" style="padding:7px 11px;border:1px solid var(--ds-black);border-radius:999px;background:var(--ds-black);color:var(--ds-black-text);font-size:11px;cursor:pointer;">立即校准</button>
+              <button data-wallet-calibrate="1" data-wallet-id="${esc$1(wallet.id)}" style="padding:7px 11px;border:1px solid var(--ds-black);border-radius:999px;background:var(--ds-black);color:var(--ds-black-text);font-size:var(--aus-fs-sm);cursor:pointer;">立即校准</button>
             </div>
             <div style="display:flex;gap:6px;">
-              <input type="password" data-wallet-api-key="1" data-wallet-id="${esc$1(wallet.id)}" value="" placeholder="${getWalletApiKey(wallet.id) ? "已保存钱包校准密钥（留空不修改）" : "填写钱包校准密钥"}" style="flex:1;min-width:0;padding:7px 9px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);color:var(--ds-text);font-size:11px;" />
-              <button data-wallet-save-key="1" data-wallet-id="${esc$1(wallet.id)}" style="padding:7px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:11px;cursor:pointer;">保存密钥</button>
+              <input type="password" data-wallet-api-key="1" data-wallet-id="${esc$1(wallet.id)}" value="" placeholder="${getWalletApiKey(wallet.id) ? "已保存钱包校准密钥（留空不修改）" : "填写钱包校准密钥"}" style="flex:1;min-width:0;padding:7px 9px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);" />
+              <button data-wallet-save-key="1" data-wallet-id="${esc$1(wallet.id)}" style="padding:7px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;">保存密钥</button>
             </div>
-            <div style="font-size:10px;color:var(--ds-text-3);">自动校准仅支持 DeepSeek 官方直连，并需在设置开启自动校准总开关；主密钥：${esc$1(selectedCredential?.label || "未指定")}</div>
-            <div style="font-size:10px;color:var(--ds-text-3);word-break:break-all;">已识别密钥：${wallet.credentials.length ? wallet.credentials.map((item) => esc$1(item.label)).join("、") : "未识别"}</div>
-          ` : `<div style="font-size:10px;color:var(--ds-text-3);">该接入暂不支持自动余额校准，请手工维护余额。</div><div style="font-size:10px;color:var(--ds-text-3);word-break:break-all;">已识别密钥：${wallet.credentials.length ? wallet.credentials.map((item) => esc$1(item.label)).join("、") : "未识别"}</div>`}
+            <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);">自动校准仅支持 DeepSeek 官方直连，并需在设置开启自动校准总开关；主密钥：${esc$1(selectedCredential?.label || "未指定")}</div>
+            <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);word-break:break-all;">已识别密钥：${wallet.credentials.length ? wallet.credentials.map((item) => esc$1(item.label)).join("、") : "未识别"}</div>
+          ` : `<div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);">该接入暂不支持自动余额校准，请手工维护余额。</div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);word-break:break-all;">已识别密钥：${wallet.credentials.length ? wallet.credentials.map((item) => esc$1(item.label)).join("、") : "未识别"}</div>`}
         </div>
 
         <div style="border:1px solid var(--ds-border);border-radius:10px;padding:10px;display:grid;gap:8px;position:relative;">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-            <div style="font-size:11px;font-weight:600;color:var(--ds-text);">峰谷规则</div>
+            <div style="font-size:var(--aus-fs-sm);font-weight:600;color:var(--ds-text);">峰谷规则</div>
             ${renderCatalogPicker(wallet)}
           </div>
           <div style="display:grid;gap:6px;">${renderPeakRows(wallet)}</div>
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-            <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ds-text-2);cursor:pointer;"><input type="checkbox" data-wallet-weekend="1" data-wallet-id="${esc$1(wallet.id)}" ${wallet.weekendOffpeak ? "checked" : ""} /> 周末全天按低谷</label>
-            <button data-wallet-add-peak="1" data-wallet-id="${esc$1(wallet.id)}" style="padding:6px 9px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:10px;cursor:pointer;">+ 添加时段</button>
+            <label style="display:flex;align-items:center;gap:6px;font-size:var(--aus-fs-sm);color:var(--ds-text-2);cursor:pointer;"><input type="checkbox" data-wallet-weekend="1" data-wallet-id="${esc$1(wallet.id)}" ${wallet.weekendOffpeak ? "checked" : ""} /> 周末全天按低谷</label>
+            <button data-wallet-add-peak="1" data-wallet-id="${esc$1(wallet.id)}" style="padding:6px 9px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;">+ 添加时段</button>
           </div>
-          ${isOfficial ? `<div style="font-size:10px;color:var(--ds-text-3);line-height:1.6;">官方接口按 DeepSeek 规则计费：中国法定节假日全天空闲（内置数据覆盖 ${CN_HOLIDAY_COVERAGE_LABEL}），调休上班的周末同样按空闲计价，可在设置中补充额外空闲日期。</div>` : ""}
+          ${isOfficial ? `<div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);line-height:1.6;">官方接口按 DeepSeek 规则计费：中国法定节假日全天空闲（内置数据覆盖 ${CN_HOLIDAY_COVERAGE_LABEL}），调休上班的周末同样按空闲计价，可在设置中补充额外空闲日期。</div>` : ""}
         </div>
       </div>
 
       <div style="border:1px solid var(--ds-border);border-radius:10px;padding:10px;overflow:hidden;">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
-          <div><div style="font-size:11px;font-weight:600;color:var(--ds-text);">模型与价格</div><div style="font-size:10px;color:var(--ds-text-3);">单位 ${getDisplayCurrency().code}/百万 tokens；模型改名会保留旧名别名</div></div>
-          <button data-wallet-add-model="1" data-wallet-id="${esc$1(wallet.id)}" style="padding:6px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:10px;cursor:pointer;">+ 添加模型</button>
+          <div><div style="font-size:var(--aus-fs-sm);font-weight:600;color:var(--ds-text);">模型与价格</div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);">单位 ${getDisplayCurrency().code}/百万 tokens；模型改名会保留旧名别名</div></div>
+          <button data-wallet-add-model="1" data-wallet-id="${esc$1(wallet.id)}" style="padding:6px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;">+ 添加模型</button>
         </div>
         <div style="width:100%;overflow-x:auto;">
-          <table style="width:100%;min-width:900px;border-collapse:collapse;font-size:10px;">
+          <table style="width:100%;min-width:900px;border-collapse:collapse;font-size:var(--aus-fs-sm);">
             <thead><tr style="text-align:center;color:var(--ds-text-2);"><th style="text-align:left;padding:5px 6px;">模型</th><th style="padding:5px 6px;">来源</th><th style="padding:5px 6px;">非峰（命中/未命中/输出）</th><th style="padding:5px 6px;">高峰（命中/未命中/输出）</th><th style="padding:5px 6px;">峰谷</th><th style="padding:5px 6px;">锁定</th><th style="padding:5px 6px;">操作</th></tr></thead>
             <tbody>${renderModelRows(wallet)}</tbody>
           </table>
@@ -6935,10 +6945,10 @@ function renderIgnoredWallets(ignored, wallets) {
 		const wallet = wallets.find((item) => item.id === id);
 		if (!wallet) return "";
 		return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-top:1px solid var(--ds-border);">
-      <div><div style="font-size:11px;font-weight:600;color:var(--ds-text);">${esc$1(wallet.name)}</div><div style="font-size:10px;color:var(--ds-text-3);">${esc$1(wallet.endpointDisplay || wallet.endpointLabel || "")}</div></div>
-      <button data-wallet-restore="1" data-wallet-id="${esc$1(wallet.id)}" style="padding:6px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:10px;cursor:pointer;">恢复显示</button>
+      <div><div style="font-size:var(--aus-fs-sm);font-weight:600;color:var(--ds-text);">${esc$1(wallet.name)}</div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);">${esc$1(wallet.endpointDisplay || wallet.endpointLabel || "")}</div></div>
+      <button data-wallet-restore="1" data-wallet-id="${esc$1(wallet.id)}" style="padding:6px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;">恢复显示</button>
     </div>`;
-	}).filter(Boolean).join("") || "<div style=\"font-size:10px;color:var(--ds-text-3);\">暂无已忽略接入</div>";
+	}).filter(Boolean).join("") || "<div style=\"font-size:var(--aus-fs-sm);color:var(--ds-text-3);\">暂无已忽略接入</div>";
 }
 var walletRenderToken = 0;
 async function renderWalletView() {
@@ -6966,13 +6976,13 @@ async function renderWalletView() {
 	host.innerHTML = `
     <div style="display:grid;gap:12px;">
       <div class="ds-card aus-wallet-summary" id="aus-wallet-summary" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
-        <div><div style="font-size:11px;color:var(--ds-text-2);">钱包余额合计</div><div style="font-size:20px;font-weight:700;color:var(--ds-text);margin-top:4px;">${money(balanceCny, 2)}</div><div style="font-size:10px;color:var(--ds-text-3);margin-top:2px;">${balanceCount} 个钱包已设置余额</div></div>
-        <div><div style="font-size:11px;color:var(--ds-text-2);">钱包数量</div><div style="font-size:20px;font-weight:700;color:var(--ds-text);margin-top:4px;">${active.length}</div><div style="font-size:10px;color:var(--ds-text-3);margin-top:2px;">已忽略 ${ignored.length} 个</div></div>
-        <div><div style="font-size:11px;color:var(--ds-text-2);">待定价模型</div><div style="font-size:20px;font-weight:700;color:${pending ? "var(--ds-red)" : "var(--ds-green)"};margin-top:4px;">${pending}</div><div style="font-size:10px;color:var(--ds-text-3);margin-top:2px;">保存价格后自动重算</div></div>
+        <div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);">钱包余额合计</div><div style="font-size:20px;font-weight:700;color:var(--ds-text);margin-top:4px;">${money(balanceCny, 2)}</div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);margin-top:2px;">${balanceCount} 个钱包已设置余额</div></div>
+        <div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);">钱包数量</div><div style="font-size:20px;font-weight:700;color:var(--ds-text);margin-top:4px;">${active.length}</div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);margin-top:2px;">已忽略 ${ignored.length} 个</div></div>
+        <div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);">待定价模型</div><div style="font-size:20px;font-weight:700;color:${pending ? "var(--ds-red)" : "var(--ds-green)"};margin-top:4px;">${pending}</div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);margin-top:2px;">保存价格后自动重算</div></div>
       </div>
       ${active.map((wallet) => renderWalletCard(wallet, history)).join("")}
       <div class="ds-card">
-        <div style="font-size:11px;font-weight:600;color:var(--ds-text);margin-bottom:2px;">已忽略接入</div>
+        <div style="font-size:var(--aus-fs-sm);font-weight:600;color:var(--ds-text);margin-bottom:2px;">已忽略接入</div>
         ${renderIgnoredWallets(ignored, wallets)}
       </div>
     </div>`;
@@ -8080,48 +8090,48 @@ function createPanel() {
 	panel.style.cssText = "position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:100001;background:var(--ds-panel-bg);color:var(--ds-text);font-family:'Microsoft YaHei','微软雅黑',system-ui,-apple-system,sans-serif;display:none;flex-direction:column;overflow:hidden;transform:none;filter:none;will-change:auto;";
 	panel.innerHTML = `
     <div id="aus-mobile-header" style="display:none;height:56px;align-items:center;padding:0 16px;flex-shrink:0;border-bottom:1px solid var(--ds-border);background:var(--ds-card-inner);">
-      <button id="aus-hamburger-btn" title="菜单" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;background:transparent;border:none;cursor:pointer;color:var(--ds-text);font-size:18px;line-height:1;padding:0;">☰</button>
-      <span style="margin-left:12px;font-size:13px;font-weight:700;color:var(--ds-text);white-space:nowrap;flex-shrink:0;">API用量统计</span>
-      <span id="aus-mobile-page-title" style="margin-left:10px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600;color:var(--ds-text-2);">用量概览</span>
-      <button id="aus-mobile-panel-close" title="关闭" style="margin-left:auto;width:32px;height:32px;flex-shrink:0;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);color:var(--ds-text-2);cursor:pointer;font-size:14px;">✕</button>
+      <button id="aus-hamburger-btn" title="菜单" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;background:transparent;border:none;cursor:pointer;color:var(--ds-text);font-size:18px;line-height:1;padding:0;">${icon("menu", 20)}</button>
+      <span style="margin-left:12px;font-size:var(--aus-fs-base);font-weight:700;color:var(--ds-text);white-space:nowrap;flex-shrink:0;">API用量统计</span>
+      <span id="aus-mobile-page-title" style="margin-left:10px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text-2);">用量概览</span>
+      <button id="aus-mobile-panel-close" title="关闭" style="margin-left:auto;width:32px;height:32px;flex-shrink:0;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);color:var(--ds-text-2);cursor:pointer;font-size:var(--aus-fs-base);">${icon("close", 16)}</button>
     </div>
     <div id="aus-panel-body" style="flex:1;display:flex;flex-direction:row;overflow:hidden;min-height:0;">
     <div id="aus-sidebar" style="width:260px;flex-shrink:0;background:var(--ds-sidebar-bg);border-right:1px solid var(--ds-border);display:flex;flex-direction:column;overflow:hidden;">
       <div style="height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;flex-shrink:0;">
         <div style="display:flex;flex-direction:column;min-width:0;" id="aus-brand">
           <span style="font-size:15px;font-weight:700;color:var(--ds-text);white-space:nowrap;">API用量统计</span>
-          <span style="font-size:11px;color:var(--ds-text-2);white-space:nowrap;">v3.1.2</span>
+          <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);white-space:nowrap;">v3.1.2</span>
         </div>
-        <button id="aus-sidebar-toggle" style="width:30px;height:30px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);color:var(--ds-text-2);cursor:pointer;flex-shrink:0;font-size:13px;padding:0;line-height:1;">‹</button>
+        <button id="aus-sidebar-toggle" style="width:30px;height:30px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);color:var(--ds-text-2);cursor:pointer;flex-shrink:0;font-size:var(--aus-fs-base);padding:0;line-height:1;">${icon("chevron-left", 14)}</button>
       </div>
       <div style="flex:1;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:4px;">
         <div class="aus-nav-group" style="display:flex;flex-direction:column;gap:4px;">
-          <div class="aus-nav-item active" data-nav="overview" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:14px;line-height:1.5;"><span class="aus-nav-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;">${navIcon("overview")}</span><span class="aus-nav-label">用量概览</span></div>
-          <div class="aus-nav-item" data-nav="stats" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:14px;line-height:1.5;"><span class="aus-nav-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;">${navIcon("stats")}</span><span class="aus-nav-label">用量统计</span></div>
-          <div class="aus-nav-item" data-nav="history" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:14px;line-height:1.5;"><span class="aus-nav-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;">${navIcon("history")}</span><span class="aus-nav-label">历史记录</span></div>
-          <div class="aus-nav-item" data-nav="forecast" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:14px;line-height:1.5;"><span class="aus-nav-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;">${navIcon("forecast")}</span><span class="aus-nav-label">趋势预测（Beta）</span></div>
-          <div class="aus-nav-item" data-nav="wallet" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:14px;line-height:1.5;"><span class="aus-nav-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;">${navIcon("wallet")}</span><span class="aus-nav-label">钱包</span></div>
+          <div class="aus-nav-item active" data-nav="overview" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:var(--aus-fs-base);line-height:1.5;"><span class="aus-nav-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;">${icon("overview")}</span><span class="aus-nav-label">用量概览</span></div>
+          <div class="aus-nav-item" data-nav="stats" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:var(--aus-fs-base);line-height:1.5;"><span class="aus-nav-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;">${icon("stats")}</span><span class="aus-nav-label">用量统计</span></div>
+          <div class="aus-nav-item" data-nav="history" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:var(--aus-fs-base);line-height:1.5;"><span class="aus-nav-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;">${icon("history")}</span><span class="aus-nav-label">历史记录</span></div>
+          <div class="aus-nav-item" data-nav="forecast" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:var(--aus-fs-base);line-height:1.5;"><span class="aus-nav-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;">${icon("forecast")}</span><span class="aus-nav-label">趋势预测（Beta）</span></div>
+          <div class="aus-nav-item" data-nav="wallet" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:var(--aus-fs-base);line-height:1.5;"><span class="aus-nav-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;">${icon("wallet")}</span><span class="aus-nav-label">钱包</span></div>
         </div>
         <div style="flex:1;"></div>
         <div class="aus-nav-group" style="display:flex;flex-direction:column;gap:4px;border-top:1px solid var(--ds-border);padding-top:10px;">
-          <div class="aus-nav-item" data-nav="settings" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:14px;line-height:1.5;"><span class="aus-nav-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;">${navIcon("settings")}</span><span class="aus-nav-label">设置</span></div>
-          <div class="aus-nav-item" data-nav="help" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:14px;line-height:1.5;"><span class="aus-nav-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;">${navIcon("help")}</span><span class="aus-nav-label">使用说明</span></div>
-          <div class="aus-nav-item" data-nav="about" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:14px;line-height:1.5;"><span class="aus-nav-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;">${navIcon("about")}</span><span class="aus-nav-label">关于</span></div>
+          <div class="aus-nav-item" data-nav="settings" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:var(--aus-fs-base);line-height:1.5;"><span class="aus-nav-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;">${icon("settings")}</span><span class="aus-nav-label">设置</span></div>
+          <div class="aus-nav-item" data-nav="help" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:var(--aus-fs-base);line-height:1.5;"><span class="aus-nav-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;">${icon("help")}</span><span class="aus-nav-label">使用说明</span></div>
+          <div class="aus-nav-item" data-nav="about" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:var(--aus-fs-base);line-height:1.5;"><span class="aus-nav-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;">${icon("about")}</span><span class="aus-nav-label">关于</span></div>
         </div>
       </div>
     </div>
     <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--ds-panel-bg);">
       <div id="aus-page-header" style="flex-shrink:0;height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-bottom:1px solid var(--ds-border);background:var(--ds-card-inner);">
-        <span id="aus-page-title" style="font-size:14px;font-weight:600;color:var(--ds-text);">用量概览</span>
-        <button id="aus-panel-close" style="width:32px;height:32px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);color:var(--ds-text-2);cursor:pointer;font-size:14px;">✕</button>
+        <span id="aus-page-title" style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);">用量概览</span>
+        <button id="aus-panel-close" style="width:32px;height:32px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);color:var(--ds-text-2);cursor:pointer;font-size:var(--aus-fs-base);">${icon("close", 16)}</button>
       </div>
       <div id="aus-content-body" style="flex:1;display:flex;flex-direction:row;overflow:hidden;min-height:0;position:relative;">
       <div id="aus-main" style="flex:1;min-width:0;overflow:auto;padding:20px;background:var(--ds-panel-bg);">
         <div style="max-width:1100px;margin:0 auto;display:grid;gap:16px;">
           <div data-view="overview">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-              <div class="ds-card aus-overview-balance-card" style="position:relative;"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><div class="ds-card-title">充值余额</div><div id="aus-overview-wallet-btn" style="display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:10px;cursor:pointer;"><span style="color:var(--ds-text-2);">余额口径</span><span id="aus-overview-wallet-label" style="font-weight:600;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">全部钱包合计</span><span>▼</span></div><div id="aus-overview-wallet-dropdown" style="display:none;position:absolute;top:44px;right:10px;z-index:20;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);padding:6px;min-width:190px;max-height:260px;overflow:auto;"></div></div><div class="ds-card-val" id="aus-balance">¥0.00<small>CNY</small></div><div id="aus-balance-remaining" style="font-size:11px;color:var(--ds-text-2);margin-top:6px;min-height:16px;"></div><div style="margin-top:8px;display:flex;gap:6px;"><button id="aus-btn-query-balance" class="ds-btn-pill" style="padding:6px 12px;font-size:11px;">查询余额</button><button id="aus-btn-export" style="padding:6px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:11px;cursor:pointer;">导出记录</button><button id="aus-btn-import" style="padding:6px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:11px;cursor:pointer;">导入记录</button></div></div>
-              <div class="ds-card"><div class="ds-card-title">累计消费</div><div class="ds-card-val" id="aus-total-cost">¥0.0000<small>CNY</small></div><div style="font-size:11px;color:var(--ds-text-3);margin-top:2px;" id="aus-total-tokens">0 tokens</div></div>
+              <div class="ds-card aus-overview-balance-card" style="position:relative;"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><div class="ds-card-title">充值余额</div><div id="aus-overview-wallet-btn" style="display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;"><span style="color:var(--ds-text-2);">余额口径</span><span id="aus-overview-wallet-label" style="font-weight:600;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">全部钱包合计</span>${icon("chevron-down", 14)}</div><div id="aus-overview-wallet-dropdown" style="display:none;position:absolute;top:44px;right:10px;z-index:20;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);padding:6px;min-width:190px;max-height:260px;overflow:auto;"></div></div><div class="ds-card-val" id="aus-balance">¥0.00<small>CNY</small></div><div id="aus-balance-remaining" style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-top:6px;min-height:16px;"></div><div style="margin-top:8px;display:flex;gap:6px;"><button id="aus-btn-query-balance" class="ds-btn-pill" style="padding:6px 12px;font-size:var(--aus-fs-sm);">查询余额</button><button id="aus-btn-export" style="padding:6px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;">导出记录</button><button id="aus-btn-import" style="padding:6px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;">导入记录</button></div></div>
+              <div class="ds-card"><div class="ds-card-title">累计消费</div><div class="ds-card-val" id="aus-total-cost">¥0.0000<small>CNY</small></div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);margin-top:2px;" id="aus-total-tokens">0 tokens</div></div>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
               <div class="ds-card" id="aus-overview-history"></div>
@@ -8130,8 +8140,8 @@ function createPanel() {
             <div id="aus-overview-four" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px;"></div>
             <div id="aus-heatmap-card-overview" class="ds-card" style="margin-top:12px;width:100%;max-width:100%;overflow:hidden;box-sizing:border-box;">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
-                <div style="font-size:12px;font-weight:600;color:var(--ds-text);">Token 使用量热力图</div>
-                <div id="aus-heatmap-legend-overview" style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--ds-text-3);"></div>
+                <div style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);">Token 使用量热力图</div>
+                <div id="aus-heatmap-legend-overview" style="display:flex;align-items:center;gap:3px;font-size:var(--aus-fs-sm);color:var(--ds-text-3);"></div>
               </div>
               <div style="display:flex;gap:0;overflow:hidden;max-width:100%;box-sizing:border-box;">
                 <div id="aus-heatmap-labels-overview" style="flex-shrink:0;padding:4px 0"></div>
@@ -8139,94 +8149,94 @@ function createPanel() {
                   <div id="aus-heatmap-container-overview" style="display:inline-block;min-width:max-content;"></div>
                 </div>
               </div>
-              <div style="font-size:10px;color:var(--ds-text-3);margin-top:6px;display:flex;justify-content:space-between;">
+              <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);margin-top:6px;display:flex;justify-content:space-between;">
                 <span>按日聚合 Token（深绿=高用量，展示近 2 年）</span>
                 <span style="color:var(--ds-text-2);">悬停查看日期</span>
               </div>
             </div>
             <div id="aus-chat-summary-overview" class="ds-card" style="margin-top:12px;overflow:auto;">
-              <div style="font-size:12px;font-weight:600;color:var(--ds-text);margin-bottom:8px;">按对话统计</div>
-              <table style="width:100%;border-collapse:collapse;font-size:11px;white-space:nowrap;min-width:720px;">
+              <div style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);margin-bottom:8px;">按对话统计</div>
+              <table style="width:100%;border-collapse:collapse;font-size:var(--aus-fs-sm);white-space:nowrap;min-width:720px;">
                 <thead><tr style="color:var(--ds-text-2);border-bottom:1px solid var(--ds-border);text-align:right;"><th style="text-align:left;padding:6px 8px;">对话</th><th style="padding:6px 8px;">轮次</th><th style="padding:6px 8px;">命中</th><th style="padding:6px 8px;">未命中</th><th style="padding:6px 8px;">输出</th><th style="padding:6px 8px;">总 Tokens</th><th style="padding:6px 8px;">总费用</th><th style="padding:6px 8px;">平均 Token/轮</th><th style="padding:6px 8px;">平均命中率</th></tr></thead>
                 <tbody id="aus-chat-summary-tbody"><tr><td colspan="9" style="text-align:center;padding:16px;color:var(--ds-text-3);">暂无数据</td></tr></tbody>
               </table>
-              <div style="font-size:10px;color:var(--ds-text-3);margin-top:6px;">按总 Token 倒序 · 数据来源为全部历史（不受统计页筛选影响）</div>
+              <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);margin-top:6px;">按总 Token 倒序 · 数据来源为全部历史（不受统计页筛选影响）</div>
             </div>
             </div>
            <div data-view="stats" style="display:none;">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;position:relative;flex-wrap:wrap;">
               <div class="aus-stats-filter">
-                <div id="aus-range-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:12px;cursor:pointer;"><span style="color:var(--ds-text-2);">时间维度</span><span id="aus-range-label" style="font-weight:600;color:var(--ds-text);">近 30 天</span><span style="font-size:10px;">▼</span></div>
+                <div id="aus-range-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-base);cursor:pointer;"><span style="color:var(--ds-text-2);">时间维度</span><span id="aus-range-label" style="font-weight:600;color:var(--ds-text);">近 30 天</span>${icon("chevron-down", 14)}</div>
                 <div id="aus-range-dropdown" style="display:none;position:absolute;top:40px;left:0;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);overflow:hidden;flex-direction:row;">
                   <div style="min-width:120px;border-right:1px solid var(--ds-card);padding:8px;display:grid;gap:2px;">
-                    <div data-range="all" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;color:var(--ds-text);">全部</div>
-                    <div data-range="today" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;color:var(--ds-text);">今天</div>
-                    <div data-range="yesterday" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;color:var(--ds-text);">昨天</div>
-                    <div data-range="7d" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;color:var(--ds-text);">近 7 天</div>
-                    <div data-range="30d" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;color:var(--ds-text);">近 30 天</div>
-                    <div data-range="month" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;color:var(--ds-text);">本月</div>
-                    <div data-range="lastMonth" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;color:var(--ds-text);">上月</div>
-                    <div data-range="custom" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;color:var(--ds-text);">自定义</div>
+                    <div data-range="all" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);color:var(--ds-text);">全部</div>
+                    <div data-range="today" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);color:var(--ds-text);">今天</div>
+                    <div data-range="yesterday" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);color:var(--ds-text);">昨天</div>
+                    <div data-range="7d" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);color:var(--ds-text);">近 7 天</div>
+                    <div data-range="30d" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);color:var(--ds-text);">近 30 天</div>
+                    <div data-range="month" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);color:var(--ds-text);">本月</div>
+                    <div data-range="lastMonth" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);color:var(--ds-text);">上月</div>
+                    <div data-range="custom" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);color:var(--ds-text);">自定义</div>
                   </div>
                   <div id="aus-date-calendar" style="padding:12px;display:none;"></div>
                 </div>
               </div>
               <div class="aus-stats-filter">
-                <div id="aus-model-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:12px;cursor:pointer;"><span style="color:var(--ds-text-2);">模型</span><span id="aus-model-label" style="font-weight:600;color:var(--ds-text);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">全部</span><span style="font-size:10px;">▼</span></div>
+                <div id="aus-model-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-base);cursor:pointer;"><span style="color:var(--ds-text-2);">模型</span><span id="aus-model-label" style="font-weight:600;color:var(--ds-text);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">全部</span>${icon("chevron-down", 14)}</div>
                 <div id="aus-model-dropdown" style="display:none;position:absolute;top:40px;left:0;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:180px;max-height:260px;overflow:auto;padding:8px;"></div>
               </div>
               <div class="aus-stats-filter">
-                <div id="aus-chat-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:12px;cursor:pointer;"><span style="color:var(--ds-text-2);">对话</span><span id="aus-chat-label" style="font-weight:600;color:var(--ds-text);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">全部</span><span style="font-size:10px;">▼</span></div>
+                <div id="aus-chat-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-base);cursor:pointer;"><span style="color:var(--ds-text-2);">对话</span><span id="aus-chat-label" style="font-weight:600;color:var(--ds-text);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">全部</span>${icon("chevron-down", 14)}</div>
                 <div id="aus-chat-dropdown" style="display:none;position:absolute;top:40px;left:0;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:200px;max-height:260px;overflow:auto;padding:8px;"></div>
               </div>
               <div class="aus-stats-filter">
-                <div id="aus-endpoint-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:12px;cursor:pointer;"><span style="color:var(--ds-text-2);">接入类型</span><span id="aus-endpoint-label" style="font-weight:600;color:var(--ds-text);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">全部</span><span style="font-size:10px;">▼</span></div>
+                <div id="aus-endpoint-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-base);cursor:pointer;"><span style="color:var(--ds-text-2);">接入类型</span><span id="aus-endpoint-label" style="font-weight:600;color:var(--ds-text);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">全部</span>${icon("chevron-down", 14)}</div>
                 <div id="aus-endpoint-dropdown" style="display:none;position:absolute;top:40px;left:0;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:200px;max-width:320px;max-height:260px;overflow:auto;padding:8px;"></div>
               </div>
               <div class="aus-stats-filter">
-                <div id="aus-credential-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:12px;cursor:pointer;"><span style="color:var(--ds-text-2);">API 密钥</span><span id="aus-credential-label" style="font-weight:600;color:var(--ds-text);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">全部</span><span style="font-size:10px;">▼</span></div>
+                <div id="aus-credential-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-base);cursor:pointer;"><span style="color:var(--ds-text-2);">API 密钥</span><span id="aus-credential-label" style="font-weight:600;color:var(--ds-text);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">全部</span>${icon("chevron-down", 14)}</div>
                 <div id="aus-credential-dropdown" style="display:none;position:absolute;top:40px;left:0;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:200px;max-width:320px;max-height:260px;overflow:auto;padding:8px;"></div>
               </div>
             </div>
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
-              <div class="ds-card"><div style="font-size:11px;color:var(--ds-text-2);">消费金额</div><div id="aus-stats-cost" style="font-size:22px;font-weight:700;color:var(--ds-text);margin-top:6px;">¥0.00 CNY</div></div>
-              <div class="ds-card"><div style="font-size:11px;color:var(--ds-text-2);">API 请求次数</div><div id="aus-stats-req" style="font-size:22px;font-weight:700;color:var(--ds-text);margin-top:6px;">0</div></div>
-              <div class="ds-card"><div style="font-size:11px;color:var(--ds-text-2);">Tokens</div><div id="aus-stats-tok" style="font-size:22px;font-weight:700;color:var(--ds-text);margin-top:6px;">0</div></div>
+              <div class="ds-card"><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);">消费金额</div><div id="aus-stats-cost" style="font-size:22px;font-weight:700;color:var(--ds-text);margin-top:6px;">¥0.00 CNY</div></div>
+              <div class="ds-card"><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);">API 请求次数</div><div id="aus-stats-req" style="font-size:22px;font-weight:700;color:var(--ds-text);margin-top:6px;">0</div></div>
+              <div class="ds-card"><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);">Tokens</div><div id="aus-stats-tok" style="font-size:22px;font-weight:700;color:var(--ds-text);margin-top:6px;">0</div></div>
             </div>
             <div id="aus-stats-four" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px;"></div>
             <div id="aus-model-summary" class="ds-card" style="margin-top:12px;overflow:auto;">
-              <div style="font-size:12px;font-weight:600;color:var(--ds-text);margin-bottom:8px;">模型汇总</div>
-              <table style="width:100%;border-collapse:collapse;font-size:11px;white-space:nowrap;">
+              <div style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);margin-bottom:8px;">模型汇总</div>
+              <table style="width:100%;border-collapse:collapse;font-size:var(--aus-fs-sm);white-space:nowrap;">
                 <thead><tr style="color:var(--ds-text-2);border-bottom:1px solid var(--ds-border);text-align:right;"><th style="text-align:left;padding:6px 8px;">模型</th><th data-sort-key="count" title="点击排序" style="padding:6px 8px;cursor:pointer;user-select:none;white-space:nowrap;">调用次数<span class="aus-sort-ind"></span></th><th data-sort-key="hit" title="点击排序" style="padding:6px 8px;cursor:pointer;user-select:none;white-space:nowrap;">输入(命中)<span class="aus-sort-ind"></span></th><th data-sort-key="miss" title="点击排序" style="padding:6px 8px;cursor:pointer;user-select:none;white-space:nowrap;">输入(未命中)<span class="aus-sort-ind"></span></th><th data-sort-key="out" title="点击排序" style="padding:6px 8px;cursor:pointer;user-select:none;white-space:nowrap;">输出<span class="aus-sort-ind"></span></th><th data-sort-key="total" title="点击排序" style="padding:6px 8px;cursor:pointer;user-select:none;white-space:nowrap;">总 Tokens<span class="aus-sort-ind"></span></th><th data-sort-key="cost" title="点击排序" style="padding:6px 8px;cursor:pointer;user-select:none;white-space:nowrap;">总成本<span class="aus-sort-ind"></span></th><th data-sort-key="avgCost" title="点击排序" style="padding:6px 8px;cursor:pointer;user-select:none;white-space:nowrap;">平均成本<span class="aus-sort-ind"></span></th><th data-sort-key="avgDur" title="点击排序" style="padding:6px 8px;cursor:pointer;user-select:none;white-space:nowrap;">平均耗时<span class="aus-sort-ind"></span></th><th data-sort-key="avgRate" title="点击排序" style="padding:6px 8px;cursor:pointer;user-select:none;white-space:nowrap;">平均速率<span class="aus-sort-ind"></span></th></tr></thead>
                 <tbody id="aus-summary-tbody"><tr><td colspan="10" style="text-align:center;padding:16px;color:var(--ds-text-3);">暂无数据</td></tr></tbody>
               </table>
             </div>
-            <div class="ds-card" style="margin-top:12px;position:relative;"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px;"><span style="font-size:12px;font-weight:600;color:var(--ds-text);">自定义图表</span><div style="display:flex;gap:8px;position:relative;"><div id="aus-chart-y-btn" style="display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:11px;cursor:pointer;"><span style="color:var(--ds-text-2);">Y</span><span id="aus-chart-y-label" style="font-weight:600;color:var(--ds-text);">总费用</span><span style="font-size:10px;">▼</span></div><div id="aus-chart-x-btn" style="display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:11px;cursor:pointer;"><span style="color:var(--ds-text-2);">X</span><span id="aus-chart-x-label" style="font-weight:600;color:var(--ds-text);">每日</span><span style="font-size:10px;">▼</span></div><div id="aus-chart-y-dropdown" style="display:none;position:absolute;top:34px;left:0;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);padding:6px;min-width:220px;max-height:280px;overflow:auto;"></div><div id="aus-chart-x-dropdown" style="display:none;position:absolute;top:34px;right:0;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);padding:6px;min-width:140px;"></div></div></div><div id="aus-stats-chart" style="height:300px;"></div></div>
+            <div class="ds-card" style="margin-top:12px;position:relative;"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px;"><span style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);">自定义图表</span><div style="display:flex;gap:8px;position:relative;"><div id="aus-chart-y-btn" style="display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;"><span style="color:var(--ds-text-2);">Y</span><span id="aus-chart-y-label" style="font-weight:600;color:var(--ds-text);">总费用</span>${icon("chevron-down", 14)}</div><div id="aus-chart-x-btn" style="display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;"><span style="color:var(--ds-text-2);">X</span><span id="aus-chart-x-label" style="font-weight:600;color:var(--ds-text);">每日</span>${icon("chevron-down", 14)}</div><div id="aus-chart-y-dropdown" style="display:none;position:absolute;top:34px;left:0;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);padding:6px;min-width:220px;max-height:280px;overflow:auto;"></div><div id="aus-chart-x-dropdown" style="display:none;position:absolute;top:34px;right:0;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);padding:6px;min-width:140px;"></div></div></div><div id="aus-stats-chart" style="height:300px;"></div></div>
             <div id="aus-extra-charts" style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px;">
-              <div class="ds-card" style="position:relative;"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px;"><span style="font-size:11px;font-weight:600;color:var(--ds-text);">Token 趋势</span><div style="display:flex;gap:6px;"><div id="aus-extra-y-token" style="padding:4px 8px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:10px;cursor:pointer;"><span id="aus-extra-y-label-token">3 项</span> ▼</div><div id="aus-extra-x-token" style="padding:4px 8px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:10px;cursor:pointer;"><span id="aus-extra-x-label-token">轮次</span> ▼</div></div></div><div id="aus-extra-y-drop-token" style="display:none;position:absolute;top:32px;left:8px;z-index:5;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:8px;padding:4px;min-width:180px;max-height:200px;overflow:auto;"></div><div id="aus-extra-x-drop-token" style="display:none;position:absolute;top:32px;right:8px;z-index:5;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:8px;padding:4px;min-width:120px;"></div><div id="aus-chart-token" style="height:220px;"></div></div>
-              <div class="ds-card" style="position:relative;"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px;"><span style="font-size:11px;font-weight:600;color:var(--ds-text);">费用 趋势</span><div style="display:flex;gap:6px;"><div id="aus-extra-y-cost" style="padding:4px 8px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:10px;cursor:pointer;"><span id="aus-extra-y-label-cost">1 项</span> ▼</div><div id="aus-extra-x-cost" style="padding:4px 8px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:10px;cursor:pointer;"><span id="aus-extra-x-label-cost">轮次</span> ▼</div></div></div><div id="aus-extra-y-drop-cost" style="display:none;position:absolute;top:32px;left:8px;z-index:5;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:8px;padding:4px;min-width:180px;max-height:200px;overflow:auto;"></div><div id="aus-extra-x-drop-cost" style="display:none;position:absolute;top:32px;right:8px;z-index:5;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:8px;padding:4px;min-width:120px;"></div><div id="aus-chart-cost" style="height:220px;"></div></div>
-              <div class="ds-card" style="position:relative;"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px;"><span style="font-size:11px;font-weight:600;color:var(--ds-text);">缓存命中 趋势</span><div style="display:flex;gap:6px;"><div id="aus-extra-x-hit" style="padding:4px 8px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:10px;cursor:pointer;"><span id="aus-extra-x-label-hit">轮次</span> ▼</div></div></div><div id="aus-extra-x-drop-hit" style="display:none;position:absolute;top:32px;right:8px;z-index:5;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:8px;padding:4px;min-width:120px;"></div><div id="aus-chart-hit" style="height:220px;"></div></div>
-              <div class="ds-card" style="position:relative;"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px;"><span style="font-size:11px;font-weight:600;color:var(--ds-text);">API请求数 趋势</span><div style="display:flex;gap:6px;"><div id="aus-extra-x-req" style="padding:4px 8px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:10px;cursor:pointer;"><span id="aus-extra-x-label-req">每日</span> ▼</div></div></div><div id="aus-extra-x-drop-req" style="display:none;position:absolute;top:32px;right:8px;z-index:5;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:8px;padding:4px;min-width:120px;"></div><div id="aus-chart-req" style="height:220px;"></div></div>
-              <div class="ds-card" style="position:relative;"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px;"><span style="font-size:11px;font-weight:600;color:var(--ds-text);">耗时与速率 趋势</span><div style="display:flex;gap:6px;"><div id="aus-extra-x-dur" style="padding:4px 8px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:10px;cursor:pointer;"><span id="aus-extra-x-label-dur">轮次</span> ▼</div></div></div><div id="aus-extra-x-drop-dur" style="display:none;position:absolute;top:32px;right:8px;z-index:5;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:8px;padding:4px;min-width:120px;"></div><div id="aus-chart-dur" style="height:220px;"></div></div>
-              <div class="ds-card" style="position:relative;"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px;"><span style="font-size:11px;font-weight:600;color:var(--ds-text);">模型用量占比</span><div id="aus-pie-toggle" style="padding:4px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-black);color:var(--ds-black-text);font-size:10px;cursor:pointer;">Token</div></div><div id="aus-chart-pie" style="height:220px;"></div></div>
+              <div class="ds-card" style="position:relative;"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px;"><span style="font-size:var(--aus-fs-sm);font-weight:600;color:var(--ds-text);">Token 趋势</span><div style="display:flex;gap:6px;"><div id="aus-extra-y-token" style="padding:4px 8px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;"><span id="aus-extra-y-label-token">3 项</span>${icon("chevron-down", 14)}</div><div id="aus-extra-x-token" style="padding:4px 8px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;"><span id="aus-extra-x-label-token">轮次</span>${icon("chevron-down", 14)}</div></div></div><div id="aus-extra-y-drop-token" style="display:none;position:absolute;top:32px;left:8px;z-index:5;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:8px;padding:4px;min-width:180px;max-height:200px;overflow:auto;"></div><div id="aus-extra-x-drop-token" style="display:none;position:absolute;top:32px;right:8px;z-index:5;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:8px;padding:4px;min-width:120px;"></div><div id="aus-chart-token" style="height:220px;"></div></div>
+              <div class="ds-card" style="position:relative;"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px;"><span style="font-size:var(--aus-fs-sm);font-weight:600;color:var(--ds-text);">费用 趋势</span><div style="display:flex;gap:6px;"><div id="aus-extra-y-cost" style="padding:4px 8px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;"><span id="aus-extra-y-label-cost">1 项</span>${icon("chevron-down", 14)}</div><div id="aus-extra-x-cost" style="padding:4px 8px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;"><span id="aus-extra-x-label-cost">轮次</span>${icon("chevron-down", 14)}</div></div></div><div id="aus-extra-y-drop-cost" style="display:none;position:absolute;top:32px;left:8px;z-index:5;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:8px;padding:4px;min-width:180px;max-height:200px;overflow:auto;"></div><div id="aus-extra-x-drop-cost" style="display:none;position:absolute;top:32px;right:8px;z-index:5;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:8px;padding:4px;min-width:120px;"></div><div id="aus-chart-cost" style="height:220px;"></div></div>
+              <div class="ds-card" style="position:relative;"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px;"><span style="font-size:var(--aus-fs-sm);font-weight:600;color:var(--ds-text);">缓存命中 趋势</span><div style="display:flex;gap:6px;"><div id="aus-extra-x-hit" style="padding:4px 8px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;"><span id="aus-extra-x-label-hit">轮次</span>${icon("chevron-down", 14)}</div></div></div><div id="aus-extra-x-drop-hit" style="display:none;position:absolute;top:32px;right:8px;z-index:5;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:8px;padding:4px;min-width:120px;"></div><div id="aus-chart-hit" style="height:220px;"></div></div>
+              <div class="ds-card" style="position:relative;"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px;"><span style="font-size:var(--aus-fs-sm);font-weight:600;color:var(--ds-text);">API请求数 趋势</span><div style="display:flex;gap:6px;"><div id="aus-extra-x-req" style="padding:4px 8px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;"><span id="aus-extra-x-label-req">每日</span>${icon("chevron-down", 14)}</div></div></div><div id="aus-extra-x-drop-req" style="display:none;position:absolute;top:32px;right:8px;z-index:5;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:8px;padding:4px;min-width:120px;"></div><div id="aus-chart-req" style="height:220px;"></div></div>
+              <div class="ds-card" style="position:relative;"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px;"><span style="font-size:var(--aus-fs-sm);font-weight:600;color:var(--ds-text);">耗时与速率 趋势</span><div style="display:flex;gap:6px;"><div id="aus-extra-x-dur" style="padding:4px 8px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;"><span id="aus-extra-x-label-dur">轮次</span>${icon("chevron-down", 14)}</div></div></div><div id="aus-extra-x-drop-dur" style="display:none;position:absolute;top:32px;right:8px;z-index:5;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:8px;padding:4px;min-width:120px;"></div><div id="aus-chart-dur" style="height:220px;"></div></div>
+              <div class="ds-card" style="position:relative;"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px;"><span style="font-size:var(--aus-fs-sm);font-weight:600;color:var(--ds-text);">模型用量占比</span><div id="aus-pie-toggle" style="padding:4px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-black);color:var(--ds-black-text);font-size:var(--aus-fs-sm);cursor:pointer;">Token</div></div><div id="aus-chart-pie" style="height:220px;"></div></div>
             </div>
             <div id="aus-model-trends" style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px;">
-              <div class="ds-card" style="position:relative;"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px;"><span style="font-size:11px;font-weight:600;color:var(--ds-text);">模型 Token 趋势</span><div style="display:flex;gap:6px;"><div id="aus-modeltrends-x-token" style="padding:4px 8px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:10px;cursor:pointer;"><span id="aus-modeltrends-x-label-token">每日</span> ▼</div></div></div><div id="aus-modeltrends-x-drop-token" style="display:none;position:absolute;top:32px;right:8px;z-index:5;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:8px;padding:4px;min-width:120px;"></div><div id="aus-chart-model-token" style="height:220px;"></div></div>
-              <div class="ds-card" style="position:relative;"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px;"><span style="font-size:11px;font-weight:600;color:var(--ds-text);">模型调用次数趋势</span><div style="display:flex;gap:6px;"><div id="aus-modeltrends-x-req" style="padding:4px 8px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:10px;cursor:pointer;"><span id="aus-modeltrends-x-label-req">每日</span> ▼</div></div></div><div id="aus-modeltrends-x-drop-req" style="display:none;position:absolute;top:32px;right:8px;z-index:5;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:8px;padding:4px;min-width:120px;"></div><div id="aus-chart-model-req" style="height:220px;"></div></div>
+              <div class="ds-card" style="position:relative;"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px;"><span style="font-size:var(--aus-fs-sm);font-weight:600;color:var(--ds-text);">模型 Token 趋势</span><div style="display:flex;gap:6px;"><div id="aus-modeltrends-x-token" style="padding:4px 8px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;"><span id="aus-modeltrends-x-label-token">每日</span>${icon("chevron-down", 14)}</div></div></div><div id="aus-modeltrends-x-drop-token" style="display:none;position:absolute;top:32px;right:8px;z-index:5;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:8px;padding:4px;min-width:120px;"></div><div id="aus-chart-model-token" style="height:220px;"></div></div>
+              <div class="ds-card" style="position:relative;"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px;"><span style="font-size:var(--aus-fs-sm);font-weight:600;color:var(--ds-text);">模型调用次数趋势</span><div style="display:flex;gap:6px;"><div id="aus-modeltrends-x-req" style="padding:4px 8px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;"><span id="aus-modeltrends-x-label-req">每日</span>${icon("chevron-down", 14)}</div></div></div><div id="aus-modeltrends-x-drop-req" style="display:none;position:absolute;top:32px;right:8px;z-index:5;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:8px;padding:4px;min-width:120px;"></div><div id="aus-chart-model-req" style="height:220px;"></div></div>
             </div>
           </div>
           <div data-view="forecast" style="display:none;">
             <div style="display:grid;gap:12px;">
               <div style="display:flex;align-items:center;gap:8px;position:relative;flex-wrap:wrap;">
-                <div id="aus-forecast-chat-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:12px;cursor:pointer;"><span style="color:var(--ds-text-2);">对话</span><span id="aus-forecast-chat-label" style="font-weight:600;color:var(--ds-text);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">当前对话</span><span style="font-size:10px;">▼</span></div>
+                <div id="aus-forecast-chat-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-base);cursor:pointer;"><span style="color:var(--ds-text-2);">对话</span><span id="aus-forecast-chat-label" style="font-weight:600;color:var(--ds-text);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">当前对话</span>${icon("chevron-down", 14)}</div>
                 <div id="aus-forecast-chat-dropdown" style="display:none;position:absolute;top:40px;left:0;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:220px;max-height:260px;overflow:auto;padding:8px;"></div>
-                <span style="font-size:10px;color:var(--ds-text-3);">切换对话以查看对应预测，能耗/趋势均随之更新</span>
+                <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);">切换对话以查看对应预测，能耗/趋势均随之更新</span>
               </div>
               <div id="aus-forecast-card" class="ds-card"></div>
-              <div class="ds-card"><div style="font-size:12px;font-weight:600;color:var(--ds-text);margin-bottom:8px;">能耗标识（RP 能耗效率）</div><div id="aus-energy-badge"></div></div>
-              <div class="ds-card"><div style="font-size:12px;font-weight:600;color:var(--ds-text);margin-bottom:8px;">预测趋势（输入 token 按轮次 + 拟合/置信带/上限）</div><div id="aus-forecast-chart" style="height:260px;"></div></div>
-              <div class="ds-card"><div style="font-size:12px;font-weight:600;color:var(--ds-text);margin-bottom:8px;">敏感度 · 假设命中率</div><div id="aus-forecast-sensitivity"></div></div>
-              <div class="ds-card"><div style="font-size:12px;font-weight:600;color:var(--ds-text);margin-bottom:8px;">对比 · 最耗对话 Top</div><div id="aus-forecast-compare"></div></div>
+              <div class="ds-card"><div style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);margin-bottom:8px;">能耗标识（RP 能耗效率）</div><div id="aus-energy-badge"></div></div>
+              <div class="ds-card"><div style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);margin-bottom:8px;">预测趋势（输入 token 按轮次 + 拟合/置信带/上限）</div><div id="aus-forecast-chart" style="height:260px;"></div></div>
+              <div class="ds-card"><div style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);margin-bottom:8px;">敏感度 · 假设命中率</div><div id="aus-forecast-sensitivity"></div></div>
+              <div class="ds-card"><div style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);margin-bottom:8px;">对比 · 最耗对话 Top</div><div id="aus-forecast-compare"></div></div>
             </div>
           </div>
           <div data-view="wallet" style="display:none;">
@@ -8259,41 +8269,41 @@ function createPanel() {
           </div>
           <div data-view="help" style="display:none;">
             <div style="display:grid;gap:12px;">
-              <div class="ds-card" style="line-height:1.7;font-size:12px;"><div style="font-size:11px;color:#0EA5E9;font-weight:600;margin-bottom:6px;">📊 匿名使用统计</div><div style="color:var(--ds-text-2);display:grid;gap:4px;"><div>本扩展默认开启匿名使用统计，仅上报浏览器环境分桶（浏览器名与主版本、系统、架构、语言、窄屏分桶、深色偏好、standalone、时区偏移）、8 个页面的使用次数、打开次数、扩展版本与面板渲染耗时分桶。</div><div>不采集对话名称或内容、模型名、密钥、余额、费用、接口地址等任何隐私数据；服务端不记录 IP 地址。数据按匿名随机标识汇总，仅用于了解用户规模与改进方向。</div><div>可在「设置 → 匿名使用统计」随时关闭，关闭后立即停止采集与上报；也可在那里重置匿名标识。</div><div>完整说明见 <a href="https://janmk1453.github.io/Api-Usage/#privacy" target="_blank" rel="noreferrer" style="color:var(--ds-text);text-decoration:underline;">隐私声明</a>。</div></div></div>
-              <div class="ds-card" style="line-height:1.7;font-size:12px;"><div style="font-size:11px;color:#FF6A00;font-weight:600;margin-bottom:6px;">完整使用文档</div><div style="color:var(--ds-text-2);">详细说明各页面、筛选、钱包、定价、同步、隐私与常见问题。</div><a href="https://janmk1453.github.io/Api-Usage/" target="_blank" rel="noreferrer" style="display:inline-flex;align-items:center;justify-content:center;margin-top:10px;padding:8px 14px;border-radius:999px;background:var(--ds-black);color:var(--ds-black-text);text-decoration:none;font-size:12px;font-weight:600;">前往完整使用文档</a></div>
-              <div class="ds-card" style="line-height:1.7;font-size:12px;"><div style="font-size:11px;color:#DC2626;font-weight:600;margin-bottom:6px;">隐私声明（完整版：<a href="https://janmk1453.github.io/Api-Usage/#privacy" target="_blank" rel="noreferrer" style="color:#DC2626;text-decoration:underline;">https://janmk1453.github.io/Api-Usage/#privacy</a>）</div><div style="color:var(--ds-text-2);display:grid;gap:6px;"><div>本扩展有且只能获得用户在酒馆本身中填写的：密钥条目的编号、用户备注和掩码末三位，仅用于独立区分请求来源，不会且无法读取、保存或上传完整明文密钥。</div><div>用户储存在酒馆本身的密钥是安全的，本扩展无法获取真实密钥。</div><div>用户主动填入本扩展的校准密钥是实际可用的密钥，且仅会被用于查询 DeepSeek 官方余额，不会额外造成扣费或消耗；它仅经 XOR 混淆后存放于 SillyTavern，不进入历史记录、统计、日志、导入导出或 WebDAV。自动校准时仅由浏览器直接发送至 <a href="https://api.deepseek.com/user/balance" target="_blank" rel="noreferrer" style="color:var(--ds-text);text-decoration:underline;">https://api.deepseek.com/user/balance</a> API 查询。</div><div>XOR 不是安全加密，请使用权限受限的密钥并自行评估风险。</div><div>本扩展完整代码开源可审查。</div><div style="margin-top:2px;padding-top:6px;border-top:1px solid var(--ds-border);font-weight:600;color:#DC2626;">免责声明（完整版见上方链接）</div><div>本扩展不对功能“价格来源”、“自动同步”等利用 <a href="https://models.dev" target="_blank" rel="noreferrer" style="color:var(--ds-text);text-decoration:underline;">models.dev</a> 获取的数据中出现或可能出现的商业化中转站负责；我们不建议使用任何商业化中转站，尽管我们已经尽力筛选数据，但由于对大量数据进行完全筛选难以实现，因此我们不对可能出现的任何商业化中转站名称负责，不构成推荐，和 models.dev 或任何中转站没有商业往来，坚定不移的反对商业化。</div><div>我们将尽可能维护扩展的安全和隐私性，但本扩展不对因酒馆/本扩展的安全漏洞或因间接原因导致的任何形式的密钥泄露及产生的损失负责。</div></div></div>
-              <div class="ds-card" style="line-height:1.7;font-size:12px;"><div style="font-size:11px;color:#0BA25E;font-weight:600;margin-bottom:6px;">钱包</div><div style="color:var(--ds-text-2);display:grid;gap:4px;"><div>1. 扩展按识别到的接入链接自动创建和汇总钱包，默认始终保留 DeepSeek 官方钱包；同名链接下识别的密钥和模型会归入同一钱包。</div><div>2. 每个钱包可独立维护名称、余额、模型价格、峰谷规则和价格来源；钱包默认收起，展开状态按钱包记忆。价格来源仅展示第一方模型厂商，不展示中转站或聚合平台。</div><div>3. 请求进入后会先匹配所属钱包，再使用该钱包的模型价格和峰谷规则计费，并从对应钱包余额预扣；未配置价格的模型先记零费用，保存或同步价格后自动重算冷热历史。</div><div>4. 自动余额校准仅支持 DeepSeek 官方直连，校准密钥需在钱包内单独填写；其他接入可使用手工余额，多个密钥不会自动相加。</div><div>5. 删除钱包会进入“已忽略接入”，后续请求不会自动重建、不参与余额合计，历史记录仍保留归属，需要时可恢复显示。</div></div></div>
-              <div class="ds-card" style="line-height:1.7;font-size:12px;"><div style="font-size:11px;color:#2563EB;font-weight:600;margin-bottom:6px;">📊 使用统计 / 预测</div><div style="color:var(--ds-text-2);display:grid;gap:4px;"><div>1. 输入 API 密钥并保存后点击“查询”获取余额（余额查询仅支持 DeepSeek 官方）</div><div>2. 正常对话，扩展自动记录每次请求的费用、token 数及缓存命中等统计数据</div></div></div>
-              <div class="ds-card" style="line-height:1.7;font-size:12px;"><div style="font-size:11px;color:var(--ds-green);font-weight:600;margin-bottom:6px;">💡 高峰时间提示</div><div style="color:var(--ds-text-2);display:grid;gap:4px;"><div>1. 设置中可开启峰值提示小圆点，直观显示当前（DeepSeek）高低峰状态</div><div>2. 圆点可拖动，位置自动记忆，找不到时可在设置中重置</div><div>3. DeepSeek 官方规则：周一至周五（不含中国法定节假日）9:00-12:00、14:00-18:00 为高峰，其余时段（含周末、中国法定节假日全天）为空闲；调休上班的周末同样按空闲计费</div><div>4. 内置中国法定节假日数据覆盖 ${CN_HOLIDAY_COVERAGE_LABEL}，超出范围的年份可在设置中按日期补充“额外空闲日期”</div></div></div>
-              <div class="ds-card" style="line-height:1.7;font-size:12px;"><div style="font-size:11px;color:#DB2777;font-weight:600;margin-bottom:6px;">🔄 消息对比</div><div style="color:var(--ds-text-2);display:grid;gap:4px;"><div>1. 在历史记录中找到想对比的两条消息，前者点“旧”，后者点“新”</div><div>2. 系统并排显示请求消息的文字差异</div><div>3. 差异点即缓存发散起始位置（前 N 条相同为缓存命中段）</div></div></div>
-              <div class="ds-card" style="line-height:1.7;font-size:12px;"><div style="font-size:11px;color:#D97706;font-weight:600;margin-bottom:6px;">📈 统计图表</div><div style="color:var(--ds-text-2);display:grid;gap:4px;"><div>1. 切换时间、模型（可多选）、对话、接入类型和 API 密钥查看不同范围的统计</div><div>2. 多图表展示多模请求参数，悬浮查看分模型明细</div></div></div>
-              <div class="ds-card" style="line-height:1.7;font-size:12px;"><div style="font-size:11px;color:#7C3AED;font-weight:600;margin-bottom:6px;">💾 请求详细参数</div><div style="color:var(--ds-text-2);display:grid;gap:4px;"><div>1. 在历史记录中点击某条的“详情”，电脑端会在右侧打开约四分之一宽的窗口并压缩列表宽度，手机端会在屏幕下部弹出约四分之三高度的悬浮窗口</div><div>2. 查看：模型/时间/耗时/首字延迟/思维链/费用/Token 等详情及四类原始数据（请求参数/完整响应/Raw Usage/Messages）</div></div></div>
-              <div class="ds-card" style="line-height:1.7;font-size:12px;"><div style="font-size:11px;color:#0891B2;font-weight:600;margin-bottom:6px;">🧡 模型兼容</div><div style="color:var(--ds-text-2);display:grid;gap:4px;"><div>1. 完全兼容 DeepSeek 官方 API</div><div>2. 尽量兼容不同厂商/渠道的请求格式，部分模型可能无缓存命中</div><div>3. 如数据异常，请携带完整请求与响应反馈</div></div></div>
-              <div class="ds-card" style="line-height:1.7;font-size:12px;"><div style="font-size:11px;color:var(--ds-text-3);font-weight:600;margin-bottom:6px;">✨ 关于</div><div style="color:var(--ds-text-2);display:grid;gap:4px;"><div>本扩展由原脚本（<a href="https://github.com/janmk1453/deepseek-tavern-script" target="_blank" style="color:var(--ds-text);text-decoration:underline;">deepseek-tavern-script</a>）迁移重构。</div><div><span style="color:var(--ds-text);">@janmk</span> · 仓库 <a href="https://github.com/janmk1453/Api-Usage" target="_blank" style="color:var(--ds-text);text-decoration:underline;">janmk1453/Api-Usage</a></div></div></div>
+              <div class="ds-card" style="line-height:1.7;font-size:var(--aus-fs-base);"><div style="font-size:var(--aus-fs-sm);color:#0EA5E9;font-weight:600;margin-bottom:6px;">📊 匿名使用统计</div><div style="color:var(--ds-text-2);display:grid;gap:4px;"><div>本扩展默认开启匿名使用统计，仅上报浏览器环境分桶（浏览器名与主版本、系统、架构、语言、窄屏分桶、深色偏好、standalone、时区偏移）、8 个页面的使用次数、打开次数、扩展版本与面板渲染耗时分桶。</div><div>不采集对话名称或内容、模型名、密钥、余额、费用、接口地址等任何隐私数据；服务端不记录 IP 地址。数据按匿名随机标识汇总，仅用于了解用户规模与改进方向。</div><div>可在「设置 → 匿名使用统计」随时关闭，关闭后立即停止采集与上报；也可在那里重置匿名标识。</div><div>完整说明见 <a href="https://janmk1453.github.io/Api-Usage/#privacy" target="_blank" rel="noreferrer" style="color:var(--ds-text);text-decoration:underline;">隐私声明</a>。</div></div></div>
+              <div class="ds-card" style="line-height:1.7;font-size:var(--aus-fs-base);"><div style="font-size:var(--aus-fs-sm);color:#FF6A00;font-weight:600;margin-bottom:6px;">完整使用文档</div><div style="color:var(--ds-text-2);">详细说明各页面、筛选、钱包、定价、同步、隐私与常见问题。</div><a href="https://janmk1453.github.io/Api-Usage/" target="_blank" rel="noreferrer" style="display:inline-flex;align-items:center;justify-content:center;margin-top:10px;padding:8px 14px;border-radius:999px;background:var(--ds-black);color:var(--ds-black-text);text-decoration:none;font-size:var(--aus-fs-base);font-weight:600;">前往完整使用文档</a></div>
+              <div class="ds-card" style="line-height:1.7;font-size:var(--aus-fs-base);"><div style="font-size:var(--aus-fs-sm);color:#DC2626;font-weight:600;margin-bottom:6px;">隐私声明（完整版：<a href="https://janmk1453.github.io/Api-Usage/#privacy" target="_blank" rel="noreferrer" style="color:#DC2626;text-decoration:underline;">https://janmk1453.github.io/Api-Usage/#privacy</a>）</div><div style="color:var(--ds-text-2);display:grid;gap:6px;"><div>本扩展有且只能获得用户在酒馆本身中填写的：密钥条目的编号、用户备注和掩码末三位，仅用于独立区分请求来源，不会且无法读取、保存或上传完整明文密钥。</div><div>用户储存在酒馆本身的密钥是安全的，本扩展无法获取真实密钥。</div><div>用户主动填入本扩展的校准密钥是实际可用的密钥，且仅会被用于查询 DeepSeek 官方余额，不会额外造成扣费或消耗；它仅经 XOR 混淆后存放于 SillyTavern，不进入历史记录、统计、日志、导入导出或 WebDAV。自动校准时仅由浏览器直接发送至 <a href="https://api.deepseek.com/user/balance" target="_blank" rel="noreferrer" style="color:var(--ds-text);text-decoration:underline;">https://api.deepseek.com/user/balance</a> API 查询。</div><div>XOR 不是安全加密，请使用权限受限的密钥并自行评估风险。</div><div>本扩展完整代码开源可审查。</div><div style="margin-top:2px;padding-top:6px;border-top:1px solid var(--ds-border);font-weight:600;color:#DC2626;">免责声明（完整版见上方链接）</div><div>本扩展不对功能“价格来源”、“自动同步”等利用 <a href="https://models.dev" target="_blank" rel="noreferrer" style="color:var(--ds-text);text-decoration:underline;">models.dev</a> 获取的数据中出现或可能出现的商业化中转站负责；我们不建议使用任何商业化中转站，尽管我们已经尽力筛选数据，但由于对大量数据进行完全筛选难以实现，因此我们不对可能出现的任何商业化中转站名称负责，不构成推荐，和 models.dev 或任何中转站没有商业往来，坚定不移的反对商业化。</div><div>我们将尽可能维护扩展的安全和隐私性，但本扩展不对因酒馆/本扩展的安全漏洞或因间接原因导致的任何形式的密钥泄露及产生的损失负责。</div></div></div>
+              <div class="ds-card" style="line-height:1.7;font-size:var(--aus-fs-base);"><div style="font-size:var(--aus-fs-sm);color:#0BA25E;font-weight:600;margin-bottom:6px;">钱包</div><div style="color:var(--ds-text-2);display:grid;gap:4px;"><div>1. 扩展按识别到的接入链接自动创建和汇总钱包，默认始终保留 DeepSeek 官方钱包；同名链接下识别的密钥和模型会归入同一钱包。</div><div>2. 每个钱包可独立维护名称、余额、模型价格、峰谷规则和价格来源；钱包默认收起，展开状态按钱包记忆。价格来源仅展示第一方模型厂商，不展示中转站或聚合平台。</div><div>3. 请求进入后会先匹配所属钱包，再使用该钱包的模型价格和峰谷规则计费，并从对应钱包余额预扣；未配置价格的模型先记零费用，保存或同步价格后自动重算冷热历史。</div><div>4. 自动余额校准仅支持 DeepSeek 官方直连，校准密钥需在钱包内单独填写；其他接入可使用手工余额，多个密钥不会自动相加。</div><div>5. 删除钱包会进入“已忽略接入”，后续请求不会自动重建、不参与余额合计，历史记录仍保留归属，需要时可恢复显示。</div></div></div>
+              <div class="ds-card" style="line-height:1.7;font-size:var(--aus-fs-base);"><div style="font-size:var(--aus-fs-sm);color:#2563EB;font-weight:600;margin-bottom:6px;">📊 使用统计 / 预测</div><div style="color:var(--ds-text-2);display:grid;gap:4px;"><div>1. 输入 API 密钥并保存后点击“查询”获取余额（余额查询仅支持 DeepSeek 官方）</div><div>2. 正常对话，扩展自动记录每次请求的费用、token 数及缓存命中等统计数据</div></div></div>
+              <div class="ds-card" style="line-height:1.7;font-size:var(--aus-fs-base);"><div style="font-size:var(--aus-fs-sm);color:var(--ds-green);font-weight:600;margin-bottom:6px;">💡 高峰时间提示</div><div style="color:var(--ds-text-2);display:grid;gap:4px;"><div>1. 设置中可开启峰值提示小圆点，直观显示当前（DeepSeek）高低峰状态</div><div>2. 圆点可拖动，位置自动记忆，找不到时可在设置中重置</div><div>3. DeepSeek 官方规则：周一至周五（不含中国法定节假日）9:00-12:00、14:00-18:00 为高峰，其余时段（含周末、中国法定节假日全天）为空闲；调休上班的周末同样按空闲计费</div><div>4. 内置中国法定节假日数据覆盖 ${CN_HOLIDAY_COVERAGE_LABEL}，超出范围的年份可在设置中按日期补充“额外空闲日期”</div></div></div>
+              <div class="ds-card" style="line-height:1.7;font-size:var(--aus-fs-base);"><div style="font-size:var(--aus-fs-sm);color:#DB2777;font-weight:600;margin-bottom:6px;">🔄 消息对比</div><div style="color:var(--ds-text-2);display:grid;gap:4px;"><div>1. 在历史记录中找到想对比的两条消息，前者点“旧”，后者点“新”</div><div>2. 系统并排显示请求消息的文字差异</div><div>3. 差异点即缓存发散起始位置（前 N 条相同为缓存命中段）</div></div></div>
+              <div class="ds-card" style="line-height:1.7;font-size:var(--aus-fs-base);"><div style="font-size:var(--aus-fs-sm);color:#D97706;font-weight:600;margin-bottom:6px;">📈 统计图表</div><div style="color:var(--ds-text-2);display:grid;gap:4px;"><div>1. 切换时间、模型（可多选）、对话、接入类型和 API 密钥查看不同范围的统计</div><div>2. 多图表展示多模请求参数，悬浮查看分模型明细</div></div></div>
+              <div class="ds-card" style="line-height:1.7;font-size:var(--aus-fs-base);"><div style="font-size:var(--aus-fs-sm);color:#7C3AED;font-weight:600;margin-bottom:6px;">💾 请求详细参数</div><div style="color:var(--ds-text-2);display:grid;gap:4px;"><div>1. 在历史记录中点击某条的“详情”，电脑端会在右侧打开约四分之一宽的窗口并压缩列表宽度，手机端会在屏幕下部弹出约四分之三高度的悬浮窗口</div><div>2. 查看：模型/时间/耗时/首字延迟/思维链/费用/Token 等详情及四类原始数据（请求参数/完整响应/Raw Usage/Messages）</div></div></div>
+              <div class="ds-card" style="line-height:1.7;font-size:var(--aus-fs-base);"><div style="font-size:var(--aus-fs-sm);color:#0891B2;font-weight:600;margin-bottom:6px;">🧡 模型兼容</div><div style="color:var(--ds-text-2);display:grid;gap:4px;"><div>1. 完全兼容 DeepSeek 官方 API</div><div>2. 尽量兼容不同厂商/渠道的请求格式，部分模型可能无缓存命中</div><div>3. 如数据异常，请携带完整请求与响应反馈</div></div></div>
+              <div class="ds-card" style="line-height:1.7;font-size:var(--aus-fs-base);"><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);font-weight:600;margin-bottom:6px;">✨ 关于</div><div style="color:var(--ds-text-2);display:grid;gap:4px;"><div>本扩展由原脚本（<a href="https://github.com/janmk1453/deepseek-tavern-script" target="_blank" style="color:var(--ds-text);text-decoration:underline;">deepseek-tavern-script</a>）迁移重构。</div><div><span style="color:var(--ds-text);">@janmk</span> · 仓库 <a href="https://github.com/janmk1453/Api-Usage" target="_blank" style="color:var(--ds-text);text-decoration:underline;">janmk1453/Api-Usage</a></div></div></div>
             </div>
           </div>
           <div data-view="about" style="display:none;">
             <div style="display:grid;gap:12px;">
-              <div class="ds-card" style="line-height:1.7;font-size:12px;color:var(--ds-text);">
-                <div style="font-size:14px;font-weight:600;">关于<br/>API用量统计 · SillyTavern 扩展</div>
+              <div class="ds-card" style="line-height:1.7;font-size:var(--aus-fs-base);color:var(--ds-text);">
+                <div style="font-size:var(--aus-fs-base);font-weight:600;">关于<br/>API用量统计 · SillyTavern 扩展</div>
                 <div style="margin-top:8px;color:var(--ds-text-2);">迁移至原 DeepSeek使用预测 脚本<br/>致力于实现最全面的用量可视化统计<br/><br/>仓库：<a href="https://github.com/janmk1453/Api-Usage" target="_blank" style="color:var(--ds-text);">janmk1453/Api-Usage</a></div>
               </div>
               <div class="ds-card" style="display:grid;gap:8px;">
-                <div style="font-size:12px;font-weight:600;color:var(--ds-text);">检查更新</div>
-                <div id="aus-update-banner" style="display:none;padding:8px 10px;border-radius:8px;background:var(--ds-yellow-bg);border:1px solid var(--ds-yellow-border);font-size:11px;color:var(--ds-text);"></div>
+                <div style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);">检查更新</div>
+                <div id="aus-update-banner" style="display:none;padding:8px 10px;border-radius:8px;background:var(--ds-yellow-bg);border:1px solid var(--ds-yellow-border);font-size:var(--aus-fs-sm);color:var(--ds-text);"></div>
                 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                   <div style="position:relative;z-index:5;">
-                    <button id="aus-update-branch-btn" class="ds-btn-pill" style="padding:6px 14px;font-size:11px;">更新分支：<span id="aus-update-branch-label">main</span></button>
+                    <button id="aus-update-branch-btn" class="ds-btn-pill" style="padding:6px 14px;font-size:var(--aus-fs-sm);">更新分支：<span id="aus-update-branch-label">main</span></button>
                     <div id="aus-update-branch-dropdown" style="display:none;position:absolute;top:calc(100% + 6px);left:0;min-width:150px;padding:6px;background:var(--ds-bg);border:1px solid var(--ds-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:60;flex-direction:column;gap:4px;">
-                      <div data-update-branch="main" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;">main（稳定）</div>
-                      <div data-update-branch="dev" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;">dev（测试）</div>
+                      <div data-update-branch="main" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);">main（稳定）</div>
+                      <div data-update-branch="dev" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);">dev（测试）</div>
                     </div>
                   </div>
-                  <button id="aus-check-update" class="ds-btn-pill" style="padding:6px 14px;font-size:11px;">检查更新</button>
-                  <button id="aus-run-update" class="ds-btn-pill" style="display:none;padding:6px 14px;font-size:11px;">立即更新</button>
-                  <span style="font-size:11px;color:var(--ds-text-3);">当前 v3.1.2 · 每 1 小时自动检查</span>
+                  <button id="aus-check-update" class="ds-btn-pill" style="padding:6px 14px;font-size:var(--aus-fs-sm);">检查更新</button>
+                  <button id="aus-run-update" class="ds-btn-pill" style="display:none;padding:6px 14px;font-size:var(--aus-fs-sm);">立即更新</button>
+                  <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);">当前 v3.1.2 · 每 1 小时自动检查</span>
                 </div>
-                <div style="font-size:11px;color:var(--ds-text-3);">可选择 main 或 dev 分支直接更新，默认 main；更新完成后自动刷新网页。非 Git 安装请使用“管理扩展程序”。</div>
+                <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);">可选择 main 或 dev 分支直接更新，默认 main；更新完成后自动刷新网页。非 Git 安装请使用“管理扩展程序”。</div>
               </div>
             </div>
           </div>
@@ -8301,8 +8311,8 @@ function createPanel() {
       </div>
       <aside id="aus-history-detail" style="display:none;flex-direction:column;width:25%;min-width:300px;max-width:480px;flex-shrink:0;border-left:1px solid var(--ds-border);background:var(--ds-card-inner);overflow:hidden;">
         <div style="flex-shrink:0;height:48px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 12px;border-bottom:1px solid var(--ds-border);">
-          <span id="aus-history-detail-title" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;color:var(--ds-text);">记录详情</span>
-          <button id="aus-history-detail-close" title="关闭" style="width:28px;height:28px;flex-shrink:0;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card);color:var(--ds-text-2);cursor:pointer;font-size:13px;line-height:1;">✕</button>
+          <span id="aus-history-detail-title" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);">记录详情</span>
+          <button id="aus-history-detail-close" title="关闭" style="width:28px;height:28px;flex-shrink:0;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card);color:var(--ds-text-2);cursor:pointer;font-size:var(--aus-fs-base);line-height:1;">✕</button>
         </div>
         <div id="aus-history-detail-body" style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:12px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;"></div>
       </aside>
@@ -8395,7 +8405,7 @@ function createPanel() {
 		sb.style.setProperty("min-width", collapsed ? "60px" : "260px", "important");
 		sb.style.setProperty("max-width", collapsed ? "60px" : "260px", "important");
 		if (brand) brand.style.setProperty("display", collapsed ? "none" : "flex", "important");
-		if (btn) btn.textContent = collapsed ? "›" : "‹";
+		if (btn) btn.innerHTML = collapsed ? icon("chevron-right", 14) : icon("chevron-left", 14);
 		doc.querySelectorAll(".aus-nav-label").forEach((el) => {
 			el.style.setProperty("display", collapsed ? "none" : "inline", "important");
 		});

@@ -100,15 +100,15 @@ async function renderOne(id:ChartId, filtered:any[]){
     }
     c.setOption({
       backgroundColor:'transparent',
-      tooltip:{ trigger:'item', backgroundColor:themeColor('--ds-card-inner','#FFFFFF'), borderColor:themeColor('--ds-border','#E5E7EB'), textStyle:{fontSize:11, color:themeColor('--ds-text','#111827')} },
-      legend:{ bottom:0, textStyle:{fontSize:10,color:themeColor('--ds-text-2','#6B7280')} },
-      series:[{ type:'pie', radius:['40%','70%'], itemStyle:{borderRadius:6,borderColor:themeColor('--ds-card-inner','#FFFFFF'),borderWidth:2}, label:{fontSize:11}, data }],
+      tooltip:{ trigger:'item', backgroundColor:themeColor('--ds-card-inner','#FFFFFF'), borderColor:themeColor('--ds-border','#E5E7EB'), textStyle:{fontSize: 12, color:themeColor('--ds-text','#111827')} },
+      legend:{ bottom:0, textStyle:{fontSize: 12,color:themeColor('--ds-text-2','#6B7280')} },
+      series:[{ type:'pie', radius:['40%','70%'], itemStyle:{borderRadius:6,borderColor:themeColor('--ds-card-inner','#FFFFFF'),borderWidth:2}, label:{fontSize: 12}, data }],
     }, true);
     return;
   }
   const yKeys = Array.from(state[id].y);
   const xKey = state[id].x;
-  if (!yKeys.length){ el.innerHTML='<div style="text-align:center;padding:30px;color:var(--ds-text-3);font-size:11px;">请选择 Y 轴</div>'; return; }
+  if (!yKeys.length){ el.innerHTML='<div style="text-align:center;padding:30px;color:var(--ds-text-3);font-size:var(--aus-fs-sm);">请选择 Y 轴</div>'; return; }
   // 聚合
   if (xKey==='round'){
     const labels = filtered.map((_,i)=>`#${i+1}`);
@@ -171,7 +171,7 @@ async function renderOne(id:ChartId, filtered:any[]){
   });
   await drawBarLine(el, id, labels, series);
   } catch(e:any){
-    try{ const doc2=getDoc(); const el2=doc2.getElementById(`aus-chart-${id}`) as HTMLElement | null; if(el2) el2.innerHTML='<div style="text-align:center;padding:20px;color:#DC2626;font-size:11px;">图表加载失败: '+(e?.message||e)+'</div>'; }catch{}
+    try{ const doc2=getDoc(); const el2=doc2.getElementById(`aus-chart-${id}`) as HTMLElement | null; if(el2) el2.innerHTML='<div style="text-align:center;padding:20px;color:#DC2626;font-size:var(--aus-fs-sm);">图表加载失败: '+(e?.message||e)+'</div>'; }catch{}
     try{ console.error('[Api-Usage] renderOne failed', id, e); }catch{}
   }
 }
@@ -202,10 +202,10 @@ async function drawBarLine(el:HTMLElement, id:ChartId, labels:string[], series:A
   const interval = calcXInterval(labels, el);
   const opts:any = {
     backgroundColor:'transparent',
-    tooltip:{ trigger:'axis', backgroundColor:themeColor('--ds-card-inner','#FFFFFF'), borderColor:themeColor('--ds-border','#E5E7EB'), textStyle:{fontSize:11} },
+    tooltip:{ trigger:'axis', backgroundColor:themeColor('--ds-card-inner','#FFFFFF'), borderColor:themeColor('--ds-border','#E5E7EB'), textStyle:{fontSize: 12} },
     grid:{ left:40, right:20, top:8, bottom:24 },
-    xAxis:{ type:'category', data: labels, axisLine:{lineStyle:{color:themeColor('--ds-border','#E5E7EB')}}, axisLabel:{fontSize:10,color:themeColor('--ds-text-3','#9CA3AF'),rotate: labels.length>12?30:0, interval: interval, hideOverlap: false} },
-    yAxis:{ type:'value', axisLabel:{fontSize:10,color:themeColor('--ds-text-3','#9CA3AF')}, splitLine:{lineStyle:{color:themeColor('--ds-card','#F6F7F8')}} },
+    xAxis:{ type:'category', data: labels, axisLine:{lineStyle:{color:themeColor('--ds-border','#E5E7EB')}}, axisLabel:{fontSize: 12,color:themeColor('--ds-text-3','#9CA3AF'),rotate: labels.length>12?30:0, interval: interval, hideOverlap: false} },
+    yAxis:{ type:'value', axisLabel:{fontSize: 12,color:themeColor('--ds-text-3','#9CA3AF')}, splitLine:{lineStyle:{color:themeColor('--ds-card','#F6F7F8')}} },
     dataZoom: labels.length > 8 ? [{ type:'inside', xAxisIndex:0, start: Math.max(0, (labels.length - Math.max(8, Math.min(labels.length, Math.floor((el.clientWidth||320)/44)))) / labels.length * 100), end: 100, zoomOnMouseWheel: false, moveOnMouseMove: true }] : undefined,
     series: (() => {
       // 堆叠柱仅最顶段有圆角，中间段直角以无缝衔接
@@ -220,15 +220,15 @@ async function drawBarLine(el:HTMLElement, id:ChartId, labels:string[], series:A
     })(),
   };
   if (id==='cost') {
-    opts.yAxis = { type:'value', axisLabel:{fontSize:10,color:themeColor('--ds-text-3','#9CA3AF'), formatter:(v:number)=> curCur.symbol + Number(v).toFixed(2)}, splitLine:{lineStyle:{color:themeColor('--ds-card','#F6F7F8')}} } as any;
-    opts.tooltip = { trigger:'axis', backgroundColor:themeColor('--ds-card-inner','#FFFFFF'), borderColor:themeColor('--ds-border','#E5E7EB'), textStyle:{fontSize:11}, formatter: (params:any)=>{ let html=`<div style="font-weight:600;margin-bottom:6px;">${params[0]?.axisValueLabel||''}</div>`; for(const p of params){ html+=`<div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:8px;height:8px;background:${p.color};border-radius:2px;"></span>${p.seriesName}<span style="margin-left:auto;font-weight:600;">${curCur.symbol}${Number(p.value).toFixed(4)} ${curCur.code}</span></div>`; } return `<div style="padding:4px 2px;min-width:160px;">${html}</div>`; } } as any;
+    opts.yAxis = { type:'value', axisLabel:{fontSize: 12,color:themeColor('--ds-text-3','#9CA3AF'), formatter:(v:number)=> curCur.symbol + Number(v).toFixed(2)}, splitLine:{lineStyle:{color:themeColor('--ds-card','#F6F7F8')}} } as any;
+    opts.tooltip = { trigger:'axis', backgroundColor:themeColor('--ds-card-inner','#FFFFFF'), borderColor:themeColor('--ds-border','#E5E7EB'), textStyle:{fontSize: 12}, formatter: (params:any)=>{ let html=`<div style="font-weight:600;margin-bottom:6px;">${params[0]?.axisValueLabel||''}</div>`; for(const p of params){ html+=`<div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:8px;height:8px;background:${p.color};border-radius:2px;"></span>${p.seriesName}<span style="margin-left:auto;font-weight:600;">${curCur.symbol}${Number(p.value).toFixed(4)} ${curCur.code}</span></div>`; } return `<div style="padding:4px 2px;min-width:160px;">${html}</div>`; } } as any;
   }
   // 命中/请求等单指标改为线+面积更可读
   if (id==='hit'){ opts.series = [{ name:'命中率', type:'line', data: series[0].data, areaStyle:{opacity:0.12,color:series[0].color}, lineStyle:{color:series[0].color}, itemStyle:{color:series[0].color}, smooth:true }]; opts.yAxis={ max:100, axisLabel:{formatter:(v:number)=>v+'%'} } as any; }
   if (id==='dur'){
     opts.yAxis=[
-      {type:'value', name:'耗时 s', position:'left', axisLabel:{fontSize:10,color:themeColor('--ds-text-3','#9CA3AF')}, splitLine:{lineStyle:{color:themeColor('--ds-card','#F6F7F8')}}},
-      {type:'value', name:'速率 t/s', position:'right', axisLabel:{fontSize:10,color:themeColor('--ds-text-3','#9CA3AF')}, splitLine:{show:false}}
+      {type:'value', name:'耗时 s', position:'left', axisLabel:{fontSize: 12,color:themeColor('--ds-text-3','#9CA3AF')}, splitLine:{lineStyle:{color:themeColor('--ds-card','#F6F7F8')}}},
+      {type:'value', name:'速率 t/s', position:'right', axisLabel:{fontSize: 12,color:themeColor('--ds-text-3','#9CA3AF')}, splitLine:{show:false}}
     ] as any;
     opts.series = series.map(s=>({
       name: s.name,
@@ -244,7 +244,7 @@ async function drawBarLine(el:HTMLElement, id:ChartId, labels:string[], series:A
   }
   c.setOption(opts, true);
   } catch(e:any){
-    try{ el.innerHTML='<div style="text-align:center;padding:20px;color:#DC2626;font-size:11px;">图表渲染失败</div>'; }catch{}
+    try{ el.innerHTML='<div style="text-align:center;padding:20px;color:#DC2626;font-size:var(--aus-fs-sm);">图表渲染失败</div>'; }catch{}
     try{ console.error('[Api-Usage] drawBarLine failed', id, e); }catch{}
   }
 }
@@ -304,7 +304,7 @@ function renderExtraY(id:ChartId){
   if (label) label.textContent = sel.size? `${sel.size} 项` : '选择';
   drop.innerHTML = opts.map(o=>{
     const checked = sel.has(o.key);
-    return `<label style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:11px;${checked?'background:var(--ds-active-bg);':''}"><input type="checkbox" data-y="${o.key}" data-chart="${id}" ${checked?'checked':''} style="accent-color:var(--ds-text);" /><span style="width:8px;height:8px;background:${o.color};border-radius:2px;"></span>${o.label}</label>`;
+    return `<label style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:var(--aus-fs-sm);${checked?'background:var(--ds-active-bg);':''}"><input type="checkbox" data-y="${o.key}" data-chart="${id}" ${checked?'checked':''} style="accent-color:var(--ds-text);" /><span style="width:8px;height:8px;background:${o.color};border-radius:2px;"></span>${o.label}</label>`;
   }).join('');
   drop.querySelectorAll('input[data-y]').forEach((el:any)=>{
     el.onchange=()=>{
@@ -326,7 +326,7 @@ function renderExtraX(id:ChartId){
   if (label) label.textContent = options.find(o=>o.key===cur)?.label || cur;
   drop.innerHTML = options.map(o=>{
     const active=o.key===cur;
-    return `<div data-x="${o.key}" data-chart="${id}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;${active?'background:var(--ds-active-bg);font-weight:600;':''}">${o.label}</div>`;
+    return `<div data-x="${o.key}" data-chart="${id}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${active?'background:var(--ds-active-bg);font-weight:600;':''}">${o.label}</div>`;
   }).join('');
   drop.querySelectorAll('[data-x]').forEach((el:any)=>{
     el.onclick=()=>{

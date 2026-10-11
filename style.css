@@ -4,6 +4,10 @@
 [data-extension="api-usage-stat"] {
   font-family: 'Microsoft YaHei', '微软雅黑', system-ui, -apple-system, sans-serif;
   box-sizing: border-box;
+  /* 字号分层：主文本与侧边栏一致 14px，次要 12px，微型角标 11px */
+  --aus-fs-base: 14px;
+  --aus-fs-sm: 12px;
+  --aus-fs-xs: 11px;
 }
 [data-extension="api-usage-stat"] * { box-sizing: border-box; }
 
@@ -102,7 +106,7 @@
   filter: none;
 }
 [data-extension="api-usage-stat"] .ds-card-title {
-  font-size: 12px;
+  font-size:var(--aus-fs-base);
   font-weight: 500;
   color: var(--ds-text-2);
   margin-bottom: 6px;
@@ -116,7 +120,7 @@
   filter: none;
 }
 [data-extension="api-usage-stat"] .ds-card-val small {
-  font-size: 14px;
+  font-size:var(--aus-fs-base);
   font-weight: 400;
   color: var(--ds-text-3);
   margin-left: 4px;
@@ -127,7 +131,7 @@
   border: none;
   border-radius: var(--ds-radius-pill);
   padding: 8px 18px;
-  font-size: 12px;
+  font-size:var(--aus-fs-base);
   font-weight: 600;
   cursor: pointer;
 }
@@ -137,7 +141,7 @@
   color: var(--ds-green);
   border-radius: 6px;
   padding: 2px 8px;
-  font-size: 11px;
+  font-size:var(--aus-fs-sm);
   font-weight: 500;
 }
 [data-extension="api-usage-stat"] .ds-grid-3 {
@@ -222,14 +226,14 @@
   #aus-extra-charts, #aus-model-trends { grid-template-columns: 1fr !important; }
   .aus-wallet-summary { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: clamp(4px, 1.4cqi, 10px) !important; }
   .aus-wallet-summary > div { min-width: 0; }
-  .aus-wallet-summary > div > div:first-child { font-size: 10px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .aus-wallet-summary > div > div:first-child { font-size:var(--aus-fs-sm) !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .aus-wallet-summary > div > div:nth-child(2) { font-size: clamp(15px, 3.4cqi, 20px) !important; }
-  .aus-wallet-summary > div > div:nth-child(3) { font-size: 9px !important; line-height: 1.35; }
+  .aus-wallet-summary > div > div:nth-child(3) { font-size:var(--aus-fs-xs) !important; line-height: 1.35; }
   /* 窄屏钱包卡紧凑化：标识缩小、余额/模型两项与图标操作并排、内外间距收紧，尽量压低纵向占用 */
   .aus-wallet-avatar { width: 36px !important; height: 36px !important; border-radius: 10px !important; font-size: 15px !important; }
   .aus-wallet-header { gap: 8px 10px !important; }
   .aus-wallet-identity { gap: 2px !important; }
-  #aus-wallet [data-wallet-card] [data-wallet-name] { font-size: 14px !important; }
+  #aus-wallet [data-wallet-card] [data-wallet-name] { font-size:var(--aus-fs-base) !important; }
   .aus-wallet-metrics { grid-template-columns: repeat(2, max-content) !important; justify-content: start !important; flex: 1 1 auto !important; }
   .aus-wallet-actions { justify-content: flex-end !important; flex: 0 0 auto !important; }
   #aus-wallet [data-wallet-card] { padding: 8px 10px !important; gap: 8px !important; }
@@ -318,7 +322,7 @@
   border-color: var(--ds-border-strong) !important;
 }
 .aus-wallet-sub {
-  font-size: 11px;
+  font-size:var(--aus-fs-sm);
   color: var(--ds-text-3);
   word-break: break-all;
 }
@@ -341,7 +345,7 @@
   border-radius: 8px;
   background: var(--ds-card-inner);
   color: var(--ds-text-2);
-  font-size: 13px;
+  font-size:var(--aus-fs-base);
   line-height: 1;
   cursor: pointer;
 }
@@ -356,13 +360,13 @@
 }
 .aus-wallet-metric { min-width: 0; }
 .aus-wallet-metric-label {
-  font-size: 10px;
+  font-size:var(--aus-fs-sm);
   color: var(--ds-text-3);
   white-space: nowrap;
 }
 .aus-wallet-metric-value {
   margin-top: 3px;
-  font-size: 12px;
+  font-size:var(--aus-fs-base);
   font-weight: 600;
   color: var(--ds-text);
   white-space: nowrap;
@@ -477,7 +481,7 @@
   .aus-wallet-avatar { width: 36px !important; height: 36px !important; border-radius: 10px !important; font-size: 15px !important; }
   .aus-wallet-header { gap: 8px 10px !important; }
   .aus-wallet-identity { gap: 2px !important; }
-  #aus-wallet [data-wallet-card] [data-wallet-name] { font-size: 14px !important; }
+  #aus-wallet [data-wallet-card] [data-wallet-name] { font-size:var(--aus-fs-base) !important; }
   .aus-wallet-metrics { grid-template-columns: repeat(2, max-content) !important; justify-content: start !important; flex: 1 1 auto !important; }
   .aus-wallet-actions { justify-content: flex-end !important; flex: 0 0 auto !important; }
   #aus-wallet [data-wallet-card] { padding: 8px 10px !important; gap: 8px !important; }

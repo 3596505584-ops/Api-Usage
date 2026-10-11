@@ -13,7 +13,18 @@ export type NavIconName =
   | 'help'
   | 'about';
 
-const PATHS: Record<NavIconName, string> = {
+/** 通用 UI 图标：下拉箭头、折叠箭头、同步、关闭、汉堡 */
+export type IconName =
+  | NavIconName
+  | 'chevron-down'
+  | 'chevron-up'
+  | 'chevron-left'
+  | 'chevron-right'
+  | 'refresh'
+  | 'close'
+  | 'menu';
+
+const PATHS: Record<IconName, string> = {
   overview:
     '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
   stats:
@@ -30,11 +41,22 @@ const PATHS: Record<NavIconName, string> = {
     '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
   about:
     '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+  'chevron-down': '<path d="m6 9 6 6 6-6"/>',
+  'chevron-up': '<path d="m18 15-6-6-6 6"/>',
+  'chevron-left': '<path d="m15 18-6-6 6-6"/>',
+  'chevron-right': '<path d="m9 18 6-6-6-6"/>',
+  refresh:
+    '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+  close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  menu: '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>',
 };
 
-/** 生成内联 SVG；尺寸默认 20px，颜色继承 currentColor */
-export function navIcon(name: NavIconName, size = 20): string {
+/**
+ * 生成内联 SVG；尺寸默认 20px、线宽 1.9，颜色继承 currentColor。
+ * 用 inline-block + vertical-align 保证既能进 flex 容器居中，也能跟在文字旁边不换行。
+ */
+export function icon(name: IconName, size = 20, strokeWidth = 1.9): string {
   return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor"`
-    + ` stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"`
-    + ` aria-hidden="true" focusable="false" style="display:block;">${PATHS[name]}</svg>`;
+    + ` stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round"`
+    + ` aria-hidden="true" focusable="false" style="display:inline-block;vertical-align:middle;flex-shrink:0;">${PATHS[name]}</svg>`;
 }

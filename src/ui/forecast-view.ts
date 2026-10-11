@@ -88,15 +88,15 @@ function renderForecastChatPicker(fullHist: any[]) {
   const chats = getRecordedChatsForForecast(fullHist);
   let html = '';
   const curActive = selectedForecastKey === '__current__' ? 'background:var(--ds-card);font-weight:600;' : '';
-  html += `<div data-fchat="__current__" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;${curActive}">当前对话</div>`;
+  html += `<div data-fchat="__current__" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${curActive}">当前对话</div>`;
   const allActive = selectedForecastKey === '__all__' ? 'background:var(--ds-card);font-weight:600;' : '';
-  html += `<div data-fchat="__all__" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;${allActive}">全部</div>`;
+  html += `<div data-fchat="__all__" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${allActive}">全部</div>`;
   for (const c of chats) {
     const key = c.chatId ?? '__null__';
     const active = key === selectedForecastKey ? 'background:var(--ds-card);font-weight:600;' : '';
-    html += `<div data-fchat="${esc(key)}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;${active}" title="${esc(c.chatId || '')}">${esc(c.displayName)}</div>`;
+    html += `<div data-fchat="${esc(key)}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${active}" title="${esc(c.chatId || '')}">${esc(c.displayName)}</div>`;
   }
-  if (!chats.length) html += '<div style="padding:8px 10px;color:var(--ds-text-3);font-size:12px;">暂无对话</div>';
+  if (!chats.length) html += '<div style="padding:8px 10px;color:var(--ds-text-3);font-size:var(--aus-fs-base);">暂无对话</div>';
   dropdown.innerHTML = html;
   dropdown.querySelectorAll('[data-fchat]').forEach((el: any) => {
     el.onclick = () => {
@@ -148,11 +148,11 @@ export async function renderForecastView(): Promise<void> {
   const renderCard = (host: HTMLElement | null) => {
     if (!host) return;
     if (effectiveHist.length < 3) {
-      host.innerHTML = `<div style="text-align:center;padding:16px;color:var(--ds-text-3);font-size:12px;">继续对话以启用预测（需 ≥3 轮当前对话样本）</div>`;
+      host.innerHTML = `<div style="text-align:center;padding:16px;color:var(--ds-text-3);font-size:var(--aus-fs-base);">继续对话以启用预测（需 ≥3 轮当前对话样本）</div>`;
       return;
     }
     const fit = fitSegments(effectiveHist, null);
-    if (!fit) { host.innerHTML = `<div style="padding:12px;color:var(--ds-text-2);font-size:12px;">暂无数据</div>`; return; }
+    if (!fit) { host.innerHTML = `<div style="padding:12px;color:var(--ds-text-2);font-size:var(--aus-fs-base);">暂无数据</div>`; return; }
     const bal = balanceNum();
     const latestEntry = [...effectiveHist].sort((a: any, b: any) => a.timestamp - b.timestamp)[effectiveHist.length - 1];
     const model = latestEntry?.model || 'deepseek-v4-flash';
@@ -169,14 +169,14 @@ export async function renderForecastView(): Promise<void> {
     const deltaTok = Math.round(fit.delta);
     const cNext = costAt(fit.segLen, fit, p);
     host.innerHTML = `<div style="line-height:1.6;">
-      <div style="font-size:13px;font-weight:700;color:var(--ds-text);">预计还可 <span style="color:var(--ds-green);">~${rShow} 轮</span>（余额口径）· ±${Math.abs(R.R_high-R.R_low)/2|0}</div>
-      <div style="font-size:11px;color:var(--ds-text-2);margin-top:4px;">每轮新增 ≈ ${deltaTok.toLocaleString()} tok · 命中率(近5) ${hitPct}% · 下一轮成本 ≈ ${(()=>{ try{  return formatMoney(cNext,4);} catch{ return '¥'+cNext.toFixed(4)+' CNY';}})()} · 下一轮 prompt ≈ ${Math.round(next.prompt).toLocaleString()} tok</div>
+      <div style="font-size:var(--aus-fs-base);font-weight:700;color:var(--ds-text);">预计还可 <span style="color:var(--ds-green);">~${rShow} 轮</span>（余额口径）· ±${Math.abs(R.R_high-R.R_low)/2|0}</div>
+      <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-top:4px;">每轮新增 ≈ ${deltaTok.toLocaleString()} tok · 命中率(近5) ${hitPct}% · 下一轮成本 ≈ ${(()=>{ try{  return formatMoney(cNext,4);} catch{ return '¥'+cNext.toFixed(4)+' CNY';}})()} · 下一轮 prompt ≈ ${Math.round(next.prompt).toLocaleString()} tok</div>
       <div style="display:flex;gap:8px;margin-top:10px;">
         <div style="flex:1;background:var(--ds-card);border-radius:6px;height:8px;position:relative;overflow:hidden;"><div style="position:absolute;left:0;top:0;bottom:0;width:${Math.min(100,(R.R/ Math.max(10,R.R+(rCtx||0)))*100)}%;background:var(--ds-green);"></div></div>
         <div style="flex:1;background:var(--ds-card);border-radius:6px;height:8px;position:relative;overflow:hidden;"><div style="position:absolute;left:0;top:0;bottom:0;width:${rCtx!=null?Math.min(100,(rCtx/ Math.max(10,rCtx))*100):0}%;background:${(rCtx!=null&&rCtx<rShow)?'var(--ds-red)':'var(--ds-purple-bg)'};"></div></div>
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--ds-text-3);margin-top:4px;"><span>R(余额) ${R.R}</span><span>R(ctx ${ctxLim != null ? `${(ctxLim / 1000) | 0}k` : '未知'}) ${rCtx ?? '—'}</span></div>
-      ${rCtx!=null && rCtx<rShow ? `<div style="font-size:11px;color:var(--ds-red);margin-top:6px;">⚠ ${rCtx} 轮后 prompt 达上限 ${ctxLim?.toLocaleString()} tok，建议压缩上下文</div>` : ''}
+      <div style="display:flex;justify-content:space-between;font-size:var(--aus-fs-sm);color:var(--ds-text-3);margin-top:4px;"><span>R(余额) ${R.R}</span><span>R(ctx ${ctxLim != null ? `${(ctxLim / 1000) | 0}k` : '未知'}) ${rCtx ?? '—'}</span></div>
+      ${rCtx!=null && rCtx<rShow ? `<div style="font-size:var(--aus-fs-sm);color:var(--ds-red);margin-top:6px;">⚠ ${rCtx} 轮后 prompt 达上限 ${ctxLim?.toLocaleString()} tok，建议压缩上下文</div>` : ''}
     </div>`;
   };
   renderCard(doc.getElementById('aus-forecast-card'));
@@ -190,13 +190,13 @@ export async function renderForecastView(): Promise<void> {
     const idx = grades.indexOf(grade);
     badgeHost.innerHTML = `<div style="display:flex;gap:12px;align-items:center;justify-content:flex-start;">
       <div style="display:flex;flex-direction:column;gap:2px;flex:none;">
-        ${grades.map((g,i)=>`<div style="display:flex;align-items:center;gap:6px;"><span style="width:28px;height:22px;border-radius:4px;background:${colors[g]};color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;">${g}</span>${i===idx?`<span style="color:${colors[g]};font-weight:700;">◀ 当前</span>`:''}</div>`).join('')}
+        ${grades.map((g,i)=>`<div style="display:flex;align-items:center;gap:6px;"><span style="width:28px;height:22px;border-radius:4px;background:${colors[g]};color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:var(--aus-fs-base);">${g}</span>${i===idx?`<span style="color:${colors[g]};font-weight:700;">◀ 当前</span>`:''}</div>`).join('')}
       </div>
-        <div style="flex:0 1 300px;min-width:210px;max-width:340px;display:grid;gap:6px;font-size:11px;">
+        <div style="flex:0 1 300px;min-width:210px;max-width:340px;display:grid;gap:6px;font-size:var(--aus-fs-sm);">
         <div style="display:flex;justify-content:space-between;gap:16px;"><span style="color:var(--ds-text-2);">增速 Δ</span><span style="font-weight:600;white-space:nowrap;">${Math.round(r.metrics.delta).toLocaleString()} tok/轮</span></div>
         <div style="display:flex;justify-content:space-between;gap:16px;"><span style="color:var(--ds-text-2);">输出</span><span style="font-weight:600;white-space:nowrap;">${Math.round(r.metrics.out).toLocaleString()} tok/轮</span></div>
         <div style="display:flex;justify-content:space-between;gap:16px;"><span style="color:var(--ds-text-2);">效率</span><span style="font-weight:600;white-space:nowrap;">${(r.metrics.efficiency*100).toFixed(1)}%</span></div>
-        <div style="font-size:10px;color:var(--ds-text-3);margin-top:4px;">综合评分 ${r.score.toFixed(0)} · ${grade} 级 · 样本 ${effectiveHist.length} 轮 · ${esc(getForecastLabel(hist))}</div>
+        <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);margin-top:4px;">综合评分 ${r.score.toFixed(0)} · ${grade} 级 · 样本 ${effectiveHist.length} 轮 · ${esc(getForecastLabel(hist))}</div>
       </div>
     </div>`;
   }
@@ -247,8 +247,8 @@ async function renderForecastChart(history:any[], chatId:string|null){
     backgroundColor:'transparent',
     tooltip:{ trigger:'axis' },
     grid:{ left:48, right:16, top:16, bottom:24 },
-    xAxis:{ type:'category', data:labels, axisLine:{lineStyle:{color:cBorder}}, axisLabel:{color:cText3,fontSize:10, interval: Math.ceil(labels.length/12)-1} },
-    yAxis:{ type:'value', axisLabel:{color:cText3,fontSize:10}, splitLine:{lineStyle:{color:cBorder}} },
+    xAxis:{ type:'category', data:labels, axisLine:{lineStyle:{color:cBorder}}, axisLabel:{color:cText3,fontSize: 12, interval: Math.ceil(labels.length/12)-1} },
+    yAxis:{ type:'value', axisLabel:{color:cText3,fontSize: 12}, splitLine:{lineStyle:{color:cBorder}} },
     series:[
       { name:'历史 prompt', type:'line', data:histData, smooth:true, symbol:'circle', symbolSize:3, lineStyle:{width:1.5}, itemStyle:{color:'#6366F1'} },
       { name:'拟合', type:'line', data:fitLine.concat(Array(futureN).fill(null)), lineStyle:{type:'dashed',width:1.5,color:'#9CA3AF'}, symbol:'none' },
@@ -264,7 +264,7 @@ function renderSensitivity(history:any[], chatId:string|null){
   const host=getDoc().getElementById('aus-forecast-sensitivity');
   if (!host) return;
   const hitInit = (()=>{ const fit=fitSegments(history,chatId); return fit? Math.round(fit.hitEwma*100): 50; })();
-  host.innerHTML = `<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:11px;color:var(--ds-text-2);">假设命中率</span><input id="aus-sens-hit" type="range" min="0" max="100" value="${hitInit}" style="flex:1;"><span id="aus-sens-hit-val" style="font-weight:600;min-width:36px;text-align:right;">${hitInit}%</span></div><div id="aus-sens-result" style="font-size:11px;color:var(--ds-text-2);margin-top:6px;"></div>`;
+  host.innerHTML = `<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);">假设命中率</span><input id="aus-sens-hit" type="range" min="0" max="100" value="${hitInit}" style="flex:1;"><span id="aus-sens-hit-val" style="font-weight:600;min-width:36px;text-align:right;">${hitInit}%</span></div><div id="aus-sens-result" style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-top:6px;"></div>`;
   const slider = host.querySelector('#aus-sens-hit') as HTMLInputElement;
   const valEl = host.querySelector('#aus-sens-hit-val') as HTMLElement;
   const resEl = host.querySelector('#aus-sens-result') as HTMLElement;
@@ -292,13 +292,13 @@ function renderCompare(history:any[]){
   const host=getDoc().getElementById('aus-forecast-compare');
   if (!host) return;
   const list = topPowerChats(history, 8);
-  if (!list.length) { host.innerHTML = `<div style="padding:12px;color:var(--ds-text-3);font-size:11px;">暂无对话</div>`; return; }
+  if (!list.length) { host.innerHTML = `<div style="padding:12px;color:var(--ds-text-3);font-size:var(--aus-fs-sm);">暂无对话</div>`; return; }
   host.innerHTML = list.map(r=>{
     const name = r.chatId || '全部/未分组';
     const pct = Math.max(6, Math.min(100, (r.delta/8000)*100));
-    return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--ds-border);font-size:11px;">
+    return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--ds-border);font-size:var(--aus-fs-sm);">
       <span style="min-width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(name)}</span>
-      <span style="width:18px;height:18px;border-radius:999px;background:${gradeColor(r.grade)};color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:10px;">${r.grade}</span>
+      <span style="width:18px;height:18px;border-radius:999px;background:${gradeColor(r.grade)};color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:var(--aus-fs-sm);">${r.grade}</span>
       <span style="flex:1;height:6px;background:var(--ds-card);border-radius:999px;position:relative;overflow:hidden;"><span style="position:absolute;left:0;top:0;bottom:0;width:${pct}%;background:var(--ds-purple-bg);"></span></span>
       <span style="min-width:60px;text-align:right;">${Math.round(r.delta).toLocaleString()} tok/轮</span>
     </div>`;
