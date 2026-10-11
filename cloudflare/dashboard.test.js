@@ -18,7 +18,7 @@ const summaryData = {
   today: '2026-10-11',
   totals: {
     users: 42, opens: 1234, durMs: 30 * 60 * 1000, avgDurMsPerUser: 44 * 1000,
-    todayUsers: 3, todayOpens: 57, todayDurMs: 12 * 60 * 1000,
+    todayUsers: 3, todayActiveUsers: 28, todayOpens: 57, todayDurMs: 12 * 60 * 1000,
   },
   userGrowth: [
     { day: '2026-10-09', added: 1, cumulative: 40 },
@@ -231,6 +231,8 @@ describe('看板页渲染（图表库不可用）', () => {
     expect(harness.text('cards-life')).toContain('44 秒');
     expect(harness.text('cards-today')).toContain('当日新增用户');
     expect(harness.text('cards-today')).toContain('57');
+    expect(harness.text('cards-today')).toContain('当日不重复用户');
+    expect(harness.text('cards-today')).toContain('28');
 
     expect(harness.text('fallback-pages')).toContain('用量概览');
     expect(harness.text('fallback-pages')).toContain('12');

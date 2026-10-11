@@ -127,9 +127,10 @@ SELECT app_version, browser, browser_major, os, arch, lang, width_bucket,
 FROM device
 `;
 
-/** 当日新增：只扫当天行（行数 = 当日活跃设备数） */
+/** 当日汇总：只扫当天行（行数 = 当日活跃设备数），同时给出当日去重设备数（日活） */
 const TODAY_SELECT_SQL = `
-SELECT COALESCE(SUM(opens), 0) AS opens, COALESCE(SUM(dur_ms), 0) AS dur_ms
+SELECT COUNT(DISTINCT device_id) AS devices,
+       COALESCE(SUM(opens), 0) AS opens, COALESCE(SUM(dur_ms), 0) AS dur_ms
 FROM device_daily
 WHERE day = ?1
 `;
@@ -329,6 +330,7 @@ async function buildSummary(env) {
       durMs,
       avgDurMsPerUser: users > 0 ? Math.round(durMs / users) : 0,
       todayUsers: growthCounts.get(today) || 0,
+      todayActiveUsers: numberOrZero(todayAgg.devices),
       todayOpens: numberOrZero(todayAgg.opens),
       todayDurMs: numberOrZero(todayAgg.dur_ms),
     },
