@@ -185,6 +185,8 @@
   will-change: auto !important;
 }
 #aus-sidebar { background: var(--ds-sidebar-bg) !important; border-right: 1px solid var(--ds-border) !important; }
+/* 品牌标题与导航项文字左对齐：侧栏内距 10 + 条目内距 12 + 图标 20 + 条目间距 12 − 品牌区内距 14 = 40 */
+#aus-sidebar #aus-brand { padding-left: 40px; }
 #aus-panel { position: fixed; } /* 使 absolute 侧栏以面板为 containing block，覆盖含 mobile-header 的全高度 */
 #aus-panel-body { display:flex; flex-direction:row; flex:1; min-height:0; overflow:hidden; container-type: inline-size; container-name: ausbody; /* 去 relative：让移动端抽屉覆盖 header，避免顶部缺口 */ }
 .aus-stats-filter { position: relative; min-width: 0; }
@@ -212,6 +214,8 @@
   #aus-page-header { display: none !important; }
   /* 窄容器抽屉同样保持紧凑导航尺寸（与 ≤760px 视口一致） */
   #aus-sidebar .aus-nav-item { justify-content: flex-start !important; padding: 8px 10px !important; gap: 10px !important; font-size: 12px !important; border-radius: 8px !important; }
+  /* 窄容器抽屉的导航项文字起点同步左移（内距 10 + 10 + 图标 20 + 间距 10 − 品牌区内距 14 = 36） */
+  #aus-sidebar #aus-brand { padding-left: 36px !important; }
   #aus-main { padding: 12px !important; overflow-x: hidden !important; }
   #aus-overview-four { grid-template-columns: repeat(2, 1fr) !important; gap: clamp(8px, 1.5cqi, 10px) !important; }
   #aus-stats-four { grid-template-columns: repeat(2, 1fr) !important; gap: clamp(8px, 1.5cqi, 10px) !important; }
@@ -221,9 +225,9 @@
   .aus-wallet-summary > div > div:first-child { font-size: 10px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .aus-wallet-summary > div > div:nth-child(2) { font-size: clamp(15px, 3.4cqi, 20px) !important; }
   .aus-wallet-summary > div > div:nth-child(3) { font-size: 9px !important; line-height: 1.35; }
-  .aus-wallet-header { grid-template-columns: 1fr !important; }
-  .aus-wallet-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
-  .aus-wallet-actions { justify-content: flex-start !important; }
+  /* 窄屏钱包 header：标识与名称同排，余额/模型两项换行且内容宽度靠左，图标操作单独一行 */
+  .aus-wallet-metrics { grid-template-columns: repeat(2, max-content) !important; justify-content: start !important; flex: 1 1 100% !important; }
+  .aus-wallet-actions { justify-content: flex-start !important; flex: 1 1 100% !important; }
   .aus-wallet-two-col { grid-template-columns: 1fr !important; }
 }
 @container ausbody (min-width: 761px) {
@@ -244,17 +248,103 @@
   gap: clamp(8px, 1.5cqi, 12px);
   grid-template-columns: repeat(4, 1fr);
 }
+/* 钱包收起态：单行卡片（方形标识 + 名称/副标题 + 五项指标 + 图标操作） */
 .aus-wallet-header {
-  display: grid;
-  grid-template-columns: minmax(230px, 1.15fr) minmax(420px, 1.9fr) auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 12px 14px;
+}
+.aus-wallet-avatar {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: var(--ds-black);
+  color: var(--ds-black-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  user-select: none;
+}
+.aus-wallet-identity {
+  flex: 1 1 190px;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+.aus-wallet-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+/* 名称默认呈标题观感（透明无边框），需 !important 压过面板内 input 的主题化覆盖 */
+#aus-wallet [data-wallet-card] [data-wallet-name] {
+  field-sizing: content;
+  width: auto;
+  min-width: 64px;
+  max-width: 100%;
+  margin-left: -7px;
+  padding: 2px 6px;
+  border: 1px solid transparent !important;
+  border-radius: 8px;
+  background: transparent !important;
+  color: var(--ds-text) !important;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+#aus-wallet [data-wallet-card] [data-wallet-name]:hover {
+  background: var(--ds-card-inner) !important;
+  border-color: var(--ds-border) !important;
+}
+#aus-wallet [data-wallet-card] [data-wallet-name]:focus {
+  outline: none;
+  background: var(--ds-card-inner) !important;
+  border-color: var(--ds-border-strong) !important;
+}
+.aus-wallet-sub {
+  font-size: 11px;
+  color: var(--ds-text-3);
+  word-break: break-all;
 }
 .aus-wallet-metrics {
   display: grid;
-  grid-template-columns: repeat(5, minmax(58px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(2, minmax(64px, auto));
+  gap: 8px 18px;
   min-width: 0;
+  flex: 0 1 auto;
+}
+.aus-wallet-icon-btn {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--ds-border);
+  border-radius: 8px;
+  background: var(--ds-card-inner);
+  color: var(--ds-text-2);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+.aus-wallet-icon-btn:hover {
+  color: var(--ds-text);
+  border-color: var(--ds-border-strong);
+}
+.aus-wallet-icon-btn.is-danger {
+  border-color: var(--ds-red-border);
+  background: var(--ds-red-bg);
+  color: var(--ds-red);
 }
 .aus-wallet-metric { min-width: 0; }
 .aus-wallet-metric-label {
@@ -313,7 +403,7 @@
 #aus-mobile-header { display:none; height:56px; align-items:center; padding:0 16px; flex-shrink:0; border-bottom:1px solid var(--ds-border); background:var(--ds-card-inner); }
 #aus-hamburger-btn { width:24px;height:24px;display:flex;align-items:center;justify-content:center;background:transparent;border:none;cursor:pointer;color:var(--ds-text);font-size:18px;line-height:1;padding:0; }
 #aus-hamburger-btn:hover { opacity:0.7; }
-.aus-nav-item { transition: background 0.15s, color 0.15s; color: var(--ds-text-2); }
+.aus-nav-item { transition: none; color: var(--ds-text-2); }
 .aus-nav-item:hover { background: var(--ds-hover-bg) !important; }
 .aus-nav-item.active { background: var(--ds-nav-active-bg, var(--ds-active-bg)) !important; color: var(--ds-text) !important; font-weight: 600; }
 #aus-panel #aus-main::-webkit-scrollbar { width: 6px; }
@@ -374,7 +464,10 @@
   #aus-sidebar-toggle { display:none !important; }
   #aus-page-header { display:none !important; }
   /* 窄屏呼出时强制还原完整导航样式，避免宽屏折叠残留导致间距/动画异常 */
-  #aus-sidebar #aus-brand { display:flex !important; }
+  #aus-sidebar #aus-brand { display:flex !important; padding-left:36px !important; }
+  /* 窄屏钱包 header：标识与名称同排，余额/模型两项换行且内容宽度靠左，图标操作单独一行 */
+  .aus-wallet-metrics { grid-template-columns: repeat(2, max-content) !important; justify-content: start !important; flex: 1 1 100% !important; }
+  .aus-wallet-actions { justify-content: flex-start !important; flex: 1 1 100% !important; }
   #aus-sidebar .aus-nav-label { display:inline !important; }
   #aus-sidebar .aus-nav-item { justify-content:flex-start !important; padding:8px 10px !important; gap:10px !important; font-size:12px !important; border-radius:8px !important; }
   /* 窄屏选中态加深，避免 #F9FAFB 侧栏与 #F6F7F8 选中态均为近白导致“都是白底” */

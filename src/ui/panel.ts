@@ -648,8 +648,10 @@ function switchView(view: typeof currentView) {
   if (view !== 'history') closeHistoryDetail(doc);
   doc.querySelectorAll('[data-view]').forEach((el: any) => {
     const v = el.getAttribute('data-view');
-    el.style.display = v === view ? 'block' : 'none';
-    if (v === view) { el.style.opacity = '0'; requestAnimationFrame(() => { el.style.transition = 'opacity 0.15s'; el.style.opacity = '1'; }); }
+    const on = v === view;
+    el.style.display = on ? 'block' : 'none';
+    // 瞬时切换：不再走“先透明再淡入”，避免点击后有一小段延迟感
+    if (on) { el.style.transition = 'none'; el.style.opacity = '1'; }
   });
   doc.querySelectorAll('.aus-nav-item').forEach((el: any) => {
     const v = el.getAttribute('data-nav');
@@ -662,25 +664,26 @@ function switchView(view: typeof currentView) {
   const mobileTitleEl = doc.getElementById('aus-mobile-page-title');
   if (titleEl) titleEl.textContent = titleText;
   if (mobileTitleEl) mobileTitleEl.textContent = titleText;
-  refreshUI();
-  if (view === 'stats') {
-    setTimeout(() => {
+  // 只渲染目标视图：原先每次点击都全量 refreshUI（历史/概览/统计/预测/钱包五页，其中两页要重建 ECharts），
+  // 再叠加 60ms 定时器二次渲染，是点击卡顿与延迟的主要来源；数据变更仍由 refreshUI 统一刷新。
+  try {
+    if (view === 'overview') renderOverview();
+    else if (view === 'stats') renderStatsView();
+    else if (view === 'forecast') Promise.resolve(renderForecastView()).catch(() => {});
+    else if (view === 'wallet') Promise.resolve(renderWalletView()).catch(() => {});
+    else if (view === 'history') { const s = getSelectedSave(); if (s) renderHistory(doc, s); }
+  } catch {}
+  // 图表容器宽度兜底：首次显示若尚未完成布局，下一帧补渲染一次（替代原先 60ms/80ms 定时器）
+  if (view === 'stats' || view === 'forecast') {
+    requestAnimationFrame(() => {
       try {
-        const doc2 = getDoc();
-        const el = doc2.getElementById('aus-stats-chart');
-        if (el && (el.clientWidth === 0 || el.clientHeight === 0)) {
-          setTimeout(() => { try { renderStatsView(); } catch {} }, 80);
-        } else {
-          renderStatsView();
+        const chartEl = doc.getElementById(view === 'stats' ? 'aus-stats-chart' : 'aus-forecast-chart');
+        if (chartEl && (chartEl.clientWidth === 0 || chartEl.clientHeight === 0)) {
+          if (view === 'stats') renderStatsView();
+          else Promise.resolve(renderForecastView()).catch(() => {});
         }
       } catch {}
-    }, 60);
-  }
-  if (view === 'forecast') {
-    setTimeout(() => { try { renderForecastView(); } catch {} }, 60);
-  }
-  if (view === 'wallet') {
-    setTimeout(() => { try { renderWalletView(); } catch {} }, 60);
+    });
   }
 }
 

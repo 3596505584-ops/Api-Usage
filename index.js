@@ -2960,22 +2960,6 @@ function computeStatsFour(filtered) {
 		rounds
 	};
 }
-function computeWalletStats(walletId, history) {
-	let requests = 0;
-	let tokens = 0;
-	let cost = 0;
-	for (const entry of history || state$2.history || []) {
-		if (entry.walletId !== walletId) continue;
-		requests++;
-		tokens += entry.total_tokens || 0;
-		cost += entry.cost || 0;
-	}
-	return {
-		requests,
-		tokens,
-		cost
-	};
-}
 //#endregion
 //#region src/ui/heatmap.ts
 function getDoc$8() {
@@ -6824,56 +6808,42 @@ function renderCatalogPicker(wallet) {
     </div>`;
 }
 function renderWalletCard(wallet, history) {
-	const stats = computeWalletStats(wallet.id, history);
+	const avatarLetter = (() => {
+		const first = String(wallet.name || wallet.endpointDisplay || wallet.endpointLabel || "").trim().replace(/^https?:\/\//i, "").replace(/^www\./i, "").replace(/^api\./i, "").replace(/^[^0-9a-zA-Z\u4e00-\u9fa5]+/, "").charAt(0);
+		return first ? first.toUpperCase() : "?";
+	})();
 	const pending = walletPendingModelCount(wallet);
 	const isOfficial = wallet.id === DEEPSEEK_WALLET_ID;
 	const selectedCredential = wallet.credentials.find((item) => item.id === wallet.balance.primaryCredentialId);
 	const collapsed = wallet.collapsed !== false;
-	const metrics = [
-		{
-			label: "余额",
-			value: walletBalanceText(wallet),
-			title: walletBalanceText(wallet)
-		},
-		{
-			label: "密钥",
-			value: `${wallet.credentials.length} 个`,
-			title: "已识别密钥数量"
-		},
-		{
-			label: "模型",
-			value: `${wallet.models.length} 个`,
-			title: "已识别模型数量"
-		},
-		{
-			label: "请求",
-			value: stats.requests.toLocaleString("zh-CN"),
-			title: "已记录请求次数"
-		},
-		{
-			label: "费用",
-			value: money(stats.cost),
-			title: "该钱包累计费用"
-		}
-	];
+	const metrics = [{
+		label: "余额",
+		value: walletBalanceText(wallet),
+		title: walletBalanceText(wallet)
+	}, {
+		label: "模型",
+		value: `${wallet.models.length} 个`,
+		title: "已识别模型数量"
+	}];
 	return `
     <section class="ds-card" data-wallet-card="${esc$1(wallet.id)}" style="display:grid;gap:12px;">
       <div class="aus-wallet-header">
-        <div class="aus-wallet-identity" style="display:grid;gap:5px;min-width:0;">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <input data-wallet-name="1" data-wallet-id="${esc$1(wallet.id)}" value="${esc$1(wallet.name)}" style="min-width:160px;max-width:100%;flex:1;padding:7px 9px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);color:var(--ds-text);font-size:13px;font-weight:600;" />
-            <span style="padding:3px 8px;border-radius:999px;background:${isOfficial ? "var(--ds-green-bg)" : "var(--ds-card-inner)"};color:${isOfficial ? "var(--ds-green)" : "var(--ds-text-2)"};font-size:10px;">${isOfficial ? "DeepSeek 官方" : "中转/自定义"}</span>
-            ${pending ? `<span style="padding:3px 8px;border-radius:999px;background:var(--ds-red-bg);color:var(--ds-red);font-size:10px;">${pending} 个待定价</span>` : ""}
+        <div class="aus-wallet-avatar" title="${esc$1(wallet.name)}">${esc$1(avatarLetter)}</div>
+        <div class="aus-wallet-identity">
+          <div class="aus-wallet-name-row">
+            <input data-wallet-name="1" data-wallet-id="${esc$1(wallet.id)}" value="${esc$1(wallet.name)}" />
+            <span style="padding:3px 8px;border-radius:999px;background:${isOfficial ? "var(--ds-green-bg)" : "var(--ds-card-inner)"};color:${isOfficial ? "var(--ds-green)" : "var(--ds-text-2)"};font-size:10px;white-space:nowrap;">${isOfficial ? "DeepSeek 官方" : "中转/自定义"}</span>
+            ${pending ? `<span style="padding:3px 8px;border-radius:999px;background:var(--ds-red-bg);color:var(--ds-red);font-size:10px;white-space:nowrap;">${pending} 个待定价</span>` : ""}
           </div>
-          <div style="font-size:10px;color:var(--ds-text-3);word-break:break-all;">${esc$1(wallet.endpointDisplay || wallet.endpointLabel || "本机官方接口")} · ${esc$1(wallet.sourceType || "未识别")}</div>
+          <div class="aus-wallet-sub">${esc$1(wallet.endpointDisplay || wallet.endpointLabel || "本机官方接口")} · ${esc$1(wallet.sourceType || "未识别")}</div>
         </div>
         <div class="aus-wallet-metrics">
           ${metrics.map((item) => `<div class="aus-wallet-metric" title="${esc$1(item.title)}"><div class="aus-wallet-metric-label">${esc$1(item.label)}</div><div class="aus-wallet-metric-value">${esc$1(item.value)}</div></div>`).join("")}
         </div>
         <div class="aus-wallet-actions">
-          <button data-wallet-toggle="1" data-wallet-id="${esc$1(wallet.id)}" style="padding:7px 11px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:11px;cursor:pointer;">${collapsed ? "展开 ▼" : "收起 ▲"}</button>
-          ${wallet.catalogProvider ? "<button data-wallet-sync=\"1\" data-wallet-id=\"" + esc$1(wallet.id) + "\" style=\"padding:7px 11px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:11px;cursor:pointer;\">同步价格</button>" : ""}
-          ${isOfficial ? "" : "<button data-wallet-ignore=\"1\" data-wallet-id=\"" + esc$1(wallet.id) + "\" style=\"padding:7px 11px;border:1px solid var(--ds-red-border);border-radius:999px;background:var(--ds-red-bg);color:var(--ds-red);font-size:11px;cursor:pointer;\">忽略钱包</button>"}
+          <button class="aus-wallet-icon-btn" data-wallet-toggle="1" data-wallet-id="${esc$1(wallet.id)}" title="${collapsed ? "展开钱包详情" : "收起钱包详情"}" aria-label="${collapsed ? "展开钱包详情" : "收起钱包详情"}">${collapsed ? "▼" : "▲"}</button>
+          ${wallet.catalogProvider ? `<button class="aus-wallet-icon-btn" data-wallet-sync="1" data-wallet-id="${esc$1(wallet.id)}" title="按价格来源同步模型价格" aria-label="同步价格">↻</button>` : ""}
+          ${isOfficial ? "" : `<button class="aus-wallet-icon-btn is-danger" data-wallet-ignore="1" data-wallet-id="${esc$1(wallet.id)}" title="忽略该钱包（历史与统计保留）" aria-label="忽略钱包">✕</button>`}
         </div>
       </div>
 
@@ -8004,14 +7974,11 @@ function switchView(view) {
 	const doc = getDoc$1();
 	if (view !== "history") closeHistoryDetail(doc);
 	doc.querySelectorAll("[data-view]").forEach((el) => {
-		const v = el.getAttribute("data-view");
-		el.style.display = v === view ? "block" : "none";
-		if (v === view) {
-			el.style.opacity = "0";
-			requestAnimationFrame(() => {
-				el.style.transition = "opacity 0.15s";
-				el.style.opacity = "1";
-			});
+		const on = el.getAttribute("data-view") === view;
+		el.style.display = on ? "block" : "none";
+		if (on) {
+			el.style.transition = "none";
+			el.style.opacity = "1";
 		}
 	});
 	doc.querySelectorAll(".aus-nav-item").forEach((el) => {
@@ -8032,28 +7999,25 @@ function switchView(view) {
 	const mobileTitleEl = doc.getElementById("aus-mobile-page-title");
 	if (titleEl) titleEl.textContent = titleText;
 	if (mobileTitleEl) mobileTitleEl.textContent = titleText;
-	refreshUI();
-	if (view === "stats") setTimeout(() => {
+	try {
+		if (view === "overview") renderOverview();
+		else if (view === "stats") renderStatsView();
+		else if (view === "forecast") Promise.resolve(renderForecastView()).catch(() => {});
+		else if (view === "wallet") Promise.resolve(renderWalletView()).catch(() => {});
+		else if (view === "history") {
+			const s = getSelectedSave();
+			if (s) renderHistory(doc, s);
+		}
+	} catch {}
+	if (view === "stats" || view === "forecast") requestAnimationFrame(() => {
 		try {
-			const el = getDoc$1().getElementById("aus-stats-chart");
-			if (el && (el.clientWidth === 0 || el.clientHeight === 0)) setTimeout(() => {
-				try {
-					renderStatsView();
-				} catch {}
-			}, 80);
-			else renderStatsView();
+			const chartEl = doc.getElementById(view === "stats" ? "aus-stats-chart" : "aus-forecast-chart");
+			if (chartEl && (chartEl.clientWidth === 0 || chartEl.clientHeight === 0)) {
+				if (view === "stats") renderStatsView();
+				else Promise.resolve(renderForecastView()).catch(() => {});
+			}
 		} catch {}
-	}, 60);
-	if (view === "forecast") setTimeout(() => {
-		try {
-			renderForecastView();
-		} catch {}
-	}, 60);
-	if (view === "wallet") setTimeout(() => {
-		try {
-			renderWalletView();
-		} catch {}
-	}, 60);
+	});
 }
 function positionPanel() {
 	try {

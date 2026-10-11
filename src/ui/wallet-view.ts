@@ -1,5 +1,4 @@
 import { repository } from '../data/repository';
-import { computeWalletStats } from '../data/computed';
 import {
   walletBalanceToCny,
   walletPendingModelCount,
@@ -177,36 +176,45 @@ function renderCatalogPicker(wallet: WalletConfig): string {
 }
 
 function renderWalletCard(wallet: WalletConfig, history: any[]): string {
-  const stats = computeWalletStats(wallet.id, history);
+  // 收起态左侧方块标识：取钱包名称中第一个有意义的字符（剥离协议与 api./www. 前缀）
+  const avatarLetter = (() => {
+    const raw = String(wallet.name || wallet.endpointDisplay || wallet.endpointLabel || '').trim();
+    const cleaned = raw
+      .replace(/^https?:\/\//i, '')
+      .replace(/^www\./i, '')
+      .replace(/^api\./i, '')
+      .replace(/^[^0-9a-zA-Z\u4e00-\u9fa5]+/, '');
+    const first = cleaned.charAt(0);
+    return first ? first.toUpperCase() : '?';
+  })();
   const pending = walletPendingModelCount(wallet);
   const isOfficial = wallet.id === DEEPSEEK_WALLET_ID;
   const selectedCredential = wallet.credentials.find((item) => item.id === wallet.balance.primaryCredentialId);
   const collapsed = wallet.collapsed !== false;
+  // 收起态只外显余额与模型数，密钥数/请求数/费用不外显（展开后按需查看）
   const metrics = [
     { label: '余额', value: walletBalanceText(wallet), title: walletBalanceText(wallet) },
-    { label: '密钥', value: `${wallet.credentials.length} 个`, title: '已识别密钥数量' },
     { label: '模型', value: `${wallet.models.length} 个`, title: '已识别模型数量' },
-    { label: '请求', value: stats.requests.toLocaleString('zh-CN'), title: '已记录请求次数' },
-    { label: '费用', value: money(stats.cost), title: '该钱包累计费用' },
   ];
   return `
     <section class="ds-card" data-wallet-card="${esc(wallet.id)}" style="display:grid;gap:12px;">
       <div class="aus-wallet-header">
-        <div class="aus-wallet-identity" style="display:grid;gap:5px;min-width:0;">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <input data-wallet-name="1" data-wallet-id="${esc(wallet.id)}" value="${esc(wallet.name)}" style="min-width:160px;max-width:100%;flex:1;padding:7px 9px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);color:var(--ds-text);font-size:13px;font-weight:600;" />
-            <span style="padding:3px 8px;border-radius:999px;background:${isOfficial ? 'var(--ds-green-bg)' : 'var(--ds-card-inner)'};color:${isOfficial ? 'var(--ds-green)' : 'var(--ds-text-2)'};font-size:10px;">${isOfficial ? 'DeepSeek 官方' : '中转/自定义'}</span>
-            ${pending ? `<span style="padding:3px 8px;border-radius:999px;background:var(--ds-red-bg);color:var(--ds-red);font-size:10px;">${pending} 个待定价</span>` : ''}
+        <div class="aus-wallet-avatar" title="${esc(wallet.name)}">${esc(avatarLetter)}</div>
+        <div class="aus-wallet-identity">
+          <div class="aus-wallet-name-row">
+            <input data-wallet-name="1" data-wallet-id="${esc(wallet.id)}" value="${esc(wallet.name)}" />
+            <span style="padding:3px 8px;border-radius:999px;background:${isOfficial ? 'var(--ds-green-bg)' : 'var(--ds-card-inner)'};color:${isOfficial ? 'var(--ds-green)' : 'var(--ds-text-2)'};font-size:10px;white-space:nowrap;">${isOfficial ? 'DeepSeek 官方' : '中转/自定义'}</span>
+            ${pending ? `<span style="padding:3px 8px;border-radius:999px;background:var(--ds-red-bg);color:var(--ds-red);font-size:10px;white-space:nowrap;">${pending} 个待定价</span>` : ''}
           </div>
-          <div style="font-size:10px;color:var(--ds-text-3);word-break:break-all;">${esc(wallet.endpointDisplay || wallet.endpointLabel || '本机官方接口')} · ${esc(wallet.sourceType || '未识别')}</div>
+          <div class="aus-wallet-sub">${esc(wallet.endpointDisplay || wallet.endpointLabel || '本机官方接口')} · ${esc(wallet.sourceType || '未识别')}</div>
         </div>
         <div class="aus-wallet-metrics">
           ${metrics.map((item) => `<div class="aus-wallet-metric" title="${esc(item.title)}"><div class="aus-wallet-metric-label">${esc(item.label)}</div><div class="aus-wallet-metric-value">${esc(item.value)}</div></div>`).join('')}
         </div>
         <div class="aus-wallet-actions">
-          <button data-wallet-toggle="1" data-wallet-id="${esc(wallet.id)}" style="padding:7px 11px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:11px;cursor:pointer;">${collapsed ? '展开 ▼' : '收起 ▲'}</button>
-          ${wallet.catalogProvider ? '<button data-wallet-sync="1" data-wallet-id="' + esc(wallet.id) + '" style="padding:7px 11px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:11px;cursor:pointer;">同步价格</button>' : ''}
-          ${isOfficial ? '' : '<button data-wallet-ignore="1" data-wallet-id="' + esc(wallet.id) + '" style="padding:7px 11px;border:1px solid var(--ds-red-border);border-radius:999px;background:var(--ds-red-bg);color:var(--ds-red);font-size:11px;cursor:pointer;">忽略钱包</button>'}
+          <button class="aus-wallet-icon-btn" data-wallet-toggle="1" data-wallet-id="${esc(wallet.id)}" title="${collapsed ? '展开钱包详情' : '收起钱包详情'}" aria-label="${collapsed ? '展开钱包详情' : '收起钱包详情'}">${collapsed ? '▼' : '▲'}</button>
+          ${wallet.catalogProvider ? `<button class="aus-wallet-icon-btn" data-wallet-sync="1" data-wallet-id="${esc(wallet.id)}" title="按价格来源同步模型价格" aria-label="同步价格">↻</button>` : ''}
+          ${isOfficial ? '' : `<button class="aus-wallet-icon-btn is-danger" data-wallet-ignore="1" data-wallet-id="${esc(wallet.id)}" title="忽略该钱包（历史与统计保留）" aria-label="忽略钱包">✕</button>`}
         </div>
       </div>
 
