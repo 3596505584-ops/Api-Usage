@@ -22,7 +22,8 @@ export type IconName =
   | 'chevron-right'
   | 'refresh'
   | 'close'
-  | 'menu';
+  | 'menu'
+  | 'brand';
 
 const PATHS: Record<IconName, string> = {
   overview:
@@ -49,6 +50,8 @@ const PATHS: Record<IconName, string> = {
     '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
   close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
   menu: '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>',
+  // 品牌标识：圆角外框 + 三根柱，与导航图标同线宽风格
+  brand: '<rect x="3" y="4" width="18" height="16" rx="4"/><path d="M8 15v-3"/><path d="M12 15V9"/><path d="M16 15v-2"/>',
 };
 
 /**

@@ -189,8 +189,9 @@
   will-change: auto !important;
 }
 #aus-sidebar { background: var(--ds-sidebar-bg) !important; border-right: 1px solid var(--ds-border) !important; }
-/* 品牌标题与导航项文字左对齐：侧栏内距 10 + 条目内距 12 + 图标 20 + 条目间距 12 − 品牌区内距 14 = 40 */
-#aus-sidebar #aus-brand { padding-left: 40px; }
+/* 品牌区：图标与导航图标同列（左边缘 22px），标题文字仍与导航项文字同列（54px）——
+   图标列 22 = 品牌行内距 14 + padding-left 8；文字列 54 = 22 + 图标 20 + 间距 12 */
+#aus-sidebar #aus-brand { padding-left: 8px; }
 #aus-panel { position: fixed; } /* 使 absolute 侧栏以面板为 containing block，覆盖含 mobile-header 的全高度 */
 #aus-panel-body { display:flex; flex-direction:row; flex:1; min-height:0; overflow:hidden; container-type: inline-size; container-name: ausbody; /* 去 relative：让移动端抽屉覆盖 header，避免顶部缺口 */ }
 .aus-stats-filter { position: relative; min-width: 0; }
@@ -219,7 +220,7 @@
   /* 窄容器抽屉同样保持紧凑导航尺寸（与 ≤760px 视口一致） */
   #aus-sidebar .aus-nav-item { justify-content: flex-start !important; padding: 8px 10px !important; gap: 10px !important; font-size: 12px !important; border-radius: 8px !important; }
   /* 窄容器抽屉的导航项文字起点同步左移（内距 10 + 10 + 图标 20 + 间距 10 − 品牌区内距 14 = 36） */
-  #aus-sidebar #aus-brand { padding-left: 36px !important; }
+  #aus-sidebar #aus-brand { padding-left: 6px !important; gap: 10px !important; }
   #aus-main { padding: 12px !important; overflow-x: hidden !important; }
   #aus-overview-four { grid-template-columns: repeat(2, 1fr) !important; gap: clamp(8px, 1.5cqi, 10px) !important; }
   #aus-stats-four { grid-template-columns: repeat(2, 1fr) !important; gap: clamp(8px, 1.5cqi, 10px) !important; }
@@ -476,7 +477,7 @@
   #aus-sidebar-toggle { display:none !important; }
   #aus-page-header { display:none !important; }
   /* 窄屏呼出时强制还原完整导航样式，避免宽屏折叠残留导致间距/动画异常 */
-  #aus-sidebar #aus-brand { display:flex !important; padding-left:36px !important; }
+  #aus-sidebar #aus-brand { display:flex !important; padding-left:6px !important; gap:10px !important; }
   /* 窄屏钱包卡紧凑化：标识缩小、余额/模型两项与图标操作并排、内外间距收紧，尽量压低纵向占用 */
   .aus-wallet-avatar { width: 36px !important; height: 36px !important; border-radius: 10px !important; font-size: 15px !important; }
   .aus-wallet-header { gap: 8px 10px !important; }
