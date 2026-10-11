@@ -2,7 +2,10 @@
 -- 首次部署执行：
 --   npx wrangler d1 execute api_usage_stat --remote --file cloudflare/schema.sql
 
--- 设备环境快照：每台匿名设备一行，首次上报写入，之后仅按周回写活跃时间与版本
+-- 设备维度汇总：每台匿名设备一行
+--   - 环境字段（browser/os/arch/...）保存该设备「最近一次上报」的状态，空值不覆盖旧值；
+--   - *_total 为去标识化的累计计数，每次有效上报（seq 递增）增量累加，供看板一次全表读即可出总计与画像；
+--   - last_seq 为幂等判据，重复/重发上报不会重复累加累计列。
 CREATE TABLE IF NOT EXISTS device (
   device_id TEXT PRIMARY KEY,
   first_seen INTEGER NOT NULL,
@@ -17,7 +20,19 @@ CREATE TABLE IF NOT EXISTS device (
   dark INTEGER,
   standalone INTEGER,
   touch INTEGER,
-  tz_offset REAL
+  tz_offset REAL,
+  first_day TEXT,
+  last_seq INTEGER NOT NULL DEFAULT 0,
+  opens_total INTEGER NOT NULL DEFAULT 0,
+  dur_ms_total INTEGER NOT NULL DEFAULT 0,
+  p_overview_total INTEGER NOT NULL DEFAULT 0,
+  p_stats_total INTEGER NOT NULL DEFAULT 0,
+  p_history_total INTEGER NOT NULL DEFAULT 0,
+  p_forecast_total INTEGER NOT NULL DEFAULT 0,
+  p_wallet_total INTEGER NOT NULL DEFAULT 0,
+  p_settings_total INTEGER NOT NULL DEFAULT 0,
+  p_help_total INTEGER NOT NULL DEFAULT 0,
+  p_about_total INTEGER NOT NULL DEFAULT 0
 );
 
 -- 逐设备日数据：每设备每天一行，重复上报在库内累加（last_seq 保证幂等）

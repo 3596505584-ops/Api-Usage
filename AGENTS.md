@@ -34,12 +34,17 @@ Api-Usage/
 ├── scripts/preview-package.mjs # main 预览包：git archive、SHA-256、压缩包清单校验
 ├── scripts/preview-notes.mjs # main 预览说明：按提交区间生成短哈希、说明与链接
 ├── cloudflare/            # ★ 匿名使用统计接收端（Cloudflare Worker + D1 + 看板，不参与 Vite 构建与 CI）
-│   ├── worker.js          # 路由：POST /collect、GET /dashboard、GET /api/summary、GET /health + 每月清理定时任务
+│   ├── worker.js          # 路由：POST /collect、GET /dashboard、GET /vendor/echarts.js、GET /api/summary、GET /api/trend、GET /health + 每月清理定时任务 + Cache API 10 分钟缓存（?force=1 绕过）
+│   ├── vendor/echarts.min.js # 自托管 ECharts 6.1.0（simple 构建，取自 node_modules/echarts/dist/echarts.simple.min.js；由 /vendor/echarts.js 同源提供，避免第三方 CDN 被网络拦截）
+│   ├── summary.js         # 看板聚合纯函数（北京时间日期基准、计数截断、时长分桶、渲染耗时估算、环境画像），cloudflare/summary.test.js 覆盖
 │   ├── payload.js         # 上报体白名单校验与数值钳制（纯函数，cloudflare/payload.test.js 覆盖）
-│   ├── schema.sql         # D1 建表：device 设备快照 + device_daily 逐设备日数据（last_seq 幂等）
+│   ├── worker.test.js     # Worker 接口测试（鉴权、/collect 契约、总计/趋势口径、定时清理）
+│   ├── schema.sql         # D1 建表：device 设备维度汇总（环境为每设备最新状态 + opens_total/dur_ms_total/p_*_total 累计列 + first_day/last_seq）+ device_daily 逐设备日数据（last_seq 幂等）
+│   ├── migrate-device-totals.sql # 已有库一次性迁移：新增累计列并用 device_daily 回填（必须「先回填、再部署」）
+│   ├── migrate-backfill-device-totals.sql # 只做累计列回填与校验，可安全重复执行（列已存在或需重算时使用）
 │   ├── wrangler.toml      # Worker 配置（D1 绑定、Cron、HTML 文本模块规则）
-│   ├── dashboard.html     # 口令保护的看板页（原生表格 + canvas 折线，不引第三方资源）
-│   └── README.md          # 部署、接入客户端、免费额度策略与运维 SQL
+│   ├── dashboard.html     # 口令保护的看板（总计/趋势/面板构成/画像/性能五分区，ECharts 6.1.0 自托管与 npmmirror 并发竞速 + jsdelivr/unpkg 兜底、页头显示来源徽标与 BUILD_ID，每个趋势图独立时间控件默认 30 天，手机竖屏单列）
+│   └── README.md          # 部署、迁移回填、看板与接口说明、免费额度策略与运维 SQL
 ├── i18n/zh-cn.json
 ├── templates/panel.html   # 预留 Handlebars
 ├── src/
@@ -76,7 +81,7 @@ node --check index.js
 npm run verify:ci   # 版本单源、清单路径、引用链与孤立产物
 ```
 
-- **匿名统计接收端（不参与上述构建与 CI）**：`cloudflare/` 独立部署，步骤见 `cloudflare/README.md`（`wrangler login` → `d1 create` → 填 `database_id` → `d1 execute --file cloudflare/schema.sql` → `secret put DASHBOARD_TOKEN` → `wrangler deploy`）；部署完成后把 `/collect` 地址写入 `src/services/telemetry.ts#TELEMETRY_ENDPOINT` 并重新 `npm run build` 提交产物
+- **匿名统计接收端（不参与上述构建与 CI）**：`cloudflare/` 独立部署，步骤见 `cloudflare/README.md`（`wrangler login` → `d1 create` → 填 `database_id` → `d1 execute --file cloudflare/schema.sql`（已有库改跑 `migrate-device-totals.sql` 回填累计列）→ `secret put DASHBOARD_TOKEN` → `wrangler deploy`）；部署完成后把 `/collect` 地址写入 `src/services/telemetry.ts#TELEMETRY_ENDPOINT` 并重新 `npm run build` 提交产物
 - **入口**：酒馆左下角魔法棒 `#extensionsMenu → #aus_wand_entry`（`list-group-item`），点击 `togglePanel()` 打开全屏 `#aus-overlay + #aus-panel`（`absolute` 视口计算，监听 `scroll/resize`，非 `fixed` 以规避 `transform` 祖先在窄屏漂移）
 - **面板**：全屏 `absolute` 定位置换 + 侧边导航（复刻 DeepSeek 官网 `display` 切换：`≥761px` 常显 `220px ↔ 60px` 折叠（`#aus-sidebar-toggle` 可见），`≤760px` 默认 `display:none` 隐藏 + `#aus-mobile-header` 内 `24px` 汉堡瞬时呼出 `is-open`，`#aus-sidebar-toggle` 隐藏，无遮罩无动画无过渡，`syncMobileSidebar` 清理宽屏折叠残留 inline），外层 `#aus-panel flex:column` + 内层 `#aus-panel-body flex:row`（`#aus-main overflow-x:hidden + min-width:0` 约束防止 720px 表撑开），`8` 视图（用量概览/统计/历史/趋势预测 Beta/钱包/设置/使用说明/关于）经 `data-view` + `opacity 0.15s` 切换，窄屏由汉堡控制 + 导航点击自动收起
 - **样式**：`[data-extension="api-usage-stat"][data-ds-theme="light"]` 隔离，卡片 `1px solid #E5E7EB` 实线，无 `box-shadow`，字重 `600`，`Microsoft YaHei` 保证锐利；`#aus-sidebar` 无过渡（瞬时 `display` 切换），`style.css` 定义 `light/dark` 两套同名变量，深色经 `themeColor()` 注入 ECharts，默认 `light`
@@ -159,6 +164,7 @@ npm run verify:ci   # 版本单源、清单路径、引用链与孤立产物
 - **改历史筛选/详情/占比**：`src/ui/panel.ts`（`renderHistory` 四维度筛选 + 筛选后分页 + 详情右侧/底部窗口与 4 类原始数据 + 三色条，费用按币种）
 - **改连接身份/隐私**：`src/services/connection-identity.ts`（地址规范、密钥条目映射）+ `src/services/interception.ts`（请求开始快照）+ `src/data/fingerprint.ts`（连接感知去重）；严格隐私模式禁止读取 `proxy_password` 与 `custom_include_headers`
 - **改匿名统计**：客户端 `src/services/telemetry.ts`（环境分桶探测、会话内累加、关闭面板/页面隐藏时批量上报、匿名标识与 `settings.telemetryEnabled` 开关、失败重试与待发合并）+ 埋点收敛点 `src/ui/panel.ts`（`openPanel`→`trackOpen`、`switchView`→`trackPage`、`closePanel`→`flushTelemetry`）+ `src/index.ts`（`initTelemetry`）+ 设置卡片 `src/ui/settings.ts`（开关、标识展示与重置）；服务端 `cloudflare/worker.js` + `cloudflare/payload.js` + `cloudflare/schema.sql`（新增采集字段必须三处同步：客户端 payload、`payload.js` 白名单、`schema.sql` 列，并同步 `docs.html` 隐私声明第十节与第四节域名表）
+- **改看板**：`cloudflare/dashboard.html`（分区布局、ECharts 配置、每个趋势图的独立时间控件、手机竖屏单列、CDN 失败时的文本兜底）+ `cloudflare/worker.js`（`/api/summary` 总计与画像、`/api/trend` 日趋势与按版本渲染耗时、Cache API 缓存与 `?force=1`）+ `cloudflare/summary.js`（聚合纯函数，改口径必须同步 `cloudflare/summary.test.js` 与 `cloudflare/worker.test.js`）；读者口径（设备维度累计列、环境取最近状态、北京时间「今日」）以 `cloudflare/README.md` 为准；新增或更换 `device` 列时必须同步 `schema.sql` 与 `migrate-device-totals.sql`
 - **改同步/导入**：`src/services/sync.ts` + `src/services/import-export.ts`（保持 `deepseek-stat-export v1` 兼容；钱包配置通过可选 `wallets/walletIgnored/walletFormat:2` 携带；WebDAV 包版本为 `2` 且兼容读取旧 `1`；历史按 `historyRecordKey` 的 timestamp/model/token/接入/钱包/密钥综合身份去重；导出经 `getAllHistory` 含冷库全量，导入超 `MAX_HISTORY` 自动回冷库，任何钱包校准密钥均不导出）+ `src/services/pricing-sync.ts`（models.dev 按钱包同步）
 - **改预测**：`src/ui/forecast-view.ts`（自选对话胶囊、能耗/预测/敏感度联动）+ `src/stats/forecast.ts`
 - **改自定义小块（概览 8 + 统计 4）**：在 `FOUR_OPTIONS`（`src/ui/overview.ts` 导出，概览与统计页共用的 18 项标签表）+ `OverviewFourKey/StatsFourKey`（`src/types/settings.ts`）+ `getFourDisplay`（渲染）+ `valid/validStats` 白名单（`src/data/repository.ts` 的 `normalizeSettings` 与 `hydrate`）四处同步新增 key；数值算在 `computeOverview`/`computeStatsFour`（`src/data/computed.ts`），**所有 `avg_*` 必须走 `averagePositive`**，让单轮 0/空值从分子分母同时剔除

@@ -13,5 +13,8 @@ deepseek-ui-reference.md
 cloudflare/wrangler.local.toml
 .dev.vars
 
+# Wrangler / Miniflare 本地状态（本地 D1、KV、R2、缓存等运行时产物）
+.wrangler/
+
 # 提交信息临时文件
 .commit-msg.tmp

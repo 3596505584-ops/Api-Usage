@@ -2,374 +2,1130 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>API用量统计 · 匿名使用统计看板</title>
 <style>
   :root {
     --bg: #FFFFFF; --card: #F6F7F8; --inner: #FFFFFF; --text: #111827;
-    --text2: #6B7280; --text3: #9CA3AF; --border: #E5E7EB; --orange: #FF6A00;
-    --green: #0BA25E; --blue: #2563EB; --radius: 14px;
+    --text2: #6B7280; --text3: #9CA3AF; --border: #E5E7EB; --grid: #E9EBEF;
+    --orange: #FF6A00; --green: #0BA25E; --blue: #2563EB; --red: #DC2626;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0F1419; --card: #1E242E; --inner: #161B22; --text: #E5E7EB;
+      --text2: #9CA3AF; --text3: #6B7280; --border: #2A3341; --grid: #2A3341;
+    }
   }
   * { box-sizing: border-box; }
+  /* 带 hidden 属性的元素必须真正隐藏：.banner/.panel-foot 都设了 display，会盖掉 UA 的 [hidden] 规则 */
+  [hidden] { display: none !important; }
+  html, body { max-width: 100%; overflow-x: hidden; }
   body {
-    margin: 0; padding: 20px 18px 48px; background: var(--bg); color: var(--text);
+    margin: 0; padding: 18px 14px 40px; background: var(--bg); color: var(--text);
     font-family: "Microsoft YaHei", -apple-system, "Segoe UI", sans-serif; font-size: 13px; line-height: 1.6;
+    -webkit-text-size-adjust: 100%;
   }
   h1 { font-size: 17px; font-weight: 600; margin: 0 0 4px; }
-  h2 { font-size: 13px; font-weight: 600; margin: 0 0 8px; }
-  .sub { color: var(--text2); font-size: 12px; margin-bottom: 14px; }
-  .dash-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-  .controls { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-  .pill {
-    padding: 6px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--inner);
-    font-size: 12px; color: var(--text); cursor: pointer;
+  h2 { font-size: 14px; font-weight: 600; margin: 0; }
+  h3 { font-size: 12.5px; font-weight: 600; margin: 0; }
+  .top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .meta { color: var(--text2); font-size: 12px; }
+  .meta b { color: var(--text); font-weight: 600; }
+  .top-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .badge {
+    font-size: 11px; color: var(--text2); border: 1px solid var(--border); border-radius: 999px;
+    padding: 3px 9px; background: var(--inner); white-space: nowrap;
   }
-  .pill.active { background: var(--text); color: #FFFFFF; border-color: var(--text); font-weight: 600; }
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
-  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
-  .card .label { font-size: 11px; color: var(--text2); }
-  .card .value { font-size: 22px; font-weight: 600; margin-top: 2px; letter-spacing: -0.5px; }
+  .badge.hit { color: var(--green); }
+  .badge.bypass { color: var(--orange); }
+  header.top .error, .error { color: var(--red); font-size: 12px; }
+  .chip {
+    font-family: inherit; font-size: 11.5px; color: var(--text); background: var(--inner);
+    border: 1px solid var(--border); border-radius: 999px; padding: 4px 11px; cursor: pointer;
+    min-height: 26px; line-height: 1.4;
+  }
+  .chip:hover { border-color: var(--text3); }
+  .chip.active { background: var(--text); color: var(--bg); border-color: var(--text); font-weight: 600; }
+  .chip.primary { background: var(--orange); border-color: var(--orange); color: #FFFFFF; font-weight: 600; }
+  .banner {
+    border: 1px solid var(--border); background: var(--card); border-radius: var(--radius);
+    padding: 10px 12px; margin-bottom: 12px; color: var(--text2); font-size: 12px;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .block { margin-bottom: 18px; }
+  .block-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin: 0 2px 8px; }
+  .note { color: var(--text2); font-size: 11.5px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); gap: 10px; }
+  .cards + .cards { margin-top: 10px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 11px 12px; min-width: 0; }
+  .card .label { font-size: 11.5px; color: var(--text2); }
+  .card .value {
+    font-size: 21px; font-weight: 600; letter-spacing: -0.4px; margin-top: 2px;
+    font-variant-numeric: tabular-nums; word-break: break-all;
+  }
   .card .hint { font-size: 11px; color: var(--text3); }
-  section { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 12px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
-  .grid section { margin-bottom: 0; }
-  .bar-row { display: grid; grid-template-columns: 132px 1fr 68px; gap: 8px; align-items: center; margin-bottom: 6px; font-size: 12px; }
-  .bar-track { background: var(--border); border-radius: 999px; height: 8px; overflow: hidden; }
-  .bar-fill { height: 100%; border-radius: 999px; background: var(--orange); }
-  .bar-label { color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .bar-value { text-align: right; color: var(--text2); font-variant-numeric: tabular-nums; }
-  table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  th, td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--border); }
-  th { color: var(--text2); font-weight: 600; }
-  td.num { text-align: right; font-variant-numeric: tabular-nums; }
-  canvas { width: 100%; height: 190px; display: block; }
-  .notice { color: var(--text2); font-size: 12px; }
-  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 8px; font-size: 12px; color: var(--text2); }
-  .legend-item { display: inline-flex; align-items: center; gap: 5px; }
-  .legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; }
-  .error { color: #DC2626; font-size: 12px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 12px; align-items: start; }
+  .grid.single { grid-template-columns: 1fr; }
+  .panel {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 12px; min-width: 0; overflow: hidden;
+  }
+  .panel-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+  .panel-foot { margin-top: 6px; display: flex; justify-content: flex-end; }
+  .chart { width: 100%; height: 250px; min-width: 0; }
+  .chart.tall { height: 300px; }
+  .fallback { font-size: 12px; }
+  .fb-row { display: grid; grid-template-columns: 104px 1fr 62px; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .fb-label { color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fb-track { background: var(--border); border-radius: 999px; height: 8px; overflow: hidden; }
+  .fb-fill { height: 100%; border-radius: 999px; background: var(--orange); }
+  .fb-value { text-align: right; color: var(--text2); font-variant-numeric: tabular-nums; }
+  .range-bar {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;
+    padding-bottom: 8px; border-bottom: 1px dashed var(--border);
+  }
+  .range-bar .custom { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+  .range-bar input[type="date"] {
+    font-family: inherit; font-size: 11.5px; color: var(--text); background: var(--inner);
+    border: 1px solid var(--border); border-radius: 8px; padding: 3px 6px; min-height: 26px;
+    max-width: 132px;
+  }
+  .range-bar .tilde { color: var(--text3); }
+  .range-bar .current { font-size: 11px; color: var(--text2); margin-left: auto; font-variant-numeric: tabular-nums; }
+  footer { color: var(--text2); font-size: 11.5px; border-top: 1px solid var(--border); padding-top: 12px; }
+  footer ul { margin: 6px 0 0; padding-left: 18px; }
+  footer li { margin-bottom: 3px; }
+  @media (max-width: 760px) {
+    body { padding: 14px 10px 32px; }
+    .grid { grid-template-columns: 1fr; }
+    .chart { height: 240px; }
+    .chart.tall { height: 280px; }
+    .card .value { font-size: 19px; }
+    .range-bar .current { margin-left: 0; width: 100%; }
+  }
 </style>
 </head>
 <body>
-<div class="dash-head">
+<header class="top">
   <div>
     <h1>API用量统计 · 匿名使用统计</h1>
-    <div class="sub" id="meta">加载中…</div>
+    <div class="meta" id="meta">加载中…</div>
   </div>
-  <div class="controls">
-    <button class="pill" data-days="7">近 7 天</button>
-    <button class="pill active" data-days="30">近 30 天</button>
-    <button class="pill" data-days="90">近 90 天</button>
-    <button class="pill" data-days="365">近 1 年</button>
-    <button class="pill" id="reload">刷新</button>
+  <div class="top-actions">
+    <span class="badge" id="cache-badge" hidden></span>
+    <span class="badge" id="lib-badge" hidden></span>
+    <button class="chip primary" id="refresh">刷新</button>
   </div>
+</header>
+
+<div class="banner" id="lib-banner" hidden>
+  <span id="lib-banner-text">图表库加载失败，已改用纯文本数值列表展示。</span>
+  <button class="chip" id="lib-retry">重试加载图表库</button>
 </div>
 
-<div class="cards" id="cards"></div>
-
-<section>
-  <h2>日活设备趋势</h2>
-  <canvas id="dau-chart"></canvas>
+<section class="block">
+  <div class="block-head">
+    <h2>总计速览</h2>
+    <span class="note">全部时间累计，不随时间筛选变化；「今日」按北京时间</span>
+  </div>
+  <div class="cards" id="cards-life"></div>
+  <div class="cards" id="cards-today"></div>
 </section>
 
-<section>
-  <h2>使用强度趋势</h2>
-  <div class="legend" id="trend-legend"></div>
-  <canvas id="usage-chart"></canvas>
+<section class="block">
+  <div class="block-head">
+    <h2>增长与活跃趋势</h2>
+    <span class="note">每个图表可独立选择时间范围，默认最近 30 天</span>
+  </div>
+  <div class="grid" id="grid-trend"></div>
 </section>
 
-<section>
-  <h2>页面使用构成（每日切换次数）</h2>
-  <div class="legend" id="pages-chart-legend"></div>
-  <canvas id="pages-chart"></canvas>
+<section class="block">
+  <div class="block-head">
+    <h2>面板使用构成</h2>
+    <span class="note">全部时间累计打开次数</span>
+  </div>
+  <div class="grid single" id="grid-usage"></div>
 </section>
 
-<section>
-  <h2>页面使用率</h2>
-  <div id="pages"></div>
+<section class="block">
+  <div class="block-head">
+    <h2>用户与设备画像</h2>
+    <span class="note">环境维度取每台设备最近一次上报的状态</span>
+  </div>
+  <div class="grid" id="grid-profile"></div>
 </section>
 
-<section>
-  <h2>面板渲染耗时分布</h2>
-  <div id="render"></div>
-  <div class="notice" style="margin-top:6px;">分档：&lt;100ms / &lt;300ms / &lt;800ms / &lt;2000ms / ≥2000ms</div>
+<section class="block">
+  <div class="block-head">
+    <h2>使用时长与渲染性能</h2>
+    <span class="note">时长分布按全部时间累计；渲染耗时按所选时间范围</span>
+  </div>
+  <div class="grid" id="grid-perf"></div>
 </section>
 
-<section>
-  <h2>扩展版本分布</h2>
-  <div class="notice" style="margin-bottom:6px;">按每台设备在所选范围内最后上报的版本统计，各版本设备数之和等于范围内活跃设备数</div>
-  <div id="versions"></div>
-</section>
-
-<div class="notice" style="margin-bottom:8px;">以下环境分布来自每台设备<strong>首次上报时</strong>的快照（之后更换浏览器或系统不会更新），且不随上方所选时间范围变化。</div>
-<div class="grid">
-  <section><h2>浏览器</h2><div id="env-browser"></div></section>
-  <section><h2>操作系统</h2><div id="env-os"></div></section>
-  <section><h2>CPU 架构</h2><div id="env-arch"></div></section>
-  <section><h2>语言</h2><div id="env-lang"></div></section>
-  <section><h2>窄屏分桶</h2><div id="env-width"></div></section>
-  <section><h2>时区偏移</h2><div id="env-tz"></div></section>
-  <section><h2>深色偏好</h2><div id="env-dark"></div></section>
-  <section><h2>显示形态</h2><div id="env-standalone"></div></section>
-  <section><h2>指针类型</h2><div id="env-touch"></div></section>
-</div>
+<footer>
+  <div>数据来自扩展「API用量统计」的匿名、聚合、去标识化上报，仅包含分桶与计数，不含对话内容、模型名、密钥、金额与 IP。</div>
+  <ul>
+    <li>使用时长 = 面板打开期间由客户端累计的会话时长；「今日」按北京时间（UTC+8）计算。</li>
+    <li>渲染耗时由客户端 5 档（&lt;100/&lt;300/&lt;800/&lt;2000/≥2000ms）按档位代表值估算，条长偏保守，用于版本间横向对比。</li>
+    <li>接口默认缓存 10 分钟；点「刷新」会绕过缓存重新查询，页面顶部显示数据生成时间。</li>
+  </ul>
+</footer>
 
 <script>
-const PAGE_LABELS = {
-  overview: '用量概览', stats: '用量统计', history: '历史记录', forecast: '趋势预测',
-  wallet: '钱包', settings: '设置', help: '使用说明', about: '关于',
-};
+(function () {
+  'use strict';
 
-let currentDays = 30;
-let lastDaily = [];
-let lastData = null;
-/** 页面构成堆叠柱的配色（顺序与 PAGE_LABELS 一致） */
-const PAGE_COLORS = ['#FF6A00', '#2563EB', '#0BA25E', '#7C3AED', '#DC2626', '#0891B2', '#D97706', '#DB2777'];
+  /* ---------------------------------- 常量 ---------------------------------- */
 
-function fmtInt(value) {
-  const num = Number(value) || 0;
-  return num.toLocaleString('zh-CN');
-}
-
-function fmtDuration(ms) {
-  const total = Math.round((Number(ms) || 0) / 1000);
-  if (!total) return '0 分钟';
-  const hours = Math.floor(total / 3600);
-  const minutes = Math.round((total % 3600) / 60);
-  return hours ? `${hours} 小时 ${minutes} 分` : `${minutes} 分钟`;
-}
-
-function card(label, value, hint) {
-  return `<div class="card"><div class="label">${label}</div><div class="value">${value}</div>${hint ? `<div class="hint">${hint}</div>` : ''}</div>`;
-}
-
-function renderBars(hostId, items, unit) {
-  const host = document.getElementById(hostId);
-  if (!host) return;
-  const list = Array.isArray(items) ? items.filter((item) => item && item.count > 0) : [];
-  if (!list.length) {
-    host.innerHTML = '<div class="notice">暂无数据</div>';
-    return;
-  }
-  const max = Math.max(...list.map((item) => Number(item.count) || 0)) || 1;
-  const total = list.reduce((sum, item) => sum + (Number(item.count) || 0), 0);
-  host.innerHTML = list.map((item) => {
-    const count = Number(item.count) || 0;
-    const percent = total ? Math.round((count / total) * 1000) / 10 : 0;
-    const width = Math.max(2, Math.round((count / max) * 100));
-    return `<div class="bar-row"><div class="bar-label" title="${String(item.label)}">${String(item.label)}</div>`
-      + `<div class="bar-track"><div class="bar-fill" style="width:${width}%"></div></div>`
-      + `<div class="bar-value">${fmtInt(count)}${unit === 'percent' ? ` · ${percent}%` : ''}</div></div>`;
-  }).join('');
-}
-
-/** 准备 canvas：按设备像素比缩放并清空 */
-function prepCanvas(canvas) {
-  const dpr = window.devicePixelRatio || 1;
-  const width = canvas.clientWidth || 600;
-  const height = canvas.clientHeight || 190;
-  canvas.width = Math.round(width * dpr);
-  canvas.height = Math.round(height * dpr);
-  const ctx = canvas.getContext('2d');
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.clearRect(0, 0, width, height);
-  return { ctx, width, height };
-}
-
-function drawEmpty(ctx) {
-  ctx.fillStyle = '#9CA3AF';
-  ctx.font = '12px "Microsoft YaHei", sans-serif';
-  ctx.fillText('暂无数据', 12, 24);
-}
-
-function layout(width, height) {
-  const pad = { padLeft: 34, padRight: 10, padTop: 12, padBottom: 22 };
-  pad.plotW = Math.max(10, width - pad.padLeft - pad.padRight);
-  pad.plotH = Math.max(10, height - pad.padTop - pad.padBottom);
-  return pad;
-}
-
-/** 画网格、Y 轴刻度与 X 轴日期标签 */
-function drawAxes(ctx, pad, width, height, maxValue, xOf, rows) {
-  ctx.strokeStyle = '#E5E7EB';
-  ctx.lineWidth = 1;
-  for (let i = 0; i <= 4; i++) {
-    const y = pad.padTop + (pad.plotH / 4) * i;
-    ctx.beginPath();
-    ctx.moveTo(pad.padLeft, y);
-    ctx.lineTo(width - pad.padRight, y);
-    ctx.stroke();
-  }
-  ctx.fillStyle = '#9CA3AF';
-  ctx.font = '11px "Microsoft YaHei", sans-serif';
-  ctx.fillText(String(maxValue), 4, pad.padTop + 8);
-  ctx.fillText('0', 4, pad.padTop + pad.plotH);
-  ctx.fillStyle = '#6B7280';
-  const labelCount = Math.min(6, rows.length);
-  for (let i = 0; i < labelCount; i++) {
-    const index = rows.length === 1 ? 0 : Math.round((rows.length - 1) * (i / Math.max(1, labelCount - 1)));
-    const text = String(rows[index].day).slice(5);
-    const x = Math.min(width - pad.padRight - 26, Math.max(pad.padLeft - 6, xOf(index) - 12));
-    ctx.fillText(text, x, height - 6);
-  }
-}
-
-/** 多条折线趋势图；series 每项为 { label, color, get(row) } */
-function drawTrend(canvas, rows, series) {
-  if (!canvas) return;
-  const { ctx, width, height } = prepCanvas(canvas);
-  if (!rows.length) return drawEmpty(ctx);
-  const pad = layout(width, height);
-  let maxValue = 0;
-  for (const row of rows) {
-    for (const item of series) maxValue = Math.max(maxValue, Number(item.get(row)) || 0);
-  }
-  maxValue = Math.max(1, maxValue);
-  const single = rows.length === 1;
-  const stepX = single ? 0 : pad.plotW / (rows.length - 1);
-  const xOf = (index) => pad.padLeft + (single ? pad.plotW / 2 : index * stepX);
-  const yOf = (value) => pad.padTop + pad.plotH - (Math.max(0, value) / maxValue) * pad.plotH;
-  drawAxes(ctx, pad, width, height, maxValue, xOf, rows);
-  for (const item of series) {
-    ctx.beginPath();
-    rows.forEach((row, index) => {
-      const x = xOf(index);
-      const y = yOf(Number(item.get(row)) || 0);
-      if (index === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.strokeStyle = item.color;
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    if (single) {
-      ctx.fillStyle = item.color;
-      ctx.beginPath();
-      ctx.arc(xOf(0), yOf(Number(item.get(rows[0])) || 0), 3, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-}
-
-/** 堆叠柱状图；series 每项为 { label, color, get(row) } */
-function drawStacked(canvas, rows, series) {
-  if (!canvas) return;
-  const { ctx, width, height } = prepCanvas(canvas);
-  if (!rows.length) return drawEmpty(ctx);
-  const pad = layout(width, height);
-  const totals = rows.map((row) => series.reduce((sum, item) => sum + (Number(item.get(row)) || 0), 0));
-  const maxValue = Math.max(1, ...totals);
-  const slot = pad.plotW / Math.max(1, rows.length);
-  const barW = Math.max(4, Math.min(38, slot * 0.62));
-  const xOf = (index) => pad.padLeft + slot * index + slot / 2;
-  drawAxes(ctx, pad, width, height, maxValue, xOf, rows);
-  rows.forEach((row, index) => {
-    const x = pad.padLeft + slot * index + (slot - barW) / 2;
-    let bottom = pad.padTop + pad.plotH;
-    for (const item of series) {
-      const value = Number(item.get(row)) || 0;
-      if (value <= 0) continue;
-      const barH = (value / maxValue) * pad.plotH;
-      ctx.fillStyle = item.color;
-      ctx.fillRect(x, bottom - barH, barW, barH);
-      bottom -= barH;
-    }
-  });
-}
-
-function renderLegend(hostId, series) {
-  const host = document.getElementById(hostId);
-  if (!host) return;
-  host.innerHTML = series
-    .map((item) => `<span class="legend-item"><span class="legend-dot" style="background:${item.color}"></span>${item.label}</span>`)
-    .join('');
-}
-
-function render(data) {
-  document.getElementById('meta').textContent =
-    `统计范围：近 ${data.days} 天 · 数据生成于 ${new Date(data.generatedAt).toLocaleString('zh-CN')}` +
-    `（每次打开或点「刷新」都会重新查询，切换范围读到的是同一时刻的数据）`;
-  document.getElementById('cards').innerHTML = [
-    card('累计独立用户', fmtInt(data.devices.total), '历史去重设备数'),
-    card('今日活跃', fmtInt(data.devices.dau), '按客户端本地日期'),
-    card('近 7 天活跃', fmtInt(data.devices.wau), ''),
-    card('近 30 天活跃', fmtInt(data.devices.mau), ''),
-    card('当前范围活跃', fmtInt(data.devices.window), `近 ${data.days} 天`),
-    card('使用时段', fmtInt(data.usage.sessions), '每次上报计一段'),
-    card('打开面板次数', fmtInt(data.usage.opens), ''),
-    card('累计使用时长', fmtDuration(data.usage.durMs), '会话时长之和'),
-  ].join('');
-
-  lastData = data;
-  lastDaily = Array.isArray(data.daily) ? data.daily : [];
-  drawTrend(document.getElementById('dau-chart'), lastDaily, [
-    { label: '活跃设备', color: '#FF6A00', get: (row) => Number(row.devices) || 0 },
-  ]);
-  const trendSeries = [
-    { label: '打开面板次数', color: '#FF6A00', get: (row) => Number(row.opens) || 0 },
-    { label: '使用时段', color: '#2563EB', get: (row) => Number(row.sessions) || 0 },
-    { label: '页面切换次数', color: '#0BA25E', get: (row) => Number(row.pageTotal) || 0 },
+  const PAGE_KEYS = ['overview', 'stats', 'history', 'forecast', 'wallet', 'settings', 'help', 'about'];
+  const PAGE_LABELS = {
+    overview: '用量概览', stats: '用量统计', history: '历史记录', forecast: '趋势预测',
+    wallet: '钱包', settings: '设置', help: '使用说明', about: '关于',
+  };
+  /** 面板固定配色：占比趋势与累计分布使用同一顺序 */
+  const PAGE_COLORS = ['#FF6A00', '#2563EB', '#0BA25E', '#7C3AED', '#DC2626', '#0891B2', '#D97706', '#DB2777'];
+  const PIE_COLORS = ['#FF6A00', '#2563EB', '#0BA25E', '#7C3AED', '#0891B2', '#D97706', '#DB2777', '#DC2626'];
+  const NEUTRAL = '#94A3B8';
+  const BAR_LIMIT = 8;
+  const DEFAULT_RANGE_DAYS = 30;
+  /** 看板构建标识：每次改动看板后更新，便于确认浏览器拿到的是否为最新页面 */
+  const BUILD_ID = '2026-10-11.2';
+  /**
+   * 图表库来源。第一组（同源自托管 + 最快的公共 CDN）**并发竞速**，先成功者胜出：
+   * 不同网络的拦截策略不一样——有的网络挡第三方域名，有的网络大响应会被中断，
+   * 竞速可以保证「只要有一条通就能画图」，同时总等待时间约等于最快的那个源。
+   */
+  const ECHARTS_RACE = [
+    { label: '自托管', url: '/vendor/echarts.js?v=6.1.0-simple' },
+    { label: 'npmmirror', url: 'https://registry.npmmirror.com/echarts/6.1.0/files/dist/echarts.min.js' },
   ];
-  renderLegend('trend-legend', trendSeries);
-  drawTrend(document.getElementById('usage-chart'), lastDaily, trendSeries);
-  const pageSeries = Object.keys(PAGE_LABELS).map((key, index) => ({
-    label: PAGE_LABELS[key],
-    color: PAGE_COLORS[index % PAGE_COLORS.length],
-    get: (row) => Number(row.pages && row.pages[key]) || 0,
-  }));
-  renderLegend('pages-chart-legend', pageSeries);
-  drawStacked(document.getElementById('pages-chart'), lastDaily, pageSeries);
+  /** 竞速全部失败后，再顺序尝试的兜底来源 */
+  const ECHARTS_FALLBACK = [
+    { label: 'jsdelivr', url: 'https://cdn.jsdelivr.net/npm/echarts@6.1.0/dist/echarts.min.js' },
+    { label: 'unpkg', url: 'https://unpkg.com/echarts@6.1.0/dist/echarts.min.js' },
+  ];
+  /** 单个来源的加载超时（毫秒）：被墙的域名往往长时间不响应，超时后换下一个来源 */
+  const SCRIPT_TIMEOUT_MS = 10000;
+  /** 「脚本迟到」观察：超时判负后脚本仍可能最终执行成功，按此间隔回看 window.echarts */
+  const LATE_WATCH_INTERVAL_MS = 1500;
+  /** 「脚本迟到」最长观察时间（毫秒） */
+  const LATE_WATCH_MAX_MS = 90000;
 
-  const pageTotal = Number(data.pages.total) || 0;
-  const pageItems = Object.keys(PAGE_LABELS).map((key) => ({
-    label: PAGE_LABELS[key],
-    count: Number(data.pages[key]) || 0,
-  })).sort((a, b) => b.count - a.count);
-  renderBars('pages', pageItems, 'percent');
-  if (!pageTotal) document.getElementById('pages').innerHTML = '<div class="notice">暂无数据</div>';
+  /** 图表卡片声明：kind 决定绘制方式，range 表示带独立时间控件 */
+  const PANELS = [
+    { grid: 'grid-trend', id: 'growth', title: '累计用户趋势', note: 'Y 轴为截至当日的不重复用户累计值', kind: 'line', range: true },
+    { grid: 'grid-trend', id: 'daily-opens', title: '每日打开面板次数', note: '当日全部设备的打开次数之和', kind: 'line', range: true },
+    { grid: 'grid-trend', id: 'daily-users', title: '每日不重复用户数', note: '当日产生遥测数据的去重设备数', kind: 'line', range: true },
+    { grid: 'grid-trend', id: 'daily-pages', title: '每日面板打开占比', note: '各面板当日打开次数占当日面板打开总数的百分比', kind: 'line', range: true, tall: true },
+    { grid: 'grid-usage', id: 'pages', title: '面板累计打开次数', note: '全部时间累计', kind: 'bar' },
+    { grid: 'grid-profile', id: 'versions', title: '扩展版本分布', note: '每台设备最近一次上报的版本', kind: 'bar' },
+    { grid: 'grid-profile', id: 'arch', title: 'CPU 架构占比', note: '每台设备最近一次上报', kind: 'pie' },
+    { grid: 'grid-profile', id: 'os', title: '操作系统占比', note: '每台设备最近一次上报', kind: 'pie' },
+    { grid: 'grid-profile', id: 'env-browser', title: '浏览器', note: '每台设备最近一次上报', kind: 'bar' },
+    { grid: 'grid-profile', id: 'env-browser-version', title: '浏览器主版本', note: '浏览器名 + 主版本号', kind: 'bar' },
+    { grid: 'grid-profile', id: 'env-lang', title: '语言', note: '每台设备最近一次上报', kind: 'bar' },
+    { grid: 'grid-profile', id: 'env-width', title: '面板宽度分桶', note: '每台设备最近一次上报', kind: 'bar' },
+    { grid: 'grid-profile', id: 'env-dark', title: '深浅色偏好', note: '每台设备最近一次上报', kind: 'bar' },
+    { grid: 'grid-profile', id: 'env-standalone', title: '显示形态', note: '独立窗口 / 浏览器标签', kind: 'bar' },
+    { grid: 'grid-profile', id: 'env-touch', title: '指针类型', note: '触屏 / 鼠标', kind: 'bar' },
+    { grid: 'grid-profile', id: 'env-tz', title: '时区分布', note: '每台设备最近一次上报', kind: 'bar' },
+    { grid: 'grid-perf', id: 'duration', title: '用户累计使用时长分布', note: '按每台设备的累计使用时长分桶', kind: 'hist', tall: true },
+    { grid: 'grid-perf', id: 'render', title: '按扩展版本区分的渲染耗时', note: '条长 = 由客户端 5 档耗时估算的平均值', kind: 'bar', range: true },
+  ];
 
-  const renderItems = (data.render || []).map((count, index) => ({
-    label: ['<100ms', '<300ms', '<800ms', '<2000ms', '≥2000ms'][index] || String(index),
-    count: Number(count) || 0,
-  }));
-  renderBars('render', renderItems, 'percent');
+  /* ---------------------------------- 工具 ---------------------------------- */
 
-  renderBars('versions', data.versions || []);
-  renderBars('env-browser', data.env?.browser || []);
-  renderBars('env-os', data.env?.os || []);
-  renderBars('env-arch', data.env?.arch || []);
-  renderBars('env-lang', data.env?.lang || []);
-  renderBars('env-width', data.env?.width || []);
-  renderBars('env-tz', data.env?.tz || []);
-  renderBars('env-dark', data.env?.dark || []);
-  renderBars('env-standalone', data.env?.standalone || []);
-  renderBars('env-touch', data.env?.touch || []);
-}
+  const charts = new Map();
+  const expanded = new Set();
+  /** 横条图的完整数据，供「展开全部 / 收起」重绘 */
+  const barData = new Map();
+  const ranges = {};
+  const dailyCache = new Map();
+  const renderCache = new Map();
+  let echartsOk = false;
+  let summary = null;
+  /** 实际生效的图表库来源，以及每个来源的尝试结果（显示在页面上，便于排查网络问题） */
+  let echartsSource = '';
+  let echartsAttempts = [];
+  let lateWatchTimer = null;
 
-async function load() {
-  const meta = document.getElementById('meta');
-  try {
-    const res = await fetch(`/api/summary?days=${currentDays}`, {
-      headers: { Accept: 'application/json' },
-      cache: 'no-store',
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    render(await res.json());
-  } catch (error) {
-    if (meta) meta.innerHTML = `<span class="error">加载失败：${String(error && error.message ? error.message : error)}</span>`;
+  function el(id) { return document.getElementById(id); }
+
+  function escapeHtml(value) {
+    return String(value === null || value === undefined ? '' : value)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
-}
 
-document.querySelectorAll('.pill[data-days]').forEach((button) => {
-  button.addEventListener('click', () => {
-    document.querySelectorAll('.pill[data-days]').forEach((item) => item.classList.remove('active'));
-    button.classList.add('active');
-    currentDays = Number(button.getAttribute('data-days')) || 30;
-    load();
+  function fmtInt(value) {
+    return (Number(value) || 0).toLocaleString('zh-CN');
+  }
+
+  function fmtDuration(ms) {
+    const totalSeconds = Math.round((Number(ms) || 0) / 1000);
+    if (totalSeconds <= 0) return '0 分钟';
+    if (totalSeconds < 60) return `${totalSeconds} 秒`;
+    const minutes = Math.floor(totalSeconds / 60);
+    if (minutes < 60) return `${minutes} 分钟`;
+    const hours = Math.floor(minutes / 60);
+    const restMinutes = minutes % 60;
+    if (hours < 24) return restMinutes ? `${hours} 小时 ${restMinutes} 分` : `${hours} 小时`;
+    const days = Math.floor(hours / 24);
+    const restHours = hours % 24;
+    return restHours ? `${days} 天 ${restHours} 小时` : `${days} 天`;
+  }
+
+  function fmtMs(ms) {
+    const value = Number(ms);
+    if (!Number.isFinite(value)) return '—';
+    return value >= 1000 ? `${(value / 1000).toFixed(2)} s` : `${Math.round(value)} ms`;
+  }
+
+  function beijingToday() {
+    return new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  }
+
+  function shiftDay(day, deltaDays) {
+    const base = Date.parse(day + 'T00:00:00Z');
+    if (Number.isNaN(base)) return day;
+    return new Date(base + deltaDays * 86400000).toISOString().slice(0, 10);
+  }
+
+  function daysBetween(from, to) {
+    const a = Date.parse(from + 'T00:00:00Z');
+    const b = Date.parse(to + 'T00:00:00Z');
+    if (Number.isNaN(a) || Number.isNaN(b)) return 0;
+    return Math.round((b - a) / 86400000) + 1;
+  }
+
+  function shortDay(day) { return String(day).slice(5); }
+
+  /** 与后端 summary.js#mergeTail 同口径：超出条目合并为「其他」 */
+  function mergeTail(items, limit) {
+    const list = Array.isArray(items) ? items.slice() : [];
+    if (list.length <= limit) return list;
+    const head = list.slice(0, limit);
+    const rest = list.slice(limit).reduce((sum, item) => sum + (Number(item.count) || 0), 0);
+    if (rest > 0) head.push({ label: '其他', count: rest, merged: true });
+    return head;
+  }
+
+  function themeColors() {
+    const styles = getComputedStyle(document.body);
+    const read = (name, fallback) => {
+      const value = (styles.getPropertyValue(name) || '').trim();
+      return value || fallback;
+    };
+    return {
+      text: read('--text', '#111827'),
+      text2: read('--text2', '#6B7280'),
+      text3: read('--text3', '#9CA3AF'),
+      border: read('--border', '#E5E7EB'),
+      grid: read('--grid', '#E9EBEF'),
+      card: read('--card', '#F6F7F8'),
+      orange: read('--orange', '#FF6A00'),
+      green: read('--green', '#0BA25E'),
+      blue: read('--blue', '#2563EB'),
+    };
+  }
+
+  /* ---------------------------------- ECharts 加载 ---------------------------------- */
+
+  function loadScript(entry, timeoutMs) {
+    return new Promise((resolve) => {
+      const started = Date.now();
+      const script = document.createElement('script');
+      let settled = false;
+      const finish = (ok) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        if (!ok) script.remove();
+        resolve({ label: entry.label, ok, ms: Date.now() - started });
+      };
+      const timer = setTimeout(() => finish(false), timeoutMs || SCRIPT_TIMEOUT_MS);
+      script.src = entry.url;
+      script.referrerPolicy = 'no-referrer';
+      script.onload = () => finish(true);
+      script.onerror = () => finish(false);
+      document.head.appendChild(script);
+    });
+  }
+
+  /** 多个来源并发加载，返回第一个成功者（都失败返回 null） */
+  function raceScripts(entries) {
+    return new Promise((resolve) => {
+      let pending = entries.length;
+      let settled = false;
+      entries.forEach((entry) => {
+        loadScript(entry).then((result) => {
+          echartsAttempts.push(result);
+          if (settled) return;
+          if (result.ok) {
+            settled = true;
+            resolve(entry);
+            return;
+          }
+          pending -= 1;
+          if (pending === 0) {
+            settled = true;
+            resolve(null);
+          }
+        });
+      });
+    });
+  }
+
+  async function loadEcharts() {
+    echartsAttempts = [];
+    if (window.echarts) {
+      echartsSource = '页面已有';
+      return true;
+    }
+    const winner = await raceScripts(ECHARTS_RACE);
+    if (winner) {
+      echartsSource = winner.label;
+      return true;
+    }
+    for (const entry of ECHARTS_FALLBACK) {
+      const result = await loadScript(entry);
+      echartsAttempts.push(result);
+      if (result.ok) {
+        echartsSource = entry.label;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function attemptsText() {
+    return echartsAttempts
+      .map((item) => item.label + '：' + (item.ok ? '成功 ' + item.ms + 'ms' : '失败 ' + item.ms + 'ms'))
+      .join(' · ');
+  }
+
+  function renderLibBadge() {
+    const badge = el('lib-badge');
+    if (!badge) return;
+    if (echartsOk) {
+      badge.hidden = false;
+      badge.textContent = '图表库：' + echartsSource;
+      return;
+    }
+    badge.hidden = true;
+  }
+
+  /** 把所有依赖图表库的区域重画一遍（首次渲染、主题切换、图表库迟到成功时复用） */
+  function redrawAll() {
+    if (summary) {
+      renderUsage(summary);
+      renderProfile(summary);
+      renderDuration(summary);
+      paintGrowth();
+    }
+    refreshAllTrends(false);
+  }
+
+  /** 状态收敛：横幅、徽标与「图表库是否真的可用」始终一致 */
+  function syncLibState() {
+    const available = !!window.echarts;
+    echartsOk = available;
+    if (available && !echartsSource) echartsSource = '页面已有';
+    showLibBanner(!available);
+    renderLibBadge();
+  }
+
+  /**
+   * 有些网络下图表库会「迟到」：超过超时被判失败，稍后才真正下载并执行成功。
+   * 这里持续观察 window.echarts，一旦出现就同步状态并补画图表，
+   * 避免出现「横幅提示加载失败、图表其实已经能画」的不一致状态。
+   */
+  function watchLateEcharts() {
+    if (lateWatchTimer || window.echarts) return;
+    const started = Date.now();
+    lateWatchTimer = setInterval(() => {
+      if (window.echarts) {
+        clearInterval(lateWatchTimer);
+        lateWatchTimer = null;
+        echartsSource = '迟到加载';
+        syncLibState();
+        redrawAll();
+        return;
+      }
+      if (Date.now() - started > LATE_WATCH_MAX_MS) {
+        clearInterval(lateWatchTimer);
+        lateWatchTimer = null;
+      }
+    }, LATE_WATCH_INTERVAL_MS);
+  }
+
+  function getChart(id) {
+    const host = el('chart-' + id);
+    if (!host || !echartsOk) return null;
+    let instance = charts.get(id);
+    if (!instance) {
+      instance = window.echarts.init(host, null, { renderer: 'canvas' });
+      charts.set(id, instance);
+    }
+    return instance;
+  }
+
+  function resizeCharts() {
+    charts.forEach((instance) => { try { instance.resize(); } catch (e) {} });
+  }
+
+  /* ---------------------------------- 面板骨架 ---------------------------------- */
+
+  function rangeBarHtml(id) {
+    return '<div class="range-bar" data-range="' + id + '">'
+      + '<button class="chip" type="button" data-days="30">30 天</button>'
+      + '<button class="chip" type="button" data-days="90">90 天</button>'
+      + '<button class="chip" type="button" data-days="365">365 天</button>'
+      + '<span class="custom">'
+      + '<input type="date" data-role="from" aria-label="开始日期">'
+      + '<span class="tilde">~</span>'
+      + '<input type="date" data-role="to" aria-label="结束日期">'
+      + '<button class="chip" type="button" data-role="apply">应用</button>'
+      + '</span>'
+      + '<span class="current" data-role="current"></span>'
+      + '</div>';
+  }
+
+  function buildPanels() {
+    for (const panel of PANELS) {
+      const host = el(panel.grid);
+      if (!host) continue;
+      const section = document.createElement('div');
+      section.className = 'panel';
+      section.setAttribute('data-panel', panel.id);
+      section.innerHTML = '<div class="panel-head"><h3>' + escapeHtml(panel.title) + '</h3>'
+        + '<span class="note">' + escapeHtml(panel.note) + '</span></div>'
+        + (panel.range ? rangeBarHtml(panel.id) : '')
+        + '<div class="chart' + (panel.tall ? ' tall' : '') + '" id="chart-' + panel.id + '"></div>'
+        + '<div class="fallback" id="fallback-' + panel.id + '" hidden></div>'
+        + '<div class="panel-foot" id="foot-' + panel.id + '" hidden><button class="chip" type="button" data-role="expand">展开全部</button></div>';
+      host.appendChild(section);
+      if (panel.range) ranges[panel.id] = defaultRange();
+    }
+  }
+
+  function defaultRange() {
+    const to = beijingToday();
+    return { from: shiftDay(to, -(DEFAULT_RANGE_DAYS - 1)), to: to };
+  }
+
+  /* ---------------------------------- 绘制 ---------------------------------- */
+
+  function baseAxis() {
+    const t = themeColors();
+    return {
+      axisLine: { lineStyle: { color: t.border } },
+      axisTick: { show: false },
+      axisLabel: { color: t.text2, fontSize: 11 },
+      splitLine: { lineStyle: { color: t.grid, type: 'dashed' } },
+    };
+  }
+
+  function drawLine(id, categories, series, options) {
+    const instance = getChart(id);
+    if (!instance) return;
+    const t = themeColors();
+    const opts = options || {};
+    instance.setOption({
+      backgroundColor: 'transparent',
+      grid: { left: 52, right: 16, top: series.length > 1 ? 46 : 18, bottom: 30, containLabel: false },
+      tooltip: {
+        trigger: 'axis',
+        confine: true,
+        axisPointer: { type: 'line', lineStyle: { color: t.text3 } },
+        textStyle: { fontSize: 11 },
+      },
+      legend: series.length > 1
+        ? {
+          type: 'scroll', top: 0, left: 0, right: 0, itemWidth: 10, itemHeight: 10,
+          textStyle: { color: t.text2, fontSize: 11 },
+        }
+        : { show: false },
+      xAxis: Object.assign({ type: 'category', boundaryGap: false, data: categories }, baseAxis(), { splitLine: { show: false } }),
+      yAxis: Object.assign({
+        type: 'value',
+        name: opts.yName || '',
+        nameTextStyle: { color: t.text2, fontSize: 11, padding: [0, 0, 0, -36] },
+        minInterval: opts.minInterval === undefined ? 1 : opts.minInterval,
+        max: opts.max,
+      }, baseAxis(), {
+        axisLabel: {
+          color: t.text2, fontSize: 11,
+          formatter: opts.percent ? '{value}%' : (value) => (value >= 10000 ? Math.round(value / 1000) + 'k' : value),
+        },
+      }),
+      series: series.map((item) => ({
+        name: item.name,
+        type: 'line',
+        smooth: false,
+        showSymbol: categories.length <= 45,
+        symbolSize: 5,
+        connectNulls: false,
+        lineStyle: { width: 2, color: item.color },
+        itemStyle: { color: item.color },
+        areaStyle: item.area ? { opacity: 0.14 } : undefined,
+        emphasis: { focus: 'series' },
+        data: item.data,
+      })),
+    }, true);
+    instance.resize();
+  }
+
+  function drawBar(id, items, options) {
+    const opts = options || {};
+    const full = (items || []).filter((item) => item && item.label !== undefined);
+    const canExpand = full.length > BAR_LIMIT;
+    const list = canExpand && !expanded.has(id) ? mergeTail(full, BAR_LIMIT) : full;
+    barData.set(id, { items: full, options: opts });
+    toggleExpandButton(id, canExpand);
+    const t = themeColors();
+    const ordered = list.slice().reverse();
+    const labels = ordered.map((item) => String(item.label));
+    const values = ordered.map((item) => Number(item.count ?? item.value ?? 0));
+    const max = Math.max(1, ...values);
+    const palette = Array.isArray(opts.colors) ? opts.colors : null;
+    const colors = palette
+      ? ordered.map((item, index) => item.color || palette[index % palette.length])
+      : opts.perItem
+        ? ordered.map((item) => item.color || NEUTRAL)
+        : (opts.color || t.orange);
+    if (!echartsOk) {
+      renderFallbackBars(id, ordered.map((item, index) => Object.assign({}, item, {
+        color: Array.isArray(colors) ? colors[index] : colors,
+      })).reverse(), opts);
+      return;
+    }
+    hideFallback(id);
+    const host = el('chart-' + id);
+    if (host) {
+      host.style.height = Math.max(150, list.length * 26 + 34) + 'px';
+    }
+    const instance = getChart(id);
+    if (!instance) return;
+    instance.setOption({
+      backgroundColor: 'transparent',
+      grid: { left: 4, right: 62, top: 6, bottom: 6, containLabel: true },
+      tooltip: {
+        trigger: 'item',
+        confine: true,
+        textStyle: { fontSize: 11 },
+        formatter: (params) => opts.itemTooltip
+          ? opts.itemTooltip(ordered[params.dataIndex], params)
+          : escapeHtml(params.name) + '<br/>' + fmtInt(params.value),
+      },
+      xAxis: { type: 'value', show: false, max: max * 1.02 },
+      yAxis: {
+        type: 'category',
+        data: labels,
+        axisLine: { show: false },
+        axisTick: { show: false },
+        axisLabel: { color: t.text2, fontSize: 11, width: 108, overflow: 'truncate' },
+      },
+      series: [{
+        type: 'bar',
+        data: values.map((value, index) => ({
+          value,
+          itemStyle: { color: Array.isArray(colors) ? colors[index] : colors, borderRadius: [0, 6, 6, 0] },
+        })),
+        barMaxWidth: 16,
+        label: {
+          show: true, position: 'right', color: t.text2, fontSize: 11,
+          formatter: (params) => (opts.valueFormatter ? opts.valueFormatter(params.value, ordered[params.dataIndex]) : fmtInt(params.value)),
+        },
+      }],
+      animationDuration: 260,
+    }, true);
+    instance.resize();
+  }
+
+  function drawPie(id, items) {
+    const list = (items || []).filter((item) => item && Number(item.count) > 0);
+    if (!echartsOk) { renderFallbackBars(id, list, { color: NEUTRAL }); return; }
+    hideFallback(id);
+    const host = el('chart-' + id);
+    if (host) host.style.height = '';
+    const instance = getChart(id);
+    if (!instance) return;
+    const t = themeColors();
+    instance.setOption({
+      backgroundColor: 'transparent',
+      tooltip: { trigger: 'item', confine: true, textStyle: { fontSize: 11 }, formatter: '{b}<br/>{c}（{d}%）' },
+      legend: {
+        bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10,
+        textStyle: { color: t.text2, fontSize: 11 },
+      },
+      series: [{
+        type: 'pie',
+        radius: ['40%', '66%'],
+        center: ['50%', '42%'],
+        avoidLabelOverlap: true,
+        itemStyle: { borderColor: t.card, borderWidth: 2 },
+        label: { show: false },
+        labelLine: { show: false },
+        data: list.map((item, index) => ({
+          name: String(item.label),
+          value: Number(item.count) || 0,
+          itemStyle: { color: PIE_COLORS[index % PIE_COLORS.length] },
+        })),
+      }],
+      animationDuration: 260,
+    }, true);
+    instance.resize();
+  }
+
+  function drawHistogram(id, items) {
+    const list = items || [];
+    if (!echartsOk) { renderFallbackBars(id, list, { color: themeColors().blue }); return; }
+    hideFallback(id);
+    const host = el('chart-' + id);
+    if (host) host.style.height = '';
+    const instance = getChart(id);
+    if (!instance) return;
+    const t = themeColors();
+    instance.setOption({
+      backgroundColor: 'transparent',
+      grid: { left: 46, right: 14, top: 16, bottom: 34 },
+      tooltip: { trigger: 'axis', confine: true, axisPointer: { type: 'shadow' }, textStyle: { fontSize: 11 } },
+      xAxis: Object.assign({
+        type: 'category',
+        data: list.map((item) => item.label),
+      }, baseAxis(), {
+        splitLine: { show: false },
+        axisLabel: { color: t.text2, fontSize: 10, interval: 0, width: 62, overflow: 'break', hideOverlap: true },
+      }),
+      yAxis: Object.assign({ type: 'value', minInterval: 1, axisLabel: { color: t.text2, fontSize: 11 } }, baseAxis()),
+      series: [{
+        type: 'bar',
+        barMaxWidth: 34,
+        itemStyle: { color: t.blue, borderRadius: [6, 6, 0, 0] },
+        label: { show: true, position: 'top', color: t.text2, fontSize: 11 },
+        data: list.map((item) => Number(item.count) || 0),
+      }],
+      animationDuration: 260,
+    }, true);
+    instance.resize();
+  }
+
+  function renderFallbackBars(id, items, options) {
+    const chartHost = el('chart-' + id);
+    const host = el('fallback-' + id);
+    if (chartHost && !echartsOk) chartHost.style.display = 'none';
+    if (!host) return;
+    const list = (items || []).filter((item) => item && item.label !== undefined);
+    if (!list.length) {
+      host.innerHTML = '<div class="note">暂无数据</div>';
+      host.hidden = false;
+      return;
+    }
+    const max = Math.max(1, ...list.map((item) => Number(item.count ?? item.value ?? 0)));
+    const opts = options || {};
+    host.innerHTML = list.map((item) => {
+      const value = Number(item.count ?? item.value ?? 0);
+      const width = Math.max(2, Math.round((value / max) * 100));
+      const color = item.color || opts.color || NEUTRAL;
+      const text = opts.valueFormatter ? opts.valueFormatter(value, item) : fmtInt(value);
+      return '<div class="fb-row"><div class="fb-label" title="' + escapeHtml(item.label) + '">' + escapeHtml(item.label) + '</div>'
+        + '<div class="fb-track"><div class="fb-fill" style="width:' + width + '%;background:' + escapeHtml(color) + '"></div></div>'
+        + '<div class="fb-value">' + escapeHtml(text) + '</div></div>';
+    }).join('');
+    host.hidden = false;
+  }
+
+  function hideFallback(id) {
+    const host = el('fallback-' + id);
+    if (host) { host.hidden = true; host.innerHTML = ''; }
+    const chartHost = el('chart-' + id);
+    if (chartHost) chartHost.style.display = '';
+  }
+
+  /* ---------------------------------- 数据渲染 ---------------------------------- */
+
+  function card(label, value, hint) {
+    return '<div class="card"><div class="label">' + escapeHtml(label) + '</div>'
+      + '<div class="value">' + escapeHtml(value) + '</div>'
+      + (hint ? '<div class="hint">' + escapeHtml(hint) + '</div>' : '') + '</div>';
+  }
+
+  function renderTotals(data) {
+    const totals = data.totals || {};
+    el('cards-life').innerHTML = [
+      card('不重复累计用户', fmtInt(totals.users), '历史去重设备数'),
+      card('累计打开面板', fmtInt(totals.opens), '全部时间累计次数'),
+      card('累计使用时长', fmtDuration(totals.durMs), '设备会话时长之和'),
+      card('人均使用时长', fmtDuration(totals.avgDurMsPerUser), '累计时长 ÷ 累计用户'),
+    ].join('');
+    el('cards-today').innerHTML = [
+      card('当日新增用户', fmtInt(totals.todayUsers), '首次出现在 ' + (data.today || '')),
+      card('当日新增打开', fmtInt(totals.todayOpens), '当日打开面板次数'),
+      card('当日新增时长', fmtDuration(totals.todayDurMs), '当日会话时长之和'),
+    ].join('');
+  }
+
+  function renderUsage(data) {
+    const pages = data.pages || {};
+    const items = PAGE_KEYS.map((key, index) => ({
+      label: PAGE_LABELS[key],
+      count: Number(pages[key]) || 0,
+      color: PAGE_COLORS[index % PAGE_COLORS.length],
+    }));
+    drawBar('pages', items, { perItem: true });
+  }
+
+  function renderProfile(data) {
+    const env = data.env || {};
+    drawBar('versions', data.versions || [], { color: themeColors().orange });
+    drawPie('arch', env.arch || []);
+    drawPie('os', env.os || []);
+    drawBar('env-browser', env.browser || [], { color: themeColors().blue });
+    drawBar('env-browser-version', env.browserVersion || [], { color: themeColors().blue });
+    drawBar('env-lang', env.lang || [], { color: themeColors().green });
+    drawBar('env-width', env.width || [], { color: themeColors().orange });
+    drawBar('env-dark', env.dark || [], { colors: [PIE_COLORS[0], PIE_COLORS[1]] });
+    drawBar('env-standalone', env.standalone || [], { colors: [PIE_COLORS[3], PIE_COLORS[4]] });
+    drawBar('env-touch', env.touch || [], { colors: [PIE_COLORS[2], PIE_COLORS[5]] });
+    drawBar('env-tz', env.tz || [], { color: themeColors().blue });
+  }
+
+  function renderDuration(data) {
+    drawHistogram('duration', data.durationHistogram || []);
+  }
+
+  /* ---------------------------------- 趋势数据 ---------------------------------- */
+
+  function cacheKey(range) { return range.from + '|' + range.to; }
+
+  async function fetchJSON(url) {
+    const res = await fetch(url, { headers: { Accept: 'application/json' }, cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    data.__cache = res.headers.get('X-Cache') || '';
+    return data;
+  }
+
+  function ensureDaily(range, force) {
+    const key = cacheKey(range);
+    if (force) dailyCache.delete(key);
+    if (!dailyCache.has(key)) {
+      const url = '/api/trend?from=' + range.from + '&to=' + range.to + '&parts=daily' + (force ? '&force=1' : '');
+      const promise = fetchJSON(url)
+        .then((data) => ({ rows: data.daily || [], cache: data.__cache, generatedAt: data.generatedAt }))
+        .catch((error) => { dailyCache.delete(key); throw error; });
+      dailyCache.set(key, promise);
+    }
+    return dailyCache.get(key);
+  }
+
+  function ensureRender(range, force) {
+    const key = cacheKey(range);
+    if (force) renderCache.delete(key);
+    if (!renderCache.has(key)) {
+      const url = '/api/trend?from=' + range.from + '&to=' + range.to + '&parts=render' + (force ? '&force=1' : '');
+      const promise = fetchJSON(url)
+        .then((data) => ({ rows: data.renderByVersion || [], cache: data.__cache, generatedAt: data.generatedAt }))
+        .catch((error) => { renderCache.delete(key); throw error; });
+      renderCache.set(key, promise);
+    }
+    return renderCache.get(key);
+  }
+
+  function paintGrowth() {
+    const range = ranges.growth;
+    const all = (summary && summary.userGrowth) || [];
+    const rows = all.filter((row) => row.day >= range.from && row.day <= range.to);
+    drawLine('growth',
+      rows.map((row) => shortDay(row.day)),
+      [{ name: '累计用户', color: themeColors().orange, area: true, data: rows.map((row) => row.cumulative) }],
+      { yName: '累计用户' });
+  }
+
+  function paintDailyOpens(rows) {
+    drawLine('daily-opens',
+      rows.map((row) => shortDay(row.day)),
+      [{ name: '打开次数', color: themeColors().orange, area: true, data: rows.map((row) => row.opens) }],
+      { yName: '次数' });
+  }
+
+  function paintDailyUsers(rows) {
+    drawLine('daily-users',
+      rows.map((row) => shortDay(row.day)),
+      [{ name: '不重复用户', color: themeColors().blue, area: true, data: rows.map((row) => row.devices) }],
+      { yName: '用户数' });
+  }
+
+  function paintDailyPages(rows) {
+    drawLine('daily-pages',
+      rows.map((row) => shortDay(row.day)),
+      PAGE_KEYS.map((key, index) => ({
+        name: PAGE_LABELS[key],
+        color: PAGE_COLORS[index % PAGE_COLORS.length],
+        data: rows.map((row) => {
+          const total = Number(row.pageTotal) || 0;
+          if (!total) return null;
+          return Math.round(((Number(row.pages && row.pages[key]) || 0) / total) * 1000) / 10;
+        }),
+      })),
+      { percent: true, minInterval: 0, max: 100, yName: '占比 %' });
+  }
+
+  function paintRender(rows) {
+    const items = (rows || []).map((row) => ({
+      label: row.version,
+      count: row.avgMs === null || row.avgMs === undefined ? 0 : row.avgMs,
+      samples: row.samples,
+      buckets: row.buckets,
+    }));
+    const sorted = items.slice().sort((a, b) => b.count - a.count);
+    drawBar('render', sorted, {
+      color: themeColors().green,
+      valueFormatter: (value) => fmtMs(value),
+      itemTooltip: (item) => {
+        if (!item || item.merged) return escapeHtml(item ? item.label : '') + '<br/>' + fmtInt(item ? item.count : 0) + ' 次渲染';
+        const buckets = item.buckets || [];
+        const labels = ['<100ms', '<300ms', '<800ms', '<2000ms', '≥2000ms'];
+        const detail = labels.map((label, index) => label + '：' + fmtInt(buckets[index])).join('<br/>');
+        return escapeHtml(item.label) + '<br/>估算平均耗时：' + fmtMs(item.count)
+          + '<br/>样本数：' + fmtInt(item.samples) + '<br/>' + detail;
+      },
+    });
+  }
+
+  function toggleExpandButton(id, canExpand) {
+    const foot = el('foot-' + id);
+    if (!foot) return;
+    foot.hidden = !canExpand;
+    const button = foot.querySelector('button');
+    if (button) button.textContent = expanded.has(id) ? '收起' : '展开全部';
+  }
+
+  async function refreshDailyViews(force) {
+    const ids = ['daily-opens', 'daily-users', 'daily-pages'];
+    await Promise.all(ids.map(async (id) => {
+      const range = ranges[id];
+      try {
+        const result = await ensureDaily(range, force);
+        if (id === 'daily-opens') paintDailyOpens(result.rows);
+        if (id === 'daily-users') paintDailyUsers(result.rows);
+        if (id === 'daily-pages') paintDailyPages(result.rows);
+        noteCache(result);
+      } catch (error) {
+        showPanelError(id, error);
+      }
+    }));
+  }
+
+  async function refreshRenderView(force) {
+    try {
+      const result = await ensureRender(ranges.render, force);
+      paintRender(result.rows);
+      noteCache(result);
+    } catch (error) {
+      showPanelError('render', error);
+    }
+  }
+
+  function showPanelError(id, error) {
+    const host = el('fallback-' + id);
+    const chartHost = el('chart-' + id);
+    if (chartHost) chartHost.style.display = 'none';
+    if (host) {
+      host.hidden = false;
+      host.innerHTML = '<div class="note error">加载失败：' + escapeHtml(error && error.message ? error.message : error) + '</div>';
+    }
+  }
+
+  let lastCacheNote = '';
+
+  function noteCache(result) {
+    if (!result || !result.cache) return;
+    lastCacheNote = result.cache;
+    updateCacheBadge();
+  }
+
+  function updateCacheBadge() {
+    const badge = el('cache-badge');
+    if (!badge) return;
+    const map = { HIT: '缓存命中', MISS: '实时查询', BYPASS: '强制刷新' };
+    if (!lastCacheNote || !map[lastCacheNote]) { badge.hidden = true; return; }
+    badge.hidden = false;
+    badge.textContent = '接口状态：' + map[lastCacheNote];
+    badge.className = 'badge ' + (lastCacheNote === 'HIT' ? 'hit' : lastCacheNote === 'BYPASS' ? 'bypass' : '');
+  }
+
+  /* ---------------------------------- 加载与刷新 ---------------------------------- */
+
+  function setMeta(text, isError) {
+    const meta = el('meta');
+    if (!meta) return;
+    meta.innerHTML = isError ? '<span class="error">' + escapeHtml(text) + '</span>' : text;
+  }
+
+  async function loadSummary(force) {
+    const url = '/api/summary' + (force ? '?force=1' : '');
+    const data = await fetchJSON(url);
+    summary = data;
+    renderTotals(data);
+    renderUsage(data);
+    renderProfile(data);
+    renderDuration(data);
+    paintGrowth();
+    noteCache({ cache: data.__cache });
+    const generated = new Date(data.generatedAt).toLocaleString('zh-CN', { hour12: false });
+    setMeta('数据生成于 <b>' + escapeHtml(generated) + '</b> · 今日（北京时间）<b>'
+      + escapeHtml(data.today || '') + '</b> · 看板构建 ' + escapeHtml(BUILD_ID));
+  }
+
+  async function refreshAllTrends(force) {
+    await Promise.all([
+      refreshDailyViews(force),
+      refreshRenderView(force),
+    ]);
+  }
+
+  async function reloadAll() {
+    lastCacheNote = '';
+    try {
+      await loadSummary(true);
+    } catch (error) {
+      setMeta('加载总计数据失败：' + String(error && error.message ? error.message : error), true);
+    }
+    await refreshAllTrends(true);
+  }
+
+  /* ---------------------------------- 时间控件 ---------------------------------- */
+
+  function applyRange(id, range, silent) {
+    ranges[id] = range;
+    const bar = document.querySelector('[data-range="' + id + '"]');
+    if (bar) {
+      const fromInput = bar.querySelector('[data-role="from"]');
+      const toInput = bar.querySelector('[data-role="to"]');
+      if (fromInput) fromInput.value = range.from;
+      if (toInput) toInput.value = range.to;
+      const current = bar.querySelector('[data-role="current"]');
+      if (current) current.textContent = range.from + ' ~ ' + range.to + '（' + daysBetween(range.from, range.to) + ' 天）';
+      const days = daysBetween(range.from, range.to);
+      bar.querySelectorAll('[data-days]').forEach((button) => {
+        button.classList.toggle('active', Number(button.getAttribute('data-days')) === days);
+      });
+    }
+    if (silent) return;
+    if (id === 'growth') paintGrowth();
+    if (id === 'daily-opens' || id === 'daily-users' || id === 'daily-pages') refreshDailyViews(false);
+    if (id === 'render') refreshRenderView(false);
+  }
+
+  function bindRangeControls() {
+    document.querySelectorAll('[data-range]').forEach((bar) => {
+      const id = bar.getAttribute('data-range');
+      bar.addEventListener('click', (event) => {
+        const target = event.target;
+        if (!target || !target.getAttribute) return;
+        const days = target.getAttribute('data-days');
+        if (days) {
+          const to = beijingToday();
+          const count = Number(days) || DEFAULT_RANGE_DAYS;
+          const from = shiftDay(to, -(count - 1));
+          applyRange(id, { from, to });
+          bar.querySelectorAll('[data-days]').forEach((button) => {
+            button.classList.toggle('active', button === target);
+          });
+          return;
+        }
+        if (target.getAttribute('data-role') === 'apply') {
+          const fromInput = bar.querySelector('[data-role="from"]');
+          const toInput = bar.querySelector('[data-role="to"]');
+          const today = beijingToday();
+          let from = fromInput && fromInput.value ? fromInput.value : shiftDay(today, -(DEFAULT_RANGE_DAYS - 1));
+          let to = toInput && toInput.value ? toInput.value : today;
+          if (to > today) to = today;
+          if (from > to) from = to;
+          if (daysBetween(from, to) > 730) from = shiftDay(to, -729);
+          applyRange(id, { from, to });
+          bar.querySelectorAll('[data-days]').forEach((button) => button.classList.remove('active'));
+        }
+      });
+    });
+  }
+
+  function bindExpandButtons() {
+    document.querySelectorAll('[data-role="expand"]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const panel = button.closest('.panel');
+        const id = panel ? panel.getAttribute('data-panel') : '';
+        const cached = id ? barData.get(id) : null;
+        if (!id || !cached) return;
+        if (expanded.has(id)) expanded.delete(id); else expanded.add(id);
+        drawBar(id, cached.items, cached.options);
+      });
+    });
+  }
+
+  /* ---------------------------------- 启动 ---------------------------------- */
+
+  function showLibBanner(show) {
+    const banner = el('lib-banner');
+    if (banner) banner.hidden = !show;
+    if (show) {
+      const text = el('lib-banner-text');
+      if (text) {
+        text.textContent = '图表库加载失败（尝试结果：' + (attemptsText() || '无')
+          + '），当前改用纯文本数值列表展示。可点右侧按钮重试；若持续失败，多半是网络拦截或浏览器扩展屏蔽了脚本请求。';
+      }
+    }
+  }
+
+  async function boot() {
+    buildPanels();
+    bindRangeControls();
+    bindExpandButtons();
+
+    echartsOk = await loadEcharts();
+    syncLibState();
+    if (!echartsOk) watchLateEcharts();
+
+    for (const panel of PANELS) {
+      if (!panel.range) continue;
+      applyRange(panel.id, ranges[panel.id], true);
+    }
+
+    await reloadAll();
+  }
+
+  el('refresh').addEventListener('click', () => { reloadAll(); });
+  el('lib-retry').addEventListener('click', async () => {
+    const ok = await loadEcharts();
+    syncLibState();
+    if (ok) {
+      charts.forEach((instance) => { try { instance.dispose(); } catch (e) {} });
+      charts.clear();
+      await reloadAll();
+    } else {
+      watchLateEcharts();
+    }
   });
-});
-document.getElementById('reload').addEventListener('click', () => load());
-window.addEventListener('resize', () => { if (lastData) render(lastData); });
-load();
+
+  window.addEventListener('resize', () => {
+    clearTimeout(window.__ausResizeTimer);
+    window.__ausResizeTimer = setTimeout(resizeCharts, 160);
+  });
+
+  if (window.matchMedia) {
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const onThemeChange = () => { redrawAll(); };
+    if (media.addEventListener) media.addEventListener('change', onThemeChange);
+    else if (media.addListener) media.addListener(onThemeChange);
+  }
+
+  boot();
+})();
 </script>
 </body>
 </html>
