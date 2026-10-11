@@ -132,7 +132,7 @@ npm run verify:ci   # 版本单源、清单路径、引用链与孤立产物
 - **待定价重算**：保存模型价格、修改峰谷、修改周末规则或同步价格后调用 `repository.recalcWallet(walletId)`，同时处理热历史和 IndexedDB 冷历史，并修正累计费用
 - **models.dev**：每个钱包配置 `catalogProvider`。价格来源胶囊只展示第一方模型厂商（DeepSeek/OpenAI/Anthropic/Google/Mistral/xAI/Moonshot AI/Z.AI/MiniMax/Cohere），不展示 OpenRouter、Groq、SiliconFlow、Fireworks 等聚合或托管渠道；旧第三方来源在标准化时归为 `null`（不自动同步）。开启同步后支持 `add-missing/overwrite-unlocked/overwrite-all`，锁定规则仅允许全部覆盖模式修改。关闭同步会移除未锁定的同步价格并重算
 - **忽略与恢复**：删除钱包改为加入 `walletIgnored`，后续请求不自动重建、不参与余额合计，历史仍保留 `walletId`；钱包页可恢复显示。DeepSeek 官方钱包不可忽略
-- **响应式**：钱包汇总卡在所有宽度保持一行三列，仅压缩字号和间距；`≤760px` 时钱包 header 自动换行——标识与名称同排、余额/模型两项指标移到下一行、图标操作落到最后一行并完整显示；钱包双栏区域改为单列。钱包卡内容使用边框面板，不嵌套 `.ds-card`
+- **响应式**：钱包汇总卡在所有宽度保持一行三列，仅压缩字号和间距；`≤760px` 时钱包卡整体紧凑化——标识缩到 `36px`（字号 `15px`、圆角 `10px`）、名称 `14px`、余额/模型两项指标与图标操作并排同一行（宽度不足时自动折行）、卡片内外间距收到 `8px`、隐藏冗余的“中转/自定义”类型徽标（副标题已含类型与来源，官方徽标与待定价徽标保留），单卡高度从约 `159px` 压到约 `99px`；钱包双栏区域改为单列。钱包卡内容使用边框面板，不嵌套 `.ds-card`
 - **使用说明**：帮助页必须保留隐私声明、免责声明和钱包说明。隐私声明需明确区分酒馆密钥识别信息与用户主动填写的钱包校准密钥；免责声明需说明不对 models.dev 数据中的商业化中转站名称或推荐关系负责。
 
 ### 设置
@@ -150,7 +150,7 @@ npm run verify:ci   # 版本单源、清单路径、引用链与孤立产物
 - 选择器统一：所有选择类 UI 必须使用用量统计·模型选择同款胶囊下拉（`#xxx-btn` 胶囊 `999px` + `#xxx-dropdown` 绝对定位 `12px` 圆角 `box-shadow`），禁止原生 `select`，选中态 `background:var(--ds-card)` 加粗
 - 魔法棒悬停：`background: transparent !important`
 - 文字：`Microsoft YaHei`，无 `antialiased/optimizeLegibility` 干预
-- 移动端：`≤760px` 侧边栏 `display:none` 默认隐藏、`#aus-mobile-header` 汉堡（`24px` `☰`，`display:flex`）瞬时呼出 `is-open`，无遮罩无动画；`#aus-panel flex:column + #aus-panel-body flex:row`（`#aus-main overflow-x:hidden + min-width:0` 约束防止 720px 表撑开），概览 8 块保持 `repeat(2,1fr)` 两列，钱包汇总卡强制保持 `repeat(3,minmax(0,1fr))` 一行三列，钱包 header 余额/模型两项指标换行、图标操作按钮单独一行，钱包双栏和其他网格 `4→1` 列，窄屏所有胶囊下拉 `overflow:visible + z-index:50` 不被裁剪；粗指针设备面板按钮统一按 `min-height:30px` 保持紧凑，历史卡片“旧/新/详情”为 `26px`、概览余额卡“查询余额/导出记录/导入记录”为 `30px`，避免被通用触控规则撑高
+- 移动端：`≤760px` 侧边栏 `display:none` 默认隐藏、`#aus-mobile-header` 汉堡（`24px` `☰`，`display:flex`）瞬时呼出 `is-open`，无遮罩无动画；`#aus-panel flex:column + #aus-panel-body flex:row`（`#aus-main overflow-x:hidden + min-width:0` 约束防止 720px 表撑开），概览 8 块保持 `repeat(2,1fr)` 两列，钱包汇总卡强制保持 `repeat(3,minmax(0,1fr))` 一行三列，钱包卡两项指标与图标操作同排（宽度不足时折行）、隐藏中转类型徽标，钱包双栏和其他网格 `4→1` 列，窄屏所有胶囊下拉 `overflow:visible + z-index:50` 不被裁剪；粗指针设备面板按钮统一按 `min-height:30px` 保持紧凑，历史卡片“旧/新/详情”为 `26px`、概览余额卡“查询余额/导出记录/导入记录”为 `30px`，避免被通用触控规则撑高
   - **宽表块横滑白名单**：窄屏 `[data-view="overview"] .ds-card { overflow:hidden !important }` 会压过卡片内联 `overflow:auto`，凡概览页需块内横滑的卡片都必须补 ID 规则（现存 `#aus-overview-history`、`#aus-overview-spend`、`#aus-chat-summary-overview`，统计页为 `#aus-model-summary`）；ID 选择器特异性高于该属性+类组合，`!important` 下同样胜出
 
 ## 常见任务
@@ -255,7 +255,7 @@ git push origin main --tags
 - **导入导出文案**：概览余额卡按钮为“导出记录 / 导入记录”（原“导出 / 导入”），绑定 `#aus-btn-export` / `#aus-btn-import` 不变
 - **WalletConfig 兼容**：新增字段必须提供默认值；`collapsed` 缺省为 `true`，`legacyPricingImported` 防止重复迁移，`walletIgnored` 决定是否允许自动重建
 - **旧价回填边界**：同名校验只按完整模型名匹配，不做别名/归一化；只运行一次并覆盖升级时的热冷历史，新请求仍用钱包自身规则。匹配钱包价格变更时，`recalcWallet` 会同时重算引用该钱包的 `legacy-match` 条目
-- **钱包收起态留白**：收起态不能只把指标塞进身份区下方；宽屏为单行卡片（方形标识 + 名称/副标题 + 余额/模型两项指标 + 图标操作），窄屏按“标识与名称一行、两项指标一行、图标操作一行”排列，保证按钮和数据均可见
+- **钱包收起态留白**：收起态不能只把指标塞进身份区下方；宽屏为单行卡片（方形标识 + 名称/副标题 + 余额/模型两项指标 + 图标操作），窄屏压缩为两行（左侧标识与名称/副标题，右侧余额/模型两项指标与图标操作同排，宽度不足才折行），在保证按钮与数据可见的前提下尽量压低单卡高度
 - **响应式规则顺序**：钱包专用响应式网格若写在通用网格之前，必须用足够的优先级覆盖后面的通用规则；否则窄屏会继续按桌面三栏计算并裁切指标/按钮
 - **筛选与分页顺序**：统计页统一走 `filterStatsHistory`；历史页先对热冷全量历史执行 `model ∩ chat ∩ endpoint ∩ credential`，再进行 `30/页` 分页，筛选不参与分页会导致总数错误
 - **三块竖屏**：统计页 `消费金额/API 次数/Tokens` 在 `760px` 下已为 `1fr` 单列三行，满足一行一列需求；新增 `statsFour` 4 块在竖屏为 `2×2`

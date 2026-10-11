@@ -225,9 +225,17 @@
   .aus-wallet-summary > div > div:first-child { font-size: 10px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .aus-wallet-summary > div > div:nth-child(2) { font-size: clamp(15px, 3.4cqi, 20px) !important; }
   .aus-wallet-summary > div > div:nth-child(3) { font-size: 9px !important; line-height: 1.35; }
-  /* 窄屏钱包 header：标识与名称同排，余额/模型两项换行且内容宽度靠左，图标操作单独一行 */
-  .aus-wallet-metrics { grid-template-columns: repeat(2, max-content) !important; justify-content: start !important; flex: 1 1 100% !important; }
-  .aus-wallet-actions { justify-content: flex-start !important; flex: 1 1 100% !important; }
+  /* 窄屏钱包卡紧凑化：标识缩小、余额/模型两项与图标操作并排、内外间距收紧，尽量压低纵向占用 */
+  .aus-wallet-avatar { width: 36px !important; height: 36px !important; border-radius: 10px !important; font-size: 15px !important; }
+  .aus-wallet-header { gap: 8px 10px !important; }
+  .aus-wallet-identity { gap: 2px !important; }
+  #aus-wallet [data-wallet-card] [data-wallet-name] { font-size: 14px !important; }
+  .aus-wallet-metrics { grid-template-columns: repeat(2, max-content) !important; justify-content: start !important; flex: 1 1 auto !important; }
+  .aus-wallet-actions { justify-content: flex-end !important; flex: 0 0 auto !important; }
+  #aus-wallet [data-wallet-card] { padding: 8px 10px !important; gap: 8px !important; }
+  #aus-wallet > div { gap: 8px !important; }
+  /* 窄屏隐藏冗余的类型徽标（副标题已含类型与来源），避免名称行折行拉高卡片 */
+  #aus-wallet .aus-wallet-badge-relay { display: none !important; }
   .aus-wallet-two-col { grid-template-columns: 1fr !important; }
 }
 @container ausbody (min-width: 761px) {
@@ -465,10 +473,18 @@
   #aus-page-header { display:none !important; }
   /* 窄屏呼出时强制还原完整导航样式，避免宽屏折叠残留导致间距/动画异常 */
   #aus-sidebar #aus-brand { display:flex !important; padding-left:36px !important; }
-  /* 窄屏钱包 header：标识与名称同排，余额/模型两项换行且内容宽度靠左，图标操作单独一行 */
-  .aus-wallet-metrics { grid-template-columns: repeat(2, max-content) !important; justify-content: start !important; flex: 1 1 100% !important; }
-  .aus-wallet-actions { justify-content: flex-start !important; flex: 1 1 100% !important; }
+  /* 窄屏钱包卡紧凑化：标识缩小、余额/模型两项与图标操作并排、内外间距收紧，尽量压低纵向占用 */
+  .aus-wallet-avatar { width: 36px !important; height: 36px !important; border-radius: 10px !important; font-size: 15px !important; }
+  .aus-wallet-header { gap: 8px 10px !important; }
+  .aus-wallet-identity { gap: 2px !important; }
+  #aus-wallet [data-wallet-card] [data-wallet-name] { font-size: 14px !important; }
+  .aus-wallet-metrics { grid-template-columns: repeat(2, max-content) !important; justify-content: start !important; flex: 1 1 auto !important; }
+  .aus-wallet-actions { justify-content: flex-end !important; flex: 0 0 auto !important; }
+  #aus-wallet [data-wallet-card] { padding: 8px 10px !important; gap: 8px !important; }
+  #aus-wallet > div { gap: 8px !important; }
   #aus-sidebar .aus-nav-label { display:inline !important; }
+  /* 窄屏隐藏冗余的类型徽标（副标题已含类型与来源），避免名称行折行拉高卡片 */
+  #aus-wallet .aus-wallet-badge-relay { display: none !important; }
   #aus-sidebar .aus-nav-item { justify-content:flex-start !important; padding:8px 10px !important; gap:10px !important; font-size:12px !important; border-radius:8px !important; }
   /* 窄屏选中态加深，避免 #F9FAFB 侧栏与 #F6F7F8 选中态均为近白导致“都是白底” */
   .aus-nav-item.active { background: #E5E7EB !important; }

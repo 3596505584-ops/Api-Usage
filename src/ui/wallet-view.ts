@@ -203,7 +203,7 @@ function renderWalletCard(wallet: WalletConfig, history: any[]): string {
         <div class="aus-wallet-identity">
           <div class="aus-wallet-name-row">
             <input data-wallet-name="1" data-wallet-id="${esc(wallet.id)}" value="${esc(wallet.name)}" />
-            <span style="padding:3px 8px;border-radius:999px;background:${isOfficial ? 'var(--ds-green-bg)' : 'var(--ds-card-inner)'};color:${isOfficial ? 'var(--ds-green)' : 'var(--ds-text-2)'};font-size:10px;white-space:nowrap;">${isOfficial ? 'DeepSeek 官方' : '中转/自定义'}</span>
+            <span class="${isOfficial ? 'aus-wallet-badge-official' : 'aus-wallet-badge-relay'}" style="padding:3px 8px;border-radius:999px;background:${isOfficial ? 'var(--ds-green-bg)' : 'var(--ds-card-inner)'};color:${isOfficial ? 'var(--ds-green)' : 'var(--ds-text-2)'};font-size:10px;white-space:nowrap;">${isOfficial ? 'DeepSeek 官方' : '中转/自定义'}</span>
             ${pending ? `<span style="padding:3px 8px;border-radius:999px;background:var(--ds-red-bg);color:var(--ds-red);font-size:10px;white-space:nowrap;">${pending} 个待定价</span>` : ''}
           </div>
           <div class="aus-wallet-sub">${esc(wallet.endpointDisplay || wallet.endpointLabel || '本机官方接口')} · ${esc(wallet.sourceType || '未识别')}</div>
