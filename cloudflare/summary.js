@@ -192,9 +192,11 @@ export function durationHistogram(values) {
 /**
  * 历史记录条数分布曲线（每台设备取最近一次上报的精确条数）
  *
- * X 轴 = 条数分组，固定每 10 条一组（0–9、10–19、…），Y 轴 = 该组设备数。
+ * X 轴 = 条数分组，固定每 10 条一组（1–9、10–19、…），Y 轴 = 该组设备数。
+ * **0 条的设备整组排除**：那表示从未产生过历史记录，与「有少量记录」是两种状态，
+ * 混进首组会把曲线左端拉成一个高大尖峰，掩盖真实分布。
  * 条数跨度可能很大（见过 1600+ 的设备），直接按 10 条铺开会产出上百个点，
- * 因此 0–{@link HISTORY_COUNT_CURVE_MAX} 逐 10 条一组，更大的全部并入末组「{MAX} 条以上」。
+ * 因此 1–{@link HISTORY_COUNT_CURVE_MAX} 逐 10 条一组，更大的全部并入末组「{MAX} 条以上」。
  */
 export const HISTORY_COUNT_CURVE_STEP = 10;
 /** 逐 10 条展开的上限（条数）；超过此值的设备计入末组 */
@@ -202,7 +204,9 @@ export const HISTORY_COUNT_CURVE_MAX = 500;
 
 export function historyCountCurve(values) {
   const groups = [];
-  for (let from = 0; from < HISTORY_COUNT_CURVE_MAX; from += HISTORY_COUNT_CURVE_STEP) {
+  // 首组 1–9（0 条已单独排除），其余从 10 起每 10 条一组：10–19、20–29、…
+  groups.push({ from: 1, to: HISTORY_COUNT_CURVE_STEP - 1, count: 0 });
+  for (let from = HISTORY_COUNT_CURVE_STEP; from < HISTORY_COUNT_CURVE_MAX; from += HISTORY_COUNT_CURVE_STEP) {
     groups.push({ from, to: from + HISTORY_COUNT_CURVE_STEP - 1, count: 0 });
   }
   // 末组吸收上限之上的设备，避免尾部出现空洞
@@ -210,6 +214,7 @@ export function historyCountCurve(values) {
 
   for (const raw of Array.isArray(values) ? values : []) {
     const value = Math.max(0, Math.floor(numberOrZero(raw)));
+    if (value < 1) continue;
     const index = value >= HISTORY_COUNT_CURVE_MAX
       ? groups.length - 1
       : Math.min(groups.length - 1, Math.floor(value / HISTORY_COUNT_CURVE_STEP));

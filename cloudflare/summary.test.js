@@ -258,23 +258,31 @@ describe('环境画像聚合', () => {
   });
 
   it('历史记录条数按设备最新值每 10 条一组分桶', () => {
-    const items = historyCountCurve([0, 1, 9, 10, 11, 19, 20, 505, -3, 'bad']);
-    expect(items.length).toBe(HISTORY_COUNT_CURVE_MAX / HISTORY_COUNT_CURVE_STEP + 1);
-    // 0/1/9/-3/'bad' 共 5 个都落进 0–9 组（负数与非法值按 0 处理）
-    expect(items[0]).toEqual({ from: 0, to: 9, label: '0–9 条', count: 5 });
+    const items = historyCountCurve([1, 9, 10, 11, 19, 20, 505]);
+    expect(items.length).toBe(51);
+    expect(items[0]).toEqual({ from: 1, to: 9, label: '1–9 条', count: 2 });
     expect(items[1]).toEqual({ from: 10, to: 19, label: '10–19 条', count: 3 });
     expect(items[2]).toEqual({ from: 20, to: 29, label: '20–29 条', count: 1 });
     // 上限之上的设备并入末组，避免尾部空洞
     const last = items[items.length - 1];
     expect(last).toEqual({ from: HISTORY_COUNT_CURVE_MAX, to: null, label: HISTORY_COUNT_CURVE_MAX + ' 条以上', count: 1 });
-    expect(items.reduce((sum, item) => sum + item.count, 0)).toBe(10);
+    expect(items.reduce((sum, item) => sum + item.count, 0)).toBe(7);
+  });
+
+  it('历史记录条数为 0 的设备不计入曲线（0 条与少量记录是两种状态）', () => {
+    const items = historyCountCurve([0, 0, -3, 'bad', 7]);
+    expect(items.reduce((sum, item) => sum + item.count, 0)).toBe(1);
+    expect(items[0]).toEqual({ from: 1, to: 9, label: '1–9 条', count: 1 });
+    // 0 条绝不进任何一组，首组起点必须是 1
+    expect(items[0].from).toBe(1);
+    expect(items.some((item) => item.from === 0)).toBe(false);
   });
 
   it('历史记录条数分桶固定返回完整分组序列（空组为 0）', () => {
     const items = historyCountCurve([]);
     expect(items).toHaveLength(51);
     expect(items.every((item) => item.count === 0)).toBe(true);
-    expect(items[0].label).toBe('0–9 条');
+    expect(items[0].label).toBe('1–9 条');
   });
 
   it('标签格式化', () => {
