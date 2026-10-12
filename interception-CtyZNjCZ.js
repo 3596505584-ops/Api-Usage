@@ -1,6 +1,6 @@
 import { cn as __exportAll } from "./Image-B5UjBJH1.js";
 import { t as log } from "./logger-Bv-AT94O.js";
-import { C as resolveRuntimeConnectionContext, S as initConnectionIdentity, t as repository } from "./repository-DKfxS99y.js";
+import { C as initConnectionIdentity, t as repository, w as resolveRuntimeConnectionContext } from "./repository-B4yMLqkN.js";
 //#region src/services/interception.ts
 var interception_exports = /* @__PURE__ */ __exportAll({
 	installInterception: () => installInterception,
@@ -154,7 +154,8 @@ function installFetchCapture() {
 				}).then((res) => {
 					try {
 						const clone = res.clone();
-						const parseAndProcess = (text, ttftVal, thinkTimeVal) => {
+						const requestedStream = reqBody?.stream === true;
+						const parseAndProcess = (text, ttftVal, thinkTimeVal, streamed = null) => {
 							let data = null;
 							let finishReason = null;
 							try {
@@ -215,6 +216,7 @@ function installFetchCapture() {
 									ttft: ttftVal,
 									thinkTime: thinkTimeVal,
 									finishReason,
+									streamed,
 									connection: requestConnection,
 									requestId
 								};
@@ -223,10 +225,11 @@ function installFetchCapture() {
 								log.debug("fetch 捕获 usage", {
 									model,
 									hasUsage: !!usage,
-									finishReason
+									finishReason,
+									streamed
 								});
 								try {
-									processUsage(usage, model, msgs, startTime, fullReq, text, ttftVal, thinkTimeVal, finishReason, requestConnection, requestId);
+									processUsage(usage, model, msgs, startTime, fullReq, text, ttftVal, thinkTimeVal, finishReason, requestConnection, requestId, streamed);
 								} catch (e) {
 									log.error("fetch 用量记录失败 " + (e?.message || e));
 								}
@@ -238,9 +241,15 @@ function installFetchCapture() {
 							let ttft = 0;
 							let thinkStart = 0, thinkEnd = 0;
 							let fullText = "";
+							let contentFrames = 0;
+							const judgeStreamed = () => {
+								if (!requestedStream) return false;
+								if (!contentFrames) return null;
+								return contentFrames > 1;
+							};
 							const finish = () => {
 								try {
-									parseAndProcess(fullText, ttft, thinkEnd && thinkStart ? thinkEnd - thinkStart : 0);
+									parseAndProcess(fullText, ttft, thinkEnd && thinkStart ? thinkEnd - thinkStart : 0, judgeStreamed());
 								} catch {}
 							};
 							const scanThink = (chunk) => {
@@ -250,6 +259,7 @@ function installFetchCapture() {
 									if (!payload || payload === "[DONE]") continue;
 									if (!thinkStart && line.indexOf("\"reasoning_content\"") !== -1) thinkStart = nowMs() - t0;
 									if (thinkStart && !thinkEnd && line.indexOf("\"content\"") !== -1) thinkEnd = nowMs() - t0;
+									if (line.indexOf("\"content\"") !== -1 || line.indexOf("\"reasoning_content\"") !== -1) contentFrames++;
 								}
 							};
 							const readStream = async (body) => {
@@ -285,13 +295,13 @@ function installFetchCapture() {
 							});
 							else clone.text().then((t) => {
 								ttft = Date.now() - startTime;
-								parseAndProcess(t, ttft, 0);
+								parseAndProcess(t, ttft, 0, false);
 							}).catch(() => {});
 						} catch (innerErr) {
 							log.debug("fetch 流式读取异常，不影响原请求", innerErr?.message || innerErr);
 							try {
 								clone.text().then((t) => {
-									parseAndProcess(t, 0, 0);
+									parseAndProcess(t, 0, 0, requestedStream ? null : false);
 								}).catch(() => {});
 							} catch {}
 						}
@@ -402,20 +412,21 @@ function onGenerationEnded(...args) {
 		});
 		if (usage && isValidUsage(usage)) {
 			log.debug("命中主路径 extra usage");
-			let ttft = 0, think = 0, fr = usage?.__finish_reason ?? usage?.finish_reason ?? null;
+			let ttft = 0, think = 0, streamed = null, fr = usage?.__finish_reason ?? usage?.finish_reason ?? null;
 			try {
 				const fp = lastFetchUsage;
 				if (fp && Date.now() - lastFetchTime < 5e3) {
 					if (!ttft) ttft = fp.ttft || 0;
 					if (!think) think = fp.thinkTime || 0;
 					if (!fr) fr = fp.finishReason ?? null;
+					if (fp.streamed != null) streamed = fp.streamed;
 					if (!fr) try {
 						const extraFr = extra?.finish_reason ?? tail?.finish_reason ?? null;
 						if (extraFr) fr = extraFr;
 					} catch {}
 				}
 			} catch {}
-			processUsage(usage, model, lastMessages, lastStart, null, null, ttft, think, fr, recentConnection(5e3), recentRequestId());
+			processUsage(usage, model, lastMessages, lastStart, null, null, ttft, think, fr, recentConnection(5e3), recentRequestId(), streamed);
 			lastFetchUsage = null;
 			return;
 		}
@@ -427,16 +438,17 @@ function onGenerationEnded(...args) {
 					usage = cand;
 					model = v?.extra?.model || model;
 					log.debug("swipe_info 命中", { model });
-					let ttft = 0, think = 0, fr = cand?.__finish_reason ?? null;
+					let ttft = 0, think = 0, streamed = null, fr = cand?.__finish_reason ?? null;
 					try {
 						const fp = lastFetchUsage;
 						if (fp && Date.now() - lastFetchTime < 5e3) {
 							ttft = fp.ttft || 0;
 							think = fp.thinkTime || 0;
 							if (!fr) fr = fp.finishReason ?? null;
+							if (fp.streamed != null) streamed = fp.streamed;
 						}
 					} catch {}
-					processUsage(usage, model, lastMessages, lastStart, null, null, ttft, think, fr, recentConnection(5e3), recentRequestId());
+					processUsage(usage, model, lastMessages, lastStart, null, null, ttft, think, fr, recentConnection(5e3), recentRequestId(), streamed);
 					lastFetchUsage = null;
 					return;
 				}
@@ -451,16 +463,17 @@ function onGenerationEnded(...args) {
 		if (isValidUsage(maybeUsage)) {
 			const m = args[0]?.model || model;
 			log.debug("args 命中", { model: m });
-			let ttft = 0, think = 0, fr = maybeUsage?.__finish_reason ?? null;
+			let ttft = 0, think = 0, streamed = null, fr = maybeUsage?.__finish_reason ?? null;
 			try {
 				const fp = lastFetchUsage;
 				if (fp && Date.now() - lastFetchTime < 5e3) {
 					ttft = fp.ttft || 0;
 					think = fp.thinkTime || 0;
 					if (!fr) fr = fp.finishReason ?? null;
+					if (fp.streamed != null) streamed = fp.streamed;
 				}
 			} catch {}
-			processUsage(maybeUsage, m, lastMessages, lastStart, null, null, ttft, think, fr, recentConnection(5e3), recentRequestId());
+			processUsage(maybeUsage, m, lastMessages, lastStart, null, null, ttft, think, fr, recentConnection(5e3), recentRequestId(), streamed);
 			lastFetchUsage = null;
 			return;
 		}
@@ -476,9 +489,10 @@ function onGenerationEnded(...args) {
 				const fTtft = fetchPack && fetchPack.ttft || 0;
 				const fThink = fetchPack && fetchPack.thinkTime || 0;
 				const fFr = fetchPack && fetchPack.finishReason || fetchUsage?.__finish_reason || null;
+				const fStreamed = fetchPack && fetchPack.streamed != null ? fetchPack.streamed : null;
 				log.debug("fetch 兜底命中", { model: fetchedModel });
 				lastFetchUsage = null;
-				processUsage(fetchUsage, fetchedModel, fetchedMsgs, fetchedStart, fetchedReq, fetchedRes, fTtft, fThink, fFr, fetchPack?.connection || recentConnection(), fetchPack?.requestId || recentRequestId(12e4));
+				processUsage(fetchUsage, fetchedModel, fetchedMsgs, fetchedStart, fetchedReq, fetchedRes, fTtft, fThink, fFr, fetchPack?.connection || recentConnection(), fetchPack?.requestId || recentRequestId(12e4), fStreamed);
 				return;
 			} else if (lastFetchUsage) {
 				const fu = fetchPack && fetchPack.usage ? fetchPack.usage : fetchPack;
@@ -503,7 +517,7 @@ function refresh() {
 		globalThis.ApiUsageStat?.refreshUI?.();
 	} catch {}
 }
-function processUsage(usage, model, messages, startTime, fullRequest = null, fullResponse = null, ttft = 0, thinkTime = 0, finishReason = null, connection = null, requestId = null) {
+function processUsage(usage, model, messages, startTime, fullRequest = null, fullResponse = null, ttft = 0, thinkTime = 0, finishReason = null, connection = null, requestId = null, streamed = null) {
 	try {
 		const fp = lastFetchUsage;
 		if (fp?.usage && Date.now() - lastFetchTime < 5e3) {
@@ -512,7 +526,7 @@ function processUsage(usage, model, messages, startTime, fullRequest = null, ful
 			if (est && !hasReal && !usage?.__think_tokens_est) usage.__think_tokens_est = est;
 		}
 	} catch {}
-	repository.addEntry(usage, model, messages, startTime, fullRequest, fullResponse, ttft, thinkTime, finishReason, connection, requestId);
+	repository.addEntry(usage, model, messages, startTime, fullRequest, fullResponse, ttft, thinkTime, finishReason, connection, requestId, streamed);
 	refresh();
 }
 function recalcAllCosts() {

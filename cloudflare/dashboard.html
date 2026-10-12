@@ -65,6 +65,8 @@
     font-variant-numeric: tabular-nums; word-break: break-all;
   }
   .card .hint { font-size: 11px; color: var(--text3); }
+  /* 「当日」三块数值用绿色强调（浅深主题共用 --green，深色卡片上对比度约 4.8:1） */
+  #cards-today .value { color: var(--green); }
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 12px; align-items: start; }
   .grid.single { grid-template-columns: 1fr; }
   .panel {
@@ -192,7 +194,7 @@
   const BAR_LIMIT = 8;
   const DEFAULT_RANGE_DAYS = 30;
   /** 看板构建标识：每次改动看板后更新，便于确认浏览器拿到的是否为最新页面 */
-  const BUILD_ID = '2026-10-11.2';
+  const BUILD_ID = '2026-10-12.2';
   /**
    * 图表库来源。第一组（同源自托管 + 最快的公共 CDN）**并发竞速**，先成功者胜出：
    * 不同网络的拦截策略不一样——有的网络挡第三方域名，有的网络大响应会被中断，
@@ -311,6 +313,28 @@
     const rest = list.slice(limit).reduce((sum, item) => sum + (Number(item.count) || 0), 0);
     if (rest > 0) head.push({ label: '其他', count: rest, merged: true });
     return head;
+  }
+
+  /**
+   * 版本号降序比较：提取 label 中的全部数字分段逐段按数值比较（缺失段按 0），
+   * 保证 3.1.10 > 3.1.9 这类不被字符串序误排；浏览器主版本取 `Chrome 141` 的 141。
+   * 数字段完全相同或都无数字（如「未知」）时保持原相对顺序（稳定排序，原序为数量降序），
+   * 无数字段的标签段值视为 0 自然沉底。
+   */
+  function compareVersionDesc(a, b) {
+    const segsA = (String(a?.label ?? '').match(/\d+/g) || []).map(Number);
+    const segsB = (String(b?.label ?? '').match(/\d+/g) || []).map(Number);
+    const len = Math.max(segsA.length, segsB.length);
+    for (let i = 0; i < len; i++) {
+      const diff = (segsB[i] || 0) - (segsA[i] || 0);
+      if (diff) return diff;
+    }
+    return 0;
+  }
+
+  /** 按版本号从高到低重排（展示层专用，不改变 /api/summary 返回的数据） */
+  function sortByVersionDesc(items) {
+    return (Array.isArray(items) ? items : []).slice().sort(compareVersionDesc);
   }
 
   function themeColors() {
@@ -766,6 +790,7 @@
       card('当日新增用户', fmtInt(totals.todayUsers), '首次出现在 ' + (data.today || '')),
       card('当日新增打开', fmtInt(totals.todayOpens), '当日打开面板次数'),
       card('当日新增时长', fmtDuration(totals.todayDurMs), '当日会话时长之和'),
+      card('当日不重复用户', fmtInt(totals.todayActiveUsers), '当日产生数据的去重设备数'),
     ].join('');
   }
 
@@ -781,11 +806,12 @@
 
   function renderProfile(data) {
     const env = data.env || {};
-    drawBar('versions', data.versions || [], { color: themeColors().orange });
+    // 版本类横条按版本号从高到低展示（drawBar 反转后数组首项显示在最顶）
+    drawBar('versions', sortByVersionDesc(data.versions), { color: themeColors().orange });
     drawPie('arch', env.arch || []);
     drawPie('os', env.os || []);
     drawBar('env-browser', env.browser || [], { color: themeColors().blue });
-    drawBar('env-browser-version', env.browserVersion || [], { color: themeColors().blue });
+    drawBar('env-browser-version', sortByVersionDesc(env.browserVersion), { color: themeColors().blue });
     drawBar('env-lang', env.lang || [], { color: themeColors().green });
     drawBar('env-width', env.width || [], { color: themeColors().orange });
     drawBar('env-dark', env.dark || [], { colors: [PIE_COLORS[0], PIE_COLORS[1]] });

@@ -100,7 +100,7 @@ function makeEnv(fixtures = {}) {
   const db = createDb({
     devices: DEVICES,
     daily: DAILY,
-    today: [{ opens: 3, dur_ms: 4 * MIN }],
+    today: [{ devices: 2, opens: 3, dur_ms: 4 * MIN }],
     render: RENDER,
     ...fixtures,
   });
@@ -205,6 +205,7 @@ describe('/api/summary 总计口径', () => {
     expect(data.totals.durMs).toBe(9 * MIN);
     expect(data.totals.avgDurMsPerUser).toBe(Math.round((9 * MIN) / 2));
     expect(data.totals.todayUsers).toBe(1);
+    expect(data.totals.todayActiveUsers).toBe(2);
     expect(data.totals.todayOpens).toBe(3);
     expect(data.totals.todayDurMs).toBe(4 * MIN);
 
@@ -235,7 +236,7 @@ describe('/api/summary 总计口径', () => {
     const data = await res.json();
     expect(data.totals).toEqual({
       users: 0, opens: 0, durMs: 0, avgDurMsPerUser: 0,
-      todayUsers: 0, todayOpens: 0, todayDurMs: 0,
+      todayUsers: 0, todayActiveUsers: 0, todayOpens: 0, todayDurMs: 0,
     });
     expect(data.userGrowth).toEqual([]);
     expect(data.env.browser).toEqual([]);

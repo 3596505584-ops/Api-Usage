@@ -3,12 +3,12 @@ import { n as getSelectedSave, r as state$2, t as getHistoryForDisplay } from ".
 import { d as WEBDAV_SYNC_FILE, i as HIDDEN_PRICING_MODELS, n as DEFAULT_PEAK_HOURS, s as PRICING } from "./pricing-bcKQQNo6.js";
 import { c as saveExtensionSettings, d as historyRecordKey, i as getExtensionSettings, u as saveHot } from "./persistence-CrFXrRB_.js";
 import { r as toast, t as log } from "./logger-Bv-AT94O.js";
-import { T as WALLET_CATALOG_PROVIDERS, _ as findWalletForHistory, a as decryptKey, b as walletBalanceToCny, c as DataEvents, d as calcSavings, f as getPricing$1, i as saveWalletApiKey, l as on, m as normalizeModel, o as encryptKey, p as isDeepSeekOfficialModel, r as getWalletApiKey, s as isTruncatedFinish, t as repository, u as calcCost, v as findWalletModel, w as DEEPSEEK_WALLET_ID, x as walletPendingModelCount, y as mergeWalletCollections } from "./repository-DKfxS99y.js";
+import { E as WALLET_CATALOG_PROVIDERS, S as walletPendingModelCount, T as DEEPSEEK_WALLET_ID, a as decryptKey, b as mergeWalletCollections, c as isTruncatedFinish, d as calcCost, f as calcSavings, h as normalizeModel, i as saveWalletApiKey, l as DataEvents, m as isDeepSeekOfficialModel, o as encryptKey, p as getPricing$1, r as getWalletApiKey, s as sanitizeHistoryTiming, t as repository, u as on, v as findWalletForHistory, x as walletBalanceToCny, y as findWalletModel } from "./repository-B4yMLqkN.js";
 import { a as isUnsafeKey$1, c as localDay$1, i as isPeakHour, l as localTimeHM, n as isChinaHoliday, o as isValidDayKey, r as isExtraOffDay, s as isWeekendDay, t as esc$1, u as CN_HOLIDAY_COVERAGE_LABEL } from "./date-BJI2m6dS.js";
 import { a as getWalletExchangeRate, i as getDisplayCurrency, n as fetchLiveRate, r as formatMoney } from "./currency-IAtpC2X8.js";
-import { r as recalcAllCosts, t as installInterception } from "./interception-DvYodKY8.js";
-import { i as saveApiKey, n as queryBalance, r as queryWalletBalance } from "./balance-DPSNGqNK.js";
-import { a as removeSyncedModels, n as isSyncedCustomModel, o as syncPricingFromModelsDev, r as previewSync, t as fetchModelsDevCatalog } from "./pricing-sync-Da48y5SX.js";
+import { r as recalcAllCosts, t as installInterception } from "./interception-CtyZNjCZ.js";
+import { i as saveApiKey, n as queryBalance, r as queryWalletBalance } from "./balance-BQzxLpAs.js";
+import { a as removeSyncedModels, n as isSyncedCustomModel, o as syncPricingFromModelsDev, r as previewSync, t as fetchModelsDevCatalog } from "./pricing-sync-Cl187A8k.js";
 //#region src/services/import-export.ts
 function isUnsafeKey(k) {
 	return k === "__proto__" || k === "constructor" || k === "prototype";
@@ -169,6 +169,7 @@ function normalizeImportData(raw) {
 			"input_cost",
 			"output_cost"
 		]) if (nh[field] !== void 0) nh[field] = finiteNonNegative(nh[field]);
+		sanitizeHistoryTiming(nh);
 		cleaned.push(nh);
 	}
 	cleaned.sort((a, b) => b.timestamp - a.timestamp);
@@ -1733,14 +1734,14 @@ function renderSettings(doc) {
 		doc.getElementById("aus-auto-balance-interval").style.display = autoCb.checked ? "block" : "none";
 		saveHot({ settings: state$2.settings });
 		try {
-			import("./balance-DPSNGqNK.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
+			import("./balance-BQzxLpAs.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
 		} catch {}
 	};
 	doc.getElementById("aus-balance-interval").onchange = (e) => {
 		state$2.settings.balanceInterval = parseInt(e.target.value) || 10;
 		saveHot({ settings: state$2.settings });
 		try {
-			import("./balance-DPSNGqNK.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
+			import("./balance-BQzxLpAs.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
 		} catch {}
 	};
 	if (dbgCb) dbgCb.onchange = () => {
@@ -1785,7 +1786,7 @@ function renderSettings(doc) {
 		const clearBtn = doc.getElementById("aus-btn-debug-clear");
 		if (clearBtn) clearBtn.onclick = async () => {
 			try {
-				const { repository } = await import("./repository-DKfxS99y.js").then((n) => n.n);
+				const { repository } = await import("./repository-B4yMLqkN.js").then((n) => n.n);
 				const { state: st } = await import("./store-DSiVmOSF.js").then((n) => n.i);
 				await repository.replaceAll({ history: (st.history || []).filter((h) => h._debug !== true) });
 				await repository.recalcAll();
@@ -1931,7 +1932,7 @@ function renderSettings(doc) {
 					intervalDrop.style.display = "none";
 					if (intervalLabel) intervalLabel.textContent = intervalMap[el.getAttribute("data-interval")] || el.getAttribute("data-interval");
 					try {
-						import("./pricing-sync-Da48y5SX.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
+						import("./pricing-sync-Cl187A8k.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
 						import("./currency-IAtpC2X8.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
 					} catch {}
 				};
@@ -1953,7 +1954,7 @@ function renderSettings(doc) {
 			if (panel) panel.style.display = enabledEl.checked ? "grid" : "none";
 			let removed = 0;
 			if (!enabledEl.checked) try {
-				const m = await import("./pricing-sync-Da48y5SX.js").then((n) => n.i);
+				const m = await import("./pricing-sync-Cl187A8k.js").then((n) => n.i);
 				try {
 					await m.markLegacySyncedModels?.({ skipRerender: true });
 				} catch {}
@@ -1964,7 +1965,7 @@ function renderSettings(doc) {
 			saveHot({ settings: state$2.settings });
 			try {
 				import("./currency-IAtpC2X8.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
-				import("./pricing-sync-Da48y5SX.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
+				import("./pricing-sync-Cl187A8k.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
 			} catch {}
 			if (removed) {
 				renderModelsEditor(doc);
@@ -2461,7 +2462,7 @@ function diffMessages(oldMsgs, newMsgs) {
 	while (i < a.length && i < b.length && a[i] === b[i]) i++;
 	if (i === a.length && i === b.length) return "<span style=\"color:var(--ds-text-2);\">两条请求完全一致（缓存命中段完整）</span>";
 	const ctx = 80;
-	return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div style="background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:10px;padding:10px;font-size:11px;white-space:pre-wrap;word-break:break-all;color:var(--ds-text);">旧：${esc$1(a.slice(Math.max(0, i - ctx), i)) + "<span style=\"background:var(--ds-red-bg);color:var(--ds-red);padding:0 2px;border-radius:3px;\">" + esc$1(a.slice(i, i + 200)) + "</span>" + esc$1(a.slice(i + 200, i + 280))}</div><div style="background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:10px;padding:10px;font-size:11px;white-space:pre-wrap;word-break:break-all;color:var(--ds-text);">新：${esc$1(b.slice(Math.max(0, i - ctx), i)) + "<span style=\"background:var(--ds-green-bg);color:var(--ds-green);padding:0 2px;border-radius:3px;\">" + esc$1(b.slice(i, i + 200)) + "</span>" + esc$1(b.slice(i + 200, i + 280))}</div></div><div style="font-size:11px;color:var(--ds-text-2);margin-top:8px;">差异起点即缓存发散位置，前 ${i} 字符一致为命中段</div>`;
+	return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div style="background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:10px;padding:10px;font-size:var(--aus-fs-sm);white-space:pre-wrap;word-break:break-all;color:var(--ds-text);">旧：${esc$1(a.slice(Math.max(0, i - ctx), i)) + "<span style=\"background:var(--ds-red-bg);color:var(--ds-red);padding:0 2px;border-radius:3px;\">" + esc$1(a.slice(i, i + 200)) + "</span>" + esc$1(a.slice(i + 200, i + 280))}</div><div style="background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:10px;padding:10px;font-size:var(--aus-fs-sm);white-space:pre-wrap;word-break:break-all;color:var(--ds-text);">新：${esc$1(b.slice(Math.max(0, i - ctx), i)) + "<span style=\"background:var(--ds-green-bg);color:var(--ds-green);padding:0 2px;border-radius:3px;\">" + esc$1(b.slice(i, i + 200)) + "</span>" + esc$1(b.slice(i + 200, i + 280))}</div></div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-top:8px;">差异起点即缓存发散位置，前 ${i} 字符一致为命中段</div>`;
 }
 function bindHistoryCompare() {
 	const doc = getDoc$9();
@@ -2484,14 +2485,14 @@ function renderDiff() {
 	const host = getDoc$9().getElementById("aus-diff");
 	if (!host) return;
 	if (selOld == null || selNew == null) {
-		host.innerHTML = "<div style=\"text-align:center;padding:16px;color:var(--ds-text-3);font-size:12px;\">已选 " + (selOld != null ? "旧 " : "") + (selNew != null ? "新 " : "") + "，请在历史中各选一条 旧/新 进行对比</div>";
+		host.innerHTML = "<div style=\"text-align:center;padding:16px;color:var(--ds-text-3);font-size:var(--aus-fs-base);\">已选 " + (selOld != null ? "旧 " : "") + (selNew != null ? "新 " : "") + "，请在历史中各选一条 旧/新 进行对比</div>";
 		return;
 	}
 	const s = getSelectedSave();
 	const oldEntry = (s?.history || []).find((h) => h.timestamp === selOld);
 	const newEntry = (s?.history || []).find((h) => h.timestamp === selNew);
 	if (!oldEntry || !newEntry) {
-		host.innerHTML = "<div style=\"color:var(--ds-red);font-size:12px;\">未找到对应记录</div>";
+		host.innerHTML = "<div style=\"color:var(--ds-red);font-size:var(--aus-fs-base);\">未找到对应记录</div>";
 		return;
 	}
 	host.innerHTML = diffMessages(oldEntry.messages || [], newEntry.messages || []);
@@ -3302,8 +3303,8 @@ function getFourDisplay(key, v) {
 			html: (v.avgTtft || 0) > 0 ? `${v.avgTtft.toFixed(1)} <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);font-weight:400;">s</span>` : `<span style="color:var(--ds-text-3);">—</span>`
 		};
 		case "avg_rate": return {
-			title: "输出速率",
-			html: `${Math.round(v.avgRate || 0)} <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);font-weight:400;">t/s</span>`
+			title,
+			html: (v.avgRate || 0) > 0 ? `${Math.round(v.avgRate)} <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);font-weight:400;">t/s</span>` : `<span style="color:var(--ds-text-3);">—</span>`
 		};
 		case "avg_input_cost": return {
 			title,
@@ -3699,8 +3700,17 @@ var X_OPTIONS = [
 	}
 ];
 var X_OPTIONS_WITHOUT_ROUND = X_OPTIONS.filter((option) => option.key !== "round");
-var ySelected = /* @__PURE__ */ new Set(["total_token"]);
-var xSelected = "day";
+/** 自定义图表的默认选中项：缓存命中 + 缓存未命中 + 输出 Token 三段拆分，配总费用曲线 */
+var DEFAULT_Y_KEYS = [
+	"input_hit_token",
+	"input_miss_token",
+	"output_token",
+	"total_cost"
+];
+/** 自定义图表的默认横轴：按轮次逐条展示 */
+var DEFAULT_X_KEY = "round";
+var ySelected = new Set(DEFAULT_Y_KEYS);
+var xSelected = DEFAULT_X_KEY;
 function getYSelected() {
 	return Array.from(ySelected);
 }
@@ -3763,7 +3773,7 @@ function getYValue$1(e, y) {
 }
 function aggregateForChart(entries, yKeys, xKey) {
 	const yMeta = new Map(Y_OPTIONS.map((o) => [o.key, o]));
-	if (!yKeys.length) yKeys = ["total_token"];
+	if (!yKeys.length) yKeys = DEFAULT_Y_KEYS;
 	if (xKey === "round") return {
 		labels: entries.map((_, i) => `#${i + 1}`),
 		series: yKeys.map((k) => {
@@ -4103,8 +4113,9 @@ async function renderOne$1(id, filtered) {
 				return Number(avg.toFixed(1));
 			});
 			else if (k === "rate") data = sortedKeys.map((key) => {
-				const arr = buckets.get(key);
-				const avg = arr.reduce((a, c) => a + (c.tokenRate || 0), 0) / arr.length;
+				const valid = buckets.get(key).map((c) => c.tokenRate || 0).filter((v) => v > 0);
+				if (!valid.length) return 0;
+				const avg = valid.reduce((a, c) => a + c, 0) / valid.length;
 				return Math.round(avg);
 			});
 			else if (k === "req_count") data = sortedKeys.map((key) => buckets.get(key).length);
@@ -6380,7 +6391,7 @@ var forecastRenderToken = 0;
 async function renderForecastView() {
 	const doc = getDoc$3();
 	const token = ++forecastRenderToken;
-	const hist = await import("./repository-DKfxS99y.js").then((n) => n.n).then((mod) => mod.repository.getAllHistory()).catch(() => state$2.history || []);
+	const hist = await import("./repository-B4yMLqkN.js").then((n) => n.n).then((mod) => mod.repository.getAllHistory()).catch(() => state$2.history || []);
 	if (token !== forecastRenderToken) return;
 	try {
 		renderForecastChatPicker(hist);
@@ -7050,7 +7061,7 @@ function bindWalletView(doc) {
 				wallet.balance.mode = input.checked ? "auto" : "manual";
 			});
 			try {
-				import("./balance-DPSNGqNK.js").then((n) => n.t).then((mod) => mod.restartBalanceTimer?.());
+				import("./balance-BQzxLpAs.js").then((n) => n.t).then((mod) => mod.restartBalanceTimer?.());
 			} catch {}
 			renderWalletView();
 		};
@@ -7513,11 +7524,11 @@ function renderHistoryFilterDropdown(kind, selected, options, emptyText, onSelec
 	if (!dropdown) return;
 	const item = (id, label, title = label) => {
 		const active = id === selected ? "background:var(--ds-card);font-weight:600;" : "";
-		return `<div data-history-value="${esc$1(id)}" title="${esc$1(title)}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;${active}">${esc$1(label)}</div>`;
+		return `<div data-history-value="${esc$1(id)}" title="${esc$1(title)}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${active}">${esc$1(label)}</div>`;
 	};
 	let html = item(STATS_FILTER_ALL, "全部");
 	for (const option of options) html += item(option.id, option.label, option.title || option.label);
-	if (!options.length) html += `<div style="padding:8px 10px;color:var(--ds-text-3);font-size:12px;">${esc$1(emptyText)}</div>`;
+	if (!options.length) html += `<div style="padding:8px 10px;color:var(--ds-text-3);font-size:var(--aus-fs-base);">${esc$1(emptyText)}</div>`;
 	dropdown.innerHTML = html;
 	dropdown.querySelectorAll("[data-history-value]").forEach((element) => {
 		element.onclick = () => onSelect(element.getAttribute("data-history-value") || "__all__");
@@ -7703,7 +7714,7 @@ function renderHistoryInner(doc, fullHist) {
 	resetHistoryDetailState(doc, true);
 	const total = fullHist.length;
 	if (!total) {
-		host.innerHTML = `<div style="text-align:center;padding:24px;color:var(--ds-text-3);font-size:12px;line-height:1.8;">当前筛选无记录<br/><button id="aus-history-filter-reset" style="margin-top:8px;padding:6px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:11px;cursor:pointer;">清除筛选</button></div>`;
+		host.innerHTML = `<div style="text-align:center;padding:24px;color:var(--ds-text-3);font-size:var(--aus-fs-base);line-height:1.8;">当前筛选无记录<br/><button id="aus-history-filter-reset" style="margin-top:8px;padding:6px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;">清除筛选</button></div>`;
 		const reset = doc.getElementById("aus-history-filter-reset");
 		if (reset) reset.onclick = () => {
 			resetHistoryFilters();
@@ -7717,17 +7728,17 @@ function renderHistoryInner(doc, fullHist) {
 	if (historyPage < 1) historyPage = 1;
 	const start = (historyPage - 1) * HISTORY_PAGE_SIZE;
 	const pageHist = fullHist.slice(start, start + HISTORY_PAGE_SIZE);
-	const pagerTop = total > HISTORY_PAGE_SIZE ? `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:11px;color:var(--ds-text-2);">
+	const pagerTop = total > HISTORY_PAGE_SIZE ? `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:var(--aus-fs-sm);color:var(--ds-text-2);">
       <span>共 ${total} 条 · 第 ${historyPage}/${totalPages} 页</span>
       <span style="display:flex;gap:6px;">
-        <button id="aus-history-prev" ${historyPage <= 1 ? "disabled" : ""} style="padding:4px 10px;border:1px solid var(--ds-border);border-radius:999px;background:${historyPage <= 1 ? "var(--ds-card)" : "var(--ds-card-inner)"};color:var(--ds-text);font-size:11px;cursor:${historyPage <= 1 ? "not-allowed" : "pointer"};opacity:${historyPage <= 1 ? "0.5" : "1"};">‹ 上一页</button>
-        <button id="aus-history-next" ${historyPage >= totalPages ? "disabled" : ""} style="padding:4px 10px;border:1px solid var(--ds-border);border-radius:999px;background:${historyPage >= totalPages ? "var(--ds-card)" : "var(--ds-card-inner)"};color:var(--ds-text);font-size:11px;cursor:${historyPage >= totalPages ? "not-allowed" : "pointer"};opacity:${historyPage >= totalPages ? "0.5" : "1"};">下一页 ›</button>
+        <button id="aus-history-prev" ${historyPage <= 1 ? "disabled" : ""} style="padding:4px 10px;border:1px solid var(--ds-border);border-radius:999px;background:${historyPage <= 1 ? "var(--ds-card)" : "var(--ds-card-inner)"};color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:${historyPage <= 1 ? "not-allowed" : "pointer"};opacity:${historyPage <= 1 ? "0.5" : "1"};display:inline-flex;align-items:center;gap:4px;">${icon("chevron-left", 14)} 上一页</button>
+        <button id="aus-history-next" ${historyPage >= totalPages ? "disabled" : ""} style="padding:4px 10px;border:1px solid var(--ds-border);border-radius:999px;background:${historyPage >= totalPages ? "var(--ds-card)" : "var(--ds-card-inner)"};color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:${historyPage >= totalPages ? "not-allowed" : "pointer"};opacity:${historyPage >= totalPages ? "0.5" : "1"};display:inline-flex;align-items:center;gap:4px;">下一页 ${icon("chevron-right", 14)}</button>
       </span>
     </div>` : "";
-	const pagerBottom = total > HISTORY_PAGE_SIZE ? `<div style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:10px;font-size:11px;">
-      <button id="aus-history-prev-b" ${historyPage <= 1 ? "disabled" : ""} style="padding:4px 12px;border:1px solid var(--ds-border);border-radius:999px;background:${historyPage <= 1 ? "var(--ds-card)" : "var(--ds-card-inner)"};color:var(--ds-text);font-size:11px;cursor:${historyPage <= 1 ? "not-allowed" : "pointer"};opacity:${historyPage <= 1 ? "0.5" : "1"};">‹ 上一页</button>
+	const pagerBottom = total > HISTORY_PAGE_SIZE ? `<div style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:10px;font-size:var(--aus-fs-sm);">
+      <button id="aus-history-prev-b" ${historyPage <= 1 ? "disabled" : ""} style="padding:4px 12px;border:1px solid var(--ds-border);border-radius:999px;background:${historyPage <= 1 ? "var(--ds-card)" : "var(--ds-card-inner)"};color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:${historyPage <= 1 ? "not-allowed" : "pointer"};opacity:${historyPage <= 1 ? "0.5" : "1"};display:inline-flex;align-items:center;gap:4px;">${icon("chevron-left", 14)} 上一页</button>
       <span style="color:var(--ds-text-2);">第 ${historyPage}/${totalPages} 页</span>
-      <button id="aus-history-next-b" ${historyPage >= totalPages ? "disabled" : ""} style="padding:4px 12px;border:1px solid var(--ds-border);border-radius:999px;background:${historyPage >= totalPages ? "var(--ds-card)" : "var(--ds-card-inner)"};color:var(--ds-text);font-size:11px;cursor:${historyPage >= totalPages ? "not-allowed" : "pointer"};opacity:${historyPage >= totalPages ? "0.5" : "1"};">下一页 ›</button>
+      <button id="aus-history-next-b" ${historyPage >= totalPages ? "disabled" : ""} style="padding:4px 12px;border:1px solid var(--ds-border);border-radius:999px;background:${historyPage >= totalPages ? "var(--ds-card)" : "var(--ds-card-inner)"};color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:${historyPage >= totalPages ? "not-allowed" : "pointer"};opacity:${historyPage >= totalPages ? "0.5" : "1"};display:inline-flex;align-items:center;gap:4px;">下一页 ${icon("chevron-right", 14)}</button>
     </div>` : "";
 	host.innerHTML = pagerTop + pageHist.map((h) => {
 		const total = h.total_tokens || 1;
@@ -7750,20 +7761,20 @@ function renderHistoryInner(doc, fullHist) {
 		const recordDateText = recordDate.toLocaleDateString("zh-CN");
 		const recordTimeText = recordDate.toLocaleTimeString("zh-CN", { hour12: false });
 		return `
-    <div style="padding:10px 12px;background:var(--ds-card);border-radius:10px;margin-bottom:8px;font-size:12px;">
+    <div style="padding:10px 12px;background:var(--ds-card);border-radius:10px;margin-bottom:8px;font-size:var(--aus-fs-base);">
       <div class="aus-history-card-head" style="display:flex;justify-content:space-between;align-items:center;">
         <div class="aus-history-card-main" style="min-width:0;flex:1;">
           <div class="aus-history-card-title" style="font-weight:600;color:var(--ds-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc$1(h.model)} · ${esc$1(localTimeHM(h.timestamp))}</div>
-          <div style="color:var(--ds-text-2);margin-top:2px;">${h.prompt_tokens || 0} in · ${h.completion_tokens || 0} out · ${h.duration || 0}ms · ${h.tokenRate || 0} t/s</div>
+          <div style="color:var(--ds-text-2);margin-top:2px;">${h.prompt_tokens || 0} in · ${h.completion_tokens || 0} out · ${h.duration || 0}ms · ${(h.tokenRate || 0) > 0 ? h.tokenRate + " t/s" : "未测速"}</div>
         </div>
         <div class="aus-history-card-actions" style="text-align:right;flex-shrink:0;margin-left:8px;display:flex;gap:6px;align-items:center;">
           <div class="aus-history-card-cost">
             <div style="font-weight:700;color:var(--ds-text);">${c4}</div>
           </div>
           <div style="display:flex;gap:4px;">
-            <button class="aus-compare-old" data-ts="${h.timestamp}" style="padding:4px 6px;border:1px solid var(--ds-border);border-radius:6px;background:var(--ds-card-inner);color:var(--ds-text);font-size:10px;cursor:pointer;">旧</button>
-            <button class="aus-compare-new" data-ts="${h.timestamp}" style="padding:4px 6px;border:1px solid var(--ds-border);border-radius:6px;background:var(--ds-card-inner);color:var(--ds-text);font-size:10px;cursor:pointer;">新</button>
-            <button class="aus-detail-toggle" data-ts="${h.timestamp}" data-model="${esc$1(h.model || "")}" data-time="${esc$1(recordDateText + " " + recordTimeText)}" style="padding:4px 8px;border:1px solid var(--ds-black);border-radius:6px;background:var(--ds-black);color:var(--ds-black-text);font-size:10px;cursor:pointer;">详情</button>
+            <button class="aus-compare-old" data-ts="${h.timestamp}" style="padding:4px 6px;border:1px solid var(--ds-border);border-radius:6px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;">旧</button>
+            <button class="aus-compare-new" data-ts="${h.timestamp}" style="padding:4px 6px;border:1px solid var(--ds-border);border-radius:6px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;">新</button>
+            <button class="aus-detail-toggle" data-ts="${h.timestamp}" data-model="${esc$1(h.model || "")}" data-time="${esc$1(recordDateText + " " + recordTimeText)}" style="padding:4px 8px;border:1px solid var(--ds-black);border-radius:6px;background:var(--ds-black);color:var(--ds-black-text);font-size:var(--aus-fs-sm);cursor:pointer;">详情</button>
           </div>
         </div>
       </div>
@@ -7772,7 +7783,7 @@ function renderHistoryInner(doc, fullHist) {
         <div style="background:var(--ds-red-border);width:${mp}%;height:100%;"></div>
         <div style="background:var(--ds-purple-bg);width:${op}%;height:100%;"></div>
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:10px;margin-top:4px;">
+      <div style="display:flex;justify-content:space-between;font-size:var(--aus-fs-sm);margin-top:4px;">
         <div style="display:flex;gap:8px;"><span style="color:var(--ds-green);font-weight:500;">${hps}% 命中</span><span style="color:var(--ds-red);font-weight:500;">${mps}% 未命中</span><span style="color:var(--ds-purple);font-weight:500;">${ops}% 输出</span></div>
         <span style="color:var(--ds-text-2);">${total.toLocaleString()}t</span>
       </div>
@@ -7794,7 +7805,7 @@ function renderHistoryInner(doc, fullHist) {
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:6px;font-size:11px;">
               <div><div style="color:var(--ds-text-2);font-size:10px;">耗时</div><div style="font-weight:600;color:var(--ds-text);margin-top:2px;">${((h.duration || 0) / 1e3).toFixed(1)}s</div></div>
               <div><div style="color:var(--ds-text-2);font-size:10px;">首字延迟</div><div style="font-weight:600;color:var(--ds-text);margin-top:2px;">${(h.ttft || 0) > 0 ? ((h.ttft || 0) / 1e3).toFixed(1) + "s" : "—"}</div></div>
-              <div><div style="color:var(--ds-text-2);font-size:10px;">速率</div><div style="font-weight:600;color:var(--ds-green);margin-top:2px;">${h.tokenRate || 0} t/s</div></div>
+              <div><div style="color:var(--ds-text-2);font-size:10px;">速率</div><div style="font-weight:600;margin-top:2px;color:${(h.tokenRate || 0) > 0 ? "var(--ds-green)" : "var(--ds-text-3)"};">${(h.tokenRate || 0) > 0 ? h.tokenRate + " t/s" : h.streamed === false ? "非流式" : "—"}</div></div>
               <div><div style="color:var(--ds-text-2);font-size:10px;">思维链耗时</div><div style="font-weight:600;color:var(--ds-text);margin-top:2px;">${(h.thinkTime || 0) > 0 ? ((h.thinkTime || 0) / 1e3).toFixed(1) + "s" : "—"}</div></div>
               <div><div style="color:var(--ds-text-2);font-size:10px;">思维链占比</div><div style="font-weight:600;color:var(--ds-text);margin-top:2px;">${(() => {
 			const comp = h.completion_tokens || 0, th = h.thinkTokens || 0;
@@ -7937,7 +7948,7 @@ function renderHistory(doc, s) {
 		historyPage = 1;
 		historyFullCache = null;
 		historyCacheScope = "";
-		host.innerHTML = scope === "current" ? "<div style=\"text-align:center;padding:16px;color:var(--ds-text-3);font-size:12px;line-height:1.8;\">当前对话暂无记录<br/><span style=\"font-size:11px;\">已按“当前对话”过滤，旧记录（未关联对话）仅在“全部历史”中可见</span><br/><button id=\"aus-history-scope-switch\" style=\"margin-top:8px;padding:6px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:11px;cursor:pointer;\">切换为全部历史</button></div>" : "<div style=\"text-align:center;padding:16px;color:var(--ds-text-3);font-size:12px;\">暂无历史记录</div>";
+		host.innerHTML = scope === "current" ? "<div style=\"text-align:center;padding:16px;color:var(--ds-text-3);font-size:var(--aus-fs-base);line-height:1.8;\">当前对话暂无记录<br/><span style=\"font-size:var(--aus-fs-sm);\">已按“当前对话”过滤，旧记录（未关联对话）仅在“全部历史”中可见</span><br/><button id=\"aus-history-scope-switch\" style=\"margin-top:8px;padding:6px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:var(--aus-fs-sm);cursor:pointer;\">切换为全部历史</button></div>" : "<div style=\"text-align:center;padding:16px;color:var(--ds-text-3);font-size:var(--aus-fs-base);\">暂无历史记录</div>";
 		const btn = doc.getElementById("aus-history-scope-switch");
 		if (btn) btn.onclick = () => {
 			state$2.settings.historyScope = "all";
@@ -8249,23 +8260,23 @@ function createPanel() {
           <div data-view="history" style="display:none;">
             <div id="aus-history-filter-host" style="display:flex;align-items:center;gap:8px;margin-bottom:12px;position:relative;flex-wrap:wrap;">
               <div class="aus-stats-filter">
-                <div id="aus-history-model-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:12px;cursor:pointer;"><span style="color:var(--ds-text-2);">模型</span><span id="aus-history-model-label" style="font-weight:600;color:var(--ds-text);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">全部</span><span style="font-size:10px;">▼</span></div>
+                <div id="aus-history-model-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-base);cursor:pointer;"><span style="color:var(--ds-text-2);">模型</span><span id="aus-history-model-label" style="font-weight:600;color:var(--ds-text);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">全部</span>${icon("chevron-down", 14)}</div>
                 <div id="aus-history-model-dropdown" style="display:none;position:absolute;top:40px;left:0;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:180px;max-height:260px;overflow:auto;padding:8px;"></div>
               </div>
               <div class="aus-stats-filter">
-                <div id="aus-history-chat-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:12px;cursor:pointer;"><span style="color:var(--ds-text-2);">对话</span><span id="aus-history-chat-label" style="font-weight:600;color:var(--ds-text);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">全部</span><span style="font-size:10px;">▼</span></div>
+                <div id="aus-history-chat-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-base);cursor:pointer;"><span style="color:var(--ds-text-2);">对话</span><span id="aus-history-chat-label" style="font-weight:600;color:var(--ds-text);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">全部</span>${icon("chevron-down", 14)}</div>
                 <div id="aus-history-chat-dropdown" style="display:none;position:absolute;top:40px;left:0;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:200px;max-height:260px;overflow:auto;padding:8px;"></div>
               </div>
               <div class="aus-stats-filter">
-                <div id="aus-history-endpoint-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:12px;cursor:pointer;"><span style="color:var(--ds-text-2);">接入类型</span><span id="aus-history-endpoint-label" style="font-weight:600;color:var(--ds-text);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">全部</span><span style="font-size:10px;">▼</span></div>
+                <div id="aus-history-endpoint-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-base);cursor:pointer;"><span style="color:var(--ds-text-2);">接入类型</span><span id="aus-history-endpoint-label" style="font-weight:600;color:var(--ds-text);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">全部</span>${icon("chevron-down", 14)}</div>
                 <div id="aus-history-endpoint-dropdown" style="display:none;position:absolute;top:40px;left:0;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:200px;max-width:320px;max-height:260px;overflow:auto;padding:8px;"></div>
               </div>
               <div class="aus-stats-filter">
-                <div id="aus-history-credential-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:12px;cursor:pointer;"><span style="color:var(--ds-text-2);">API 密钥</span><span id="aus-history-credential-label" style="font-weight:600;color:var(--ds-text);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">全部</span><span style="font-size:10px;">▼</span></div>
+                <div id="aus-history-credential-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-base);cursor:pointer;"><span style="color:var(--ds-text-2);">API 密钥</span><span id="aus-history-credential-label" style="font-weight:600;color:var(--ds-text);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">全部</span>${icon("chevron-down", 14)}</div>
                 <div id="aus-history-credential-dropdown" style="display:none;position:absolute;top:40px;left:0;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:200px;max-width:320px;max-height:260px;overflow:auto;padding:8px;"></div>
               </div>
             </div>
-            <div id="aus-diff" class="ds-card" style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><span style="font-size:12px;font-weight:600;color:var(--ds-text);">缓存断点</span><button id="aus-diff-fullscreen" style="padding:4px 8px;border:1px solid var(--ds-border);border-radius:6px;background:var(--ds-card-inner);color:var(--ds-text);font-size:11px;cursor:pointer;">全屏</button></div><div style="font-size:11px;color:var(--ds-text-3);">在历史中各选一条 旧/新 对比，橙/绿高亮即发散点</div></div>
+            <div id="aus-diff" class="ds-card" style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><span style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);">缓存断点</span><button id="aus-diff-fullscreen" style="padding:4px 8px;border:1px solid var(--ds-border);border-radius:6px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;">全屏</button></div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);">在历史中各选一条 旧/新 对比，橙/绿高亮即发散点</div></div>
             <div id="aus-history"></div>
           </div>
           <div data-view="settings" style="display:none;">
@@ -8316,7 +8327,7 @@ function createPanel() {
       <aside id="aus-history-detail" style="display:none;flex-direction:column;width:25%;min-width:300px;max-width:480px;flex-shrink:0;border-left:1px solid var(--ds-border);background:var(--ds-card-inner);overflow:hidden;">
         <div style="flex-shrink:0;height:48px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 12px;border-bottom:1px solid var(--ds-border);">
           <span id="aus-history-detail-title" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);">记录详情</span>
-          <button id="aus-history-detail-close" title="关闭" style="width:28px;height:28px;flex-shrink:0;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card);color:var(--ds-text-2);cursor:pointer;font-size:var(--aus-fs-base);line-height:1;">✕</button>
+          <button id="aus-history-detail-close" title="关闭" style="width:28px;height:28px;flex-shrink:0;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card);color:var(--ds-text-2);cursor:pointer;line-height:1;display:inline-flex;align-items:center;justify-content:center;">${icon("close", 16)}</button>
         </div>
         <div id="aus-history-detail-body" style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:12px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;"></div>
       </aside>
@@ -8824,7 +8835,7 @@ function onAppReady() {
 		refreshUI();
 	} catch {}
 	try {
-		import("./interception-DvYodKY8.js").then((n) => n.n).then((m) => m.installInterception()).catch(() => {});
+		import("./interception-CtyZNjCZ.js").then((n) => n.n).then((m) => m.installInterception()).catch(() => {});
 	} catch {}
 }
 function onAppInitialized() {
@@ -8832,7 +8843,7 @@ function onAppInitialized() {
 		ensureWandEntry();
 	} catch {}
 	try {
-		import("./interception-DvYodKY8.js").then((n) => n.n).then((m) => m.installInterception()).catch(() => {});
+		import("./interception-CtyZNjCZ.js").then((n) => n.n).then((m) => m.installInterception()).catch(() => {});
 	} catch {}
 }
 function onChatChanged() {
@@ -8922,13 +8933,13 @@ async function onDelete() {
 		stopPeakDot();
 	} catch {}
 	try {
-		(await import("./balance-DPSNGqNK.js").then((n) => n.t)).stopBalanceTimer?.();
+		(await import("./balance-BQzxLpAs.js").then((n) => n.t)).stopBalanceTimer?.();
 	} catch {}
 	try {
 		(await import("./currency-IAtpC2X8.js").then((n) => n.t)).stopRateTimer?.();
 	} catch {}
 	try {
-		(await import("./pricing-sync-Da48y5SX.js").then((n) => n.i)).stopPricingSyncTimer?.();
+		(await import("./pricing-sync-Cl187A8k.js").then((n) => n.i)).stopPricingSyncTimer?.();
 	} catch {}
 	cleanupRuntimeBindings();
 	try {
@@ -8955,16 +8966,16 @@ async function onDelete() {
 function onEnable() {
 	log.debug("enabled");
 	try {
-		import("./interception-DvYodKY8.js").then((n) => n.n).then((m) => m.installInterception());
+		import("./interception-CtyZNjCZ.js").then((n) => n.n).then((m) => m.installInterception());
 	} catch {}
 	try {
-		import("./balance-DPSNGqNK.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
+		import("./balance-BQzxLpAs.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
 	} catch {}
 	try {
 		import("./currency-IAtpC2X8.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
 	} catch {}
 	try {
-		import("./pricing-sync-Da48y5SX.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
+		import("./pricing-sync-Cl187A8k.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
 	} catch {}
 }
 async function onDisable() {
@@ -8974,7 +8985,7 @@ async function onDisable() {
 		flushSaveHot();
 	} catch {}
 	try {
-		import("./interception-DvYodKY8.js").then((n) => n.n).then((m) => m.uninstallInterception?.());
+		import("./interception-CtyZNjCZ.js").then((n) => n.n).then((m) => m.uninstallInterception?.());
 	} catch {}
 	try {
 		const doc = getDoc();
@@ -8990,13 +9001,13 @@ async function onDisable() {
 		stopPeakDot();
 	} catch {}
 	try {
-		(await import("./balance-DPSNGqNK.js").then((n) => n.t)).stopBalanceTimer?.();
+		(await import("./balance-BQzxLpAs.js").then((n) => n.t)).stopBalanceTimer?.();
 	} catch {}
 	try {
 		(await import("./currency-IAtpC2X8.js").then((n) => n.t)).stopRateTimer?.();
 	} catch {}
 	try {
-		(await import("./pricing-sync-Da48y5SX.js").then((n) => n.i)).stopPricingSyncTimer?.();
+		(await import("./pricing-sync-Cl187A8k.js").then((n) => n.i)).stopPricingSyncTimer?.();
 	} catch {}
 	cleanupRuntimeBindings();
 }
@@ -9024,13 +9035,13 @@ async function init() {
 		initTelemetry();
 	} catch {}
 	try {
-		(await import("./balance-DPSNGqNK.js").then((n) => n.t)).restartBalanceTimer?.();
+		(await import("./balance-BQzxLpAs.js").then((n) => n.t)).restartBalanceTimer?.();
 	} catch {}
 	try {
 		(await import("./currency-IAtpC2X8.js").then((n) => n.t)).restartRateTimer?.();
 	} catch {}
 	try {
-		(await import("./pricing-sync-Da48y5SX.js").then((n) => n.i)).restartPricingSyncTimer?.();
+		(await import("./pricing-sync-Cl187A8k.js").then((n) => n.i)).restartPricingSyncTimer?.();
 	} catch {}
 	try {
 		installInterception();
@@ -9052,7 +9063,7 @@ async function init() {
 			refreshUI();
 		} catch {}
 		try {
-			import("./pricing-sync-Da48y5SX.js").then((n) => n.i).then((m) => m.markLegacySyncedModels?.()).catch(() => {});
+			import("./pricing-sync-Cl187A8k.js").then((n) => n.i).then((m) => m.markLegacySyncedModels?.()).catch(() => {});
 		} catch {}
 	};
 	if (globalThis.SillyTavern?.getContext) mount();

@@ -106,7 +106,7 @@ npm run verify:ci   # 版本单源、清单路径、引用链与孤立产物
 - **三块**：消费金额（动态币种 `CNY/USD` 经 `formatMoney`）/API 请求次数/Tokens
 - **四小块**：模型汇总表上方 4 块 `repeat(4,1fr)`，竖屏 `repeat(2,1fr)`，与概览 8 块同体系（`statsFour`，响应五维度过滤，`computeStatsFour` 单源，选项与概览共用 `FOUR_OPTIONS` 18 项、含 `avg_ttft`，支持 `avg_think_ratio/truncation_rate`，费用类按币种换算）；平均值同样按 `averagePositive` 忽略单轮 0/空值
 - **模型汇总表**：`10` 列（模型/调用/命中/未命中/输出/总/总成本/平均成本/平均耗时/平均速率），横向可滚动，随五维度联动，费用列经 `formatMoney`
-- **图表**：首图通用 `图表`（`Y` 8 项多选 + `X` 5 维度双胶囊，默认 `总 Token`，费用 `Y` 经 `getDisplayCurrency()` 换算，`yAxis name=CNY/USD`，`tooltip` 按币种显示）；渲染按 `Y.kind` 分流——`token` 类堆叠柱 `stack:'total'`、`cost` 类叠加曲线，同屏双轴共存。下方 `6` 图 `2×3` 网格（Token 3 段堆叠柱、费用曲线、命中 `100%` 面积、请求数柱、耗时/速率双轴、模型环，费用图 `drawBarLine` 内按币种除率）；`API请求数 趋势` 的 `X` 走 `X_OPTIONS_WITHOUT_ROUND`（无「轮次」，默认每日）。均支持 `Y/X` 独立配置与按 `time ∩ model ∩ chat ∩ endpoint ∩ credential` 联动，`vite.define` 修复 `process` 未定义，**隐藏时跳过初始化**（`display:none` 则不渲染，切到统计页再 `setTimeout 60ms` 触发，避免 `clientWidth 0` 误报 `图表容器未就绪`）
+- **图表**：首图通用 `图表`（`Y` 8 项多选 + `X` 5 维度双胶囊，默认 `Y = ['input_hit_token','input_miss_token','output_token','total_cost']`（缓存命中 + 未命中 + 输出 Token 三段拆分叠总费用曲线）、`X = 'round'`（轮次），常量 `DEFAULT_Y_KEYS/DEFAULT_X_KEY` 定义在 `src/ui/chart-config.ts`，`setYSelected` 与 `aggregateForChart` 的空值兜底同源；费用 `Y` 经 `getDisplayCurrency()` 换算，`yAxis name=CNY/USD`，`tooltip` 按币种显示）；渲染按 `Y.kind` 分流——`token` 类堆叠柱 `stack:'total'`、`cost` 类叠加曲线，同屏双轴共存。下方 `6` 图 `2×3` 网格（Token 3 段堆叠柱、费用曲线、命中 `100%` 面积、请求数柱、耗时/速率双轴、模型环，费用图 `drawBarLine` 内按币种除率）；`API请求数 趋势` 的 `X` 走 `X_OPTIONS_WITHOUT_ROUND`（无「轮次」，默认每日）。均支持 `Y/X` 独立配置与按 `time ∩ model ∩ chat ∩ endpoint ∩ credential` 联动，`vite.define` 修复 `process` 未定义，**隐藏时跳过初始化**（`display:none` 则不渲染，切到统计页再 `setTimeout 60ms` 触发，避免 `clientWidth 0` 误报 `图表容器未就绪`）
 
 ### 历史记录
 - **四维度**：模型、对话、接入类型与 API 密钥按交集过滤；接入类型优先联动密钥；筛选先作用于热+冷全量历史，再进行 `30/页` 分页，筛选无结果显示清除按钮；对话与 API 密钥选项同样按最近记录时间从近到远排序
@@ -124,7 +124,7 @@ npm run verify:ci   # 版本单源、清单路径、引用链与孤立产物
 - **钱包粒度**：一个 `endpointId` 对应一个钱包，同一链接下多个密钥归入同一钱包；默认始终有不可删除的 DeepSeek 官方钱包。历史中已有识别的接入会在迁移时回填，新请求首次出现未忽略接入时自动创建钱包并命名成接入地址
 - **固定与可编辑**：接入地址、接入类型、已识别密钥身份只读；钱包名称、模型名、价格、价格来源、峰谷规则、手工余额和忽略状态可编辑。模型改名会保留旧名别名，旧请求仍能命中规则
 - **官方峰谷规则**：DeepSeek 官方内置定价按北京时间判断——周一至周五（不含中国法定节假日）`9:00-12:00`、`14:00-18:00` 为高峰，其余时段（含周末、中国法定节假日全天）为空闲；调休上班的周末同样按空闲计费。节假日数据在 `src/constants/holidays.ts`（内置覆盖 2024-2026），`settings.extraOffDays` 可补充额外空闲日期；官方钱包的自定义价格规则同样应用节假日豁免，中转钱包仍按自身峰谷配置
-- **默认收起**：每个钱包默认 `collapsed=true`；宽屏收起态为单行卡片——左侧 `44px` 方形标识（取钱包名首个有意义字符，剥离 `http(s)://`、`www.`、`api.` 前缀，`--ds-black` 底 + `--ds-black-text` 字）、中间名称（无边框标题态输入，hover/focus 才显底色与描边）与副标题（接入地址 · 来源）、右侧只外显**余额**与**模型数**两项指标（密钥数/请求数/费用不外显），操作收为 `30px` 图标按钮（展开 ▼/收起 ▲、同步 ↻、忽略 ✕，仅可忽略项显示忽略），待定价数显示为状态徽标。展开状态按钱包独立记忆并随导入导出/WebDAV 同步
+- **默认收起**：每个钱包默认 `collapsed=true`；宽屏收起态为单行卡片——左侧 `44px` 方形标识（取钱包名首个有意义字符，剥离 `http(s)://`、`www.`、`api.` 前缀，`--ds-black` 底 + `--ds-black-text` 字）、中间名称（无边框标题态输入，hover/focus 才显底色与描边）与副标题（接入地址 · 来源）、右侧只外显**余额**与**模型数**两项指标（密钥数/请求数/费用不外显），操作收为 `30px` 图标按钮（展开/收起 `chevron-down`/`chevron-up`、同步 `refresh`、忽略 `close`，均 `16px` SVG，仅可忽略项显示忽略），待定价数显示为状态徽标。展开状态按钱包独立记忆并随导入导出/WebDAV 同步
 - **余额**：币种首版支持 `CNY/USD`，手工余额可直接填写；自动校准只开放给 DeepSeek 官方直连钱包，默认使用钱包内单独保存的校准密钥，可选一个主密钥作为账号身份。多密钥不会自动相加。钱包余额在每次请求按当前币种预扣，成功校准后覆盖为服务端余额
 - **密钥隐私**：普通官方接口只记录酒馆密钥条目编号、标签和掩码末三位；反向代理 `proxy_password` 与 `custom_include_headers` 继续不读取、不比较、不持久化，因此按“未识别密钥”处理
 - **钱包模型**：模型条目含 `sourceModel/model/aliases/price/source/locked`；非峰与高峰均包含命中、未命中、输出三价。每条规则可关闭峰谷、锁定防止同步覆盖。每个钱包可独立配置跨天峰谷时段与“周末全天低谷”
@@ -151,7 +151,7 @@ npm run verify:ci   # 版本单源、清单路径、引用链与孤立产物
 - 选择器统一：所有选择类 UI 必须使用用量统计·模型选择同款胶囊下拉（`#xxx-btn` 胶囊 `999px` + `#xxx-dropdown` 绝对定位 `12px` 圆角 `box-shadow`），禁止原生 `select`，选中态 `background:var(--ds-card)` 加粗
 - 魔法棒悬停：`background: transparent !important`
 - 文字：`Microsoft YaHei`，无 `antialiased/optimizeLegibility` 干预
-- 字号分层：全站走 `style.css` 中 `[data-extension="api-usage-stat"]` 定义的三个变量——`--aus-fs-base:14px`（主文本，与侧边栏一致）、`--aus-fs-sm:12px`（次要）、`--aus-fs-xs:11px`（微型角标），内联样式一律写 `var(--aus-fs-*)` 而不再写死 `px`；`≥15px` 的数值与标题字号保持原值；ECharts 轴与 tooltip 的 `fontSize` 统一 `12`；**历史记录页保持原样**（`panel.ts` 的 `historyFiltersActive → bindPanel` 段落、历史视图标记、`compare.ts` 全部），改动该页字号需同步本规范
+- 字号分层：全站走 `style.css` 中 `[data-extension="api-usage-stat"]` 定义的三个变量——`--aus-fs-base:14px`（主文本，与侧边栏一致）、`--aus-fs-sm:12px`（次要）、`--aus-fs-xs:11px`（微型角标），内联样式一律写 `var(--aus-fs-*)` 而不再写死 `px`；`≥15px` 的数值与标题字号保持原值；ECharts 轴与 tooltip 的 `fontSize` 统一 `12`；**历史记录页的详情窗口保持紧凑档**（`panel.ts` 的 `.aus-detail-panel` 整段字段名 `10px`、区块标题与 Tab/pre `11px`，以及 `compare.ts` 的 `renderUsageDetail` 使用详情浮层）—— 该区在窄屏是 `75%` 高悬浮层且 15 个字段挤在 4 块内，放大易挤爆；**列表区与筛选区已按分层对齐**（筛选胶囊与下拉项 `--aus-fs-base`、分页器/旧·新·详情按钮/三段占比 `--aus-fs-sm`、卡片容器 `--aus-fs-base`，分页 `‹ ›` 与筛选 `▼` 均为 `icon()` 14px SVG），改动该页字号需同步本规范
 - 移动端：`≤760px` 侧边栏 `display:none` 默认隐藏、`#aus-mobile-header` 汉堡（`24px` `☰`，`display:flex`）瞬时呼出 `is-open`，无遮罩无动画；`#aus-panel flex:column + #aus-panel-body flex:row`（`#aus-main overflow-x:hidden + min-width:0` 约束防止 720px 表撑开），概览 8 块保持 `repeat(2,1fr)` 两列，钱包汇总卡强制保持 `repeat(3,minmax(0,1fr))` 一行三列，钱包卡两项指标与图标操作同排（宽度不足时折行）、隐藏中转类型徽标，钱包双栏和其他网格 `4→1` 列，窄屏所有胶囊下拉 `overflow:visible + z-index:50` 不被裁剪；粗指针设备面板按钮统一按 `min-height:30px` 保持紧凑，历史卡片“旧/新/详情”为 `26px`、概览余额卡“查询余额/导出记录/导入记录”为 `30px`，避免被通用触控规则撑高
   - **宽表块横滑白名单**：窄屏 `[data-view="overview"] .ds-card { overflow:hidden !important }` 会压过卡片内联 `overflow:auto`，凡概览页需块内横滑的卡片都必须补 ID 规则（现存 `#aus-overview-history`、`#aus-overview-spend`、`#aus-chat-summary-overview`，统计页为 `#aus-model-summary`）；ID 选择器特异性高于该属性+类组合，`!important` 下同样胜出
 
@@ -242,7 +242,8 @@ git push origin main --tags
 ## 其他经验
 
 - **动态分包 404 坑**：`import('../services/update')` 等动态 `import()` 会使 `Vite lib` 输出额外 `index-*.js`，`index.js` 仅为 re-export 存根；若漏提交新 hash 文件，扩展激活时 `GET .../index-*.js 404` → `Could not activate extension [object Event]` 并阻断后续扩展加载，属全站故障
-- **TTFT/思维链为 0 坑**：`GENERATION_ENDED` 主路径不带 `ttft`，需在 `onGenerationEnded` 中合并最近 `lastFetchUsage.ttft/thinkTime/finishReason`（5s 内有效），否则 `tokenRate` 失真且详情为 0
+- **TTFT/思维链为 0 坑**：`GENERATION_ENDED` 主路径不带 `ttft`，需在 `onGenerationEnded` 中合并最近 `lastFetchUsage.ttft/thinkTime/finishReason/streamed`（5s 内有效），否则 `tokenRate` 失真且详情为 0
+- **非流式/假流式速率爆炸坑**：速率口径单一来源在 `src/data/token-rate.ts`（`computeTokenRate`）。非流式走 `clone.text()` 分支、假流式首帧即携带全文，两者都让 `duration - ttft` 塌缩到几百毫秒，算出上千 t/s 的假速率。拦截层按 `reqBody.stream === true` 与正文增量帧数（`contentFrames > 1`）判定 `streamed`，沿 `parseAndProcess → processUsage → addEntry` 透传并落到 `HistoryEntry.streamed`；`streamed === false` 时 `tokenRate` 与 `ttft` 一并归零。数值兜底：生成阶段窗口 < 200ms 或结果 > 1000 t/s 一律归 0。历史脏值由 `hydrate` 与导入清洗（`sanitizeHistoryTiming`）修复；`extra-charts` 速率均值分母只计有效样本，`overview.ts` / `panel.ts` / `compare.ts` 在无有效值时显示 `—`
 - **截断率/思维链占比**：`finish_reason === 'length'` 判截断，`thinkTokens/completion_tokens` 算占比，统计块与详情均基于此；`isTruncated` 持久化于 `HistoryEntry`
 - **详情双占比去重**：性能块与 Token 消耗块曾各显示一次“思维链占比”，后收敛为仅性能块保留，Token 块改为单列占满的“思维链 Token”
 - **密钥身份与隐私**：普通官方接口的密钥由酒馆后端注入，扩展只读活动密钥条目编号、标签和掩码末三位；反向代理的 `proxy_password` 与 `custom_include_headers` 不读取、不比较、不持久化，因此同一中转地址下的反向代理密码无法细分

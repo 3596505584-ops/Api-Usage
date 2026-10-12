@@ -1116,6 +1116,56 @@ function usageFingerprint(model, total, hit, miss, completion, connection, reque
 		connection?.credentialId || ""
 	].join("|");
 }
+/**
+* 清洗历史遗留的速率：非有限值或超过上限一律归 0。
+* 用于 hydrate 迁移与导入数据清洗。
+*/
+function sanitizeRate(rate) {
+	const value = typeof rate === "number" ? rate : parseFloat(String(rate));
+	if (!Number.isFinite(value) || value < 0) return 0;
+	if (value > 1e3) return 0;
+	return Math.round(value);
+}
+/**
+* 计算输出速率（t/s）。
+* @param duration 整轮耗时（ms）
+* @param ttft 首字延迟（ms）
+* @param completionTokens 输出 Token 数
+* @param streamed 是否为真实流式；false 表示非流式/假流式，速率不可测
+*/
+function computeTokenRate(opts) {
+	const { duration, ttft, completionTokens, streamed } = opts;
+	if (streamed === false) return 0;
+	const dur = Number.isFinite(duration) ? duration : 0;
+	const first = Number.isFinite(ttft) ? ttft : 0;
+	const comp = Number.isFinite(completionTokens) ? completionTokens : 0;
+	if (dur <= 0 || comp <= 0) return 0;
+	if (first <= 0) return 0;
+	const window = dur - first;
+	if (window < 200) return 0;
+	return sanitizeRate(comp / window * 1e3);
+}
+/**
+* 迁移清洗：把一次性返回造成的异常速率与失真 TTFT 归零。
+* @returns 是否有条目被修改
+*/
+function sanitizeHistoryTiming(entry) {
+	if (!entry || typeof entry !== "object") return false;
+	let changed = false;
+	const rate = entry.tokenRate;
+	if (typeof rate === "number" && Number.isFinite(rate) && (rate > 1e3 || rate < 0)) {
+		entry.tokenRate = 0;
+		changed = true;
+	}
+	const dur = typeof entry.duration === "number" ? entry.duration : 0;
+	const first = typeof entry.ttft === "number" ? entry.ttft : 0;
+	if (dur > 0 && first > 0 && first >= dur * .98) {
+		entry.ttft = 0;
+		entry.tokenRate = 0;
+		changed = true;
+	}
+	return changed;
+}
 //#endregion
 //#region src/utils/crypto.ts
 var XOR_KEY = "ds-stats-v1-xor-key!@#$%^&*";
@@ -1937,7 +1987,7 @@ var repository = {
 	recalcEntryWallet(entry) {
 		return findWalletForHistory(state.wallets, entry);
 	},
-	addEntry(usage, model, messages, startTime, fullRequest, fullResponse, ttft = 0, thinkTime = 0, finishReason = null, connection = null, requestId = null) {
+	addEntry(usage, model, messages, startTime, fullRequest, fullResponse, ttft = 0, thinkTime = 0, finishReason = null, connection = null, requestId = null, streamed = null) {
 		messages = messages || [];
 		if (!model) try {
 			model = globalThis.SillyTavern?.getContext?.().model || "deepseek-v4-flash";
@@ -1988,7 +2038,7 @@ var repository = {
 					const modelObservation = observeModel(wallet, model, nowTs);
 					if (modelObservation.changed) wallet.updatedAt = nowTs;
 					if (modelObservation.model?.source === "discovered" && modelObservation.model.price.priceConfigured !== true && state.settings.pricingSync?.enabled) try {
-						import("./pricing-sync-Da48y5SX.js").then((n) => n.i).then((module) => module.syncPricingFromModelsDev({ silent: true })).then(() => this.recalcWallet(wallet.id)).catch(() => {});
+						import("./pricing-sync-Cl187A8k.js").then((n) => n.i).then((module) => module.syncPricingFromModelsDev({ silent: true })).then(() => this.recalcWallet(wallet.id)).catch(() => {});
 					} catch {}
 				}
 				wallet.lastUsedAt = nowTs;
@@ -2018,9 +2068,25 @@ var repository = {
 							changed = true;
 						}
 						if (ttft && !head.ttft) {
-							head.ttft = ttft;
-							const dur = head.duration || 0;
-							head.tokenRate = dur - ttft > 50 && (head.completion_tokens || 0) > 0 ? Math.round(head.completion_tokens / (dur - ttft) * 1e3) : 0;
+							if (streamed === false) {
+								head.ttft = 0;
+								head.tokenRate = 0;
+								head.streamed = false;
+							} else {
+								head.ttft = ttft;
+								head.tokenRate = computeTokenRate({
+									duration: head.duration || 0,
+									ttft,
+									completionTokens: head.completion_tokens || 0,
+									streamed
+								});
+								if (streamed != null) head.streamed = streamed;
+							}
+							changed = true;
+						} else if (streamed === false && !head.streamed) {
+							head.ttft = 0;
+							head.tokenRate = 0;
+							head.streamed = false;
 							changed = true;
 						}
 						if (thinkTime && !head.thinkTime) {
@@ -2085,8 +2151,15 @@ var repository = {
 		const duration = startTime ? Date.now() - startTime : 0;
 		const thinkTokens = usage.completion_tokens_details?.reasoning_tokens || usage?.__think_tokens_est || 0;
 		lu.duration = duration;
-		lu.tokenRate = duration - (ttft || 0) > 50 && comp > 0 ? Math.round(comp / (duration - (ttft || 0)) * 1e3) : 0;
-		lu.ttft = ttft || 0;
+		const nonStreamed = streamed === false;
+		lu.streamed = streamed;
+		lu.tokenRate = nonStreamed ? 0 : computeTokenRate({
+			duration,
+			ttft: ttft || 0,
+			completionTokens: comp,
+			streamed
+		});
+		lu.ttft = nonStreamed ? 0 : ttft || 0;
 		lu.thinkTime = thinkTime || 0;
 		lu.thinkTokens = thinkTokens;
 		lu.finishReason = fr;
@@ -2141,7 +2214,7 @@ var repository = {
 			raw_usage: usage,
 			messages: (messages || []).map(clampMessage),
 			duration,
-			ttft,
+			ttft: lu.ttft,
 			thinkTime,
 			thinkTokens,
 			tokenRate: lu.tokenRate,
@@ -2149,6 +2222,7 @@ var repository = {
 			fullResponse: safeResponse,
 			finishReason: fr2,
 			isTruncated: isTruncatedFinish(fr2),
+			streamed,
 			chatId,
 			chatName,
 			sourceType: connection?.sourceType ?? null,
@@ -2605,6 +2679,18 @@ var repository = {
 		try {
 			coldForWalletMigration = await loadHistoryCold();
 		} catch {}
+		try {
+			let hotFixed = false;
+			for (const h of state.history || []) if (sanitizeHistoryTiming(h)) hotFixed = true;
+			let coldFixed = false;
+			for (const h of coldForWalletMigration || []) if (sanitizeHistoryTiming(h)) coldFixed = true;
+			if (hotFixed) try {
+				saveHot({ history: state.history });
+			} catch {}
+			if (coldFixed) try {
+				await saveHistoryCold(coldForWalletMigration);
+			} catch {}
+		} catch {}
 		if (migrateWallets(hot, coldForWalletMigration)) {
 			try {
 				saveHot({
@@ -2631,4 +2717,4 @@ var repository = {
 	}
 };
 //#endregion
-export { resolveRuntimeConnectionContext as C, initConnectionIdentity as S, WALLET_CATALOG_PROVIDERS as T, findWalletForHistory as _, decryptKey as a, walletBalanceToCny as b, DataEvents as c, calcSavings as d, getPricing as f, cloneWallet as g, DEEPSEEK_OFFICIAL_ENDPOINT_ID as h, saveWalletApiKey as i, on as l, normalizeModel as m, repository_exports as n, encryptKey as o, isDeepSeekOfficialModel as p, getWalletApiKey as r, isTruncatedFinish as s, repository as t, calcCost as u, findWalletModel as v, DEEPSEEK_WALLET_ID as w, walletPendingModelCount as x, mergeWalletCollections as y };
+export { initConnectionIdentity as C, WALLET_CATALOG_PROVIDERS as E, walletPendingModelCount as S, DEEPSEEK_WALLET_ID as T, cloneWallet as _, decryptKey as a, mergeWalletCollections as b, isTruncatedFinish as c, calcCost as d, calcSavings as f, DEEPSEEK_OFFICIAL_ENDPOINT_ID as g, normalizeModel as h, saveWalletApiKey as i, DataEvents as l, isDeepSeekOfficialModel as m, repository_exports as n, encryptKey as o, getPricing as p, getWalletApiKey as r, sanitizeHistoryTiming as s, repository as t, on as u, findWalletForHistory as v, resolveRuntimeConnectionContext as w, walletBalanceToCny as x, findWalletModel as y };
