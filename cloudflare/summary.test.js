@@ -1,20 +1,28 @@
 import { describe, it, expect } from 'vitest';
 import {
   CACHE_TTL_SECONDS,
+  DEFAULT_WINDOW_HOURS,
+  MAX_WINDOW_HOURS,
   beijingDayKey,
+  beijingHourKey,
+  hoursBetween,
   cumulativeGrowth,
   daysBetween,
   durationBucketIndex,
   durationHistogram,
   envBreakdown,
   estimateRenderMs,
+  historyCountHistogram,
   isDayKey,
+  isHourKey,
   mergeTail,
+  normalizeHourWindow,
   normalizeWindow,
   numberOrZero,
   offsetDayKey,
   renderSampleCount,
   shiftDay,
+  shiftHour,
   sumBy,
   tally,
   tzLabel,
@@ -42,6 +50,44 @@ describe('北京时间日期基准', () => {
     expect(isDayKey('2026-10-32')).toBe(false);
     expect(isDayKey('2026-10-11T00:00:00Z')).toBe(false);
     expect(daysBetween('2026-09-12', '2026-10-11')).toBe(29);
+  });
+});
+
+describe('北京时间小时基准', () => {
+  it('按 UTC+8 计算小时键，与 UTC 小时不同', () => {
+    expect(beijingHourKey(NOW)).toBe('2026-10-11T04');
+    expect(new Date(NOW).toISOString().slice(0, 13)).toBe('2026-10-10T20');
+  });
+
+  it('小时键校验、平移与差值跨天正确', () => {
+    expect(isHourKey('2026-10-11T00')).toBe(true);
+    expect(isHourKey('2026-10-11T24')).toBe(false);
+    expect(isHourKey('2026-10-11')).toBe(false);
+    expect(shiftHour('2026-10-11T23', 1)).toBe('2026-10-12T00');
+    expect(shiftHour('2026-10-12T00', -1)).toBe('2026-10-11T23');
+    expect(hoursBetween('2026-10-11T00', '2026-10-11T23')).toBe(23);
+  });
+});
+
+describe('小时粒度窗口归一', () => {
+  it('缺省参数回退最近 24 小时', () => {
+    expect(normalizeHourWindow(null, null, NOW)).toEqual({ from: '2026-10-10T05', to: '2026-10-11T04', hours: DEFAULT_WINDOW_HOURS });
+  });
+
+  it('末小时不晚于当前小时，起止倒置时收成同一小时', () => {
+    expect(normalizeHourWindow('2026-10-01T00', '2026-12-31T23', NOW).to).toBe('2026-10-11T04');
+    expect(normalizeHourWindow('2026-10-11T03', '2026-10-11T01', NOW)).toEqual({
+      from: '2026-10-11T01',
+      to: '2026-10-11T01',
+      hours: 1,
+    });
+  });
+
+  it('跨度上限与保留期一致', () => {
+    const window = normalizeHourWindow('2000-01-01T00', '2026-10-11T04', NOW);
+    expect(window.hours).toBe(MAX_WINDOW_HOURS);
+    expect(window.to).toBe('2026-10-11T04');
+    expect(window.from).toBe(shiftHour('2026-10-11T04', -(MAX_WINDOW_HOURS - 1)));
   });
 });
 
@@ -171,14 +217,17 @@ describe('环境画像聚合', () => {
       {
         browser: 'Chrome', browser_major: '141', os: 'Windows', arch: 'x86_64',
         lang: 'zh-CN', width_bucket: 'gt1024', dark: 1, standalone: 0, touch: 0, tz_offset: 8,
+        st_version: '1.13.5',
       },
       {
         browser: 'Chrome', browser_major: '141', os: 'Windows', arch: 'x86_64',
         lang: 'zh-CN', width_bucket: 'le480', dark: 0, standalone: 0, touch: 0, tz_offset: 8,
+        st_version: '1.13.5',
       },
       {
         browser: 'Firefox', browser_major: '128', os: 'Android', arch: 'arm64',
         lang: 'ja-JP', width_bucket: 'le480', dark: 0, standalone: 1, touch: 1, tz_offset: 5.5,
+        st_version: '1.13.5',
       },
     ]);
     expect(env.browserVersion[0]).toEqual({ label: 'Chrome 141', count: 2 });
@@ -203,6 +252,13 @@ describe('环境画像聚合', () => {
       { label: 'UTC+8', count: 2 },
       { label: 'UTC+5.5', count: 1 },
     ]);
+    expect(env.stVersion).toEqual([{ label: '1.13.5', count: 3 }]);
+  });
+
+  it('历史记录条数按设备最新值分桶', () => {
+    const items = historyCountHistogram([0, 1, 10, 11, 50, 51, 200, 201, 1000, 1001, -3, 'bad']);
+    expect(items.map((item) => item.label)).toEqual(['0 条', '1–10 条', '11–50 条', '51–200 条', '201–1000 条', '1001 条以上']);
+    expect(items.map((item) => item.count)).toEqual([3, 2, 2, 2, 2, 1]);
   });
 
   it('标签格式化', () => {

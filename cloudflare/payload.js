@@ -19,8 +19,14 @@ const MAX_OPENS = 500;
 const MAX_DURATION_MS = 12 * 60 * 60 * 1000;
 const MAX_PAGE_COUNT = 2000;
 const MAX_SEQ = 100000000;
+/** 历史记录总条数上限（精确值，超出按上限钳制） */
+const MAX_HISTORY_COUNT = 100000000;
 const DAY_WINDOW_BEFORE = 2;
 const DAY_WINDOW_AFTER = 1;
+/** 上报时间戳允许的时钟偏差：向前 2 天（覆盖失败重发）、向后 10 分钟 */
+const TS_WINDOW_BEFORE_MS = 2 * 86400000;
+const TS_WINDOW_AFTER_MS = 10 * 60000;
+const MINUTE_MS = 60000;
 
 function fail(error) {
   return { ok: false, error };
@@ -37,6 +43,12 @@ function toInt(value, min, max) {
 
 function toStr(value, max) {
   return typeof value === 'string' ? value.slice(0, max) : '';
+}
+
+/** 版本号清洗：只保留数字、字母与 . + -，不含数字则视为无效 */
+function toVersion(value, max) {
+  const text = toStr(value, max).replace(/[^0-9A-Za-z.+-]/g, '');
+  return /\d/.test(text) ? text : '';
 }
 
 export function isDayKey(value) {
@@ -60,6 +72,20 @@ function clampTz(value) {
   if (!Number.isFinite(num)) return 0;
   const rounded = Math.round(num * 2) / 2;
   return Math.min(14, Math.max(-12, rounded));
+}
+
+/**
+ * 把上报时间戳归一为分钟精度（毫秒）。
+ * 非法值、超出允许时钟偏差的值一律回退到服务端当前分钟，保证写入的 hour 桶可信。
+ */
+export function normalizeMinute(ts, now = Date.now()) {
+  const fallback = Math.floor(Number(now) / MINUTE_MS) * MINUTE_MS;
+  const value = Number(ts);
+  if (!Number.isFinite(value)) return fallback;
+  const minute = Math.floor(value / MINUTE_MS) * MINUTE_MS;
+  if (minute < Number(now) - TS_WINDOW_BEFORE_MS) return fallback;
+  if (minute > Number(now) + TS_WINDOW_AFTER_MS) return fallback;
+  return minute;
 }
 
 /**
@@ -91,6 +117,7 @@ export function normalizePayload(raw, now = Date.now()) {
     dark: envRaw.dark === true ? 1 : 0,
     standalone: envRaw.standalone === true ? 1 : 0,
     touch: envRaw.touch === true ? 1 : 0,
+    stv: toVersion(envRaw.stv, 16),
   };
 
   const pages = {};
@@ -104,6 +131,8 @@ export function normalizePayload(raw, now = Date.now()) {
       id,
       seq,
       day: raw.day,
+      /** 上报时刻（毫秒，分钟精度），用于小时粒度趋势；旧客户端缺失时回退服务端当前分钟 */
+      ts: normalizeMinute(raw.ts, now),
       tz: clampTz(raw.tz),
       app: toStr(raw.app, 16),
       env,
@@ -114,6 +143,8 @@ export function normalizePayload(raw, now = Date.now()) {
         render,
       },
       daily: raw.daily === true ? 1 : 0,
+      off: raw.off === true ? 1 : 0,
+      hc: toInt(raw.hc, 0, MAX_HISTORY_COUNT),
     },
   };
 }

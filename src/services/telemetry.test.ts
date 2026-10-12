@@ -20,6 +20,8 @@ import {
   emptyCounters,
   countersAreEmpty,
   flushTelemetry,
+  flushTelemetryOnDisable,
+  historyRecordCount,
   isEndpointConfigured,
   isTelemetryEnabled,
   isTelemetryPageKey,
@@ -29,6 +31,7 @@ import {
   probeEnv,
   renderBucketIndex,
   resetIdentity,
+  sanitizeVersion,
   roundTz,
   telemetryStatus,
   todayKey,
@@ -195,7 +198,18 @@ describe('环境探测', () => {
     expect(env.dark).toBe(true);
     expect(env.touch).toBe(true);
     expect(env.arch).toBe('unknown');
-    expect(Object.keys(env).sort()).toEqual(['arch', 'b', 'bv', 'dark', 'lang', 'os', 'standalone', 'touch', 'w']);
+    expect(Object.keys(env).sort()).toEqual(['arch', 'b', 'bv', 'dark', 'lang', 'os', 'standalone', 'stv', 'touch', 'w']);
+  });
+
+  it('从酒馆上下文读取版本号并清洗非法字符', () => {
+    expect(sanitizeVersion('1.13.5')).toBe('1.13.5');
+    expect(sanitizeVersion('v1.13.5-beta/恶意')).toBe('v1.13.5-beta');
+    expect(sanitizeVersion('SillyTavern')).toBe('');
+    expect(sanitizeVersion('x'.repeat(40))).toBe('');
+
+    vi.stubGlobal('SillyTavern', { getContext: () => ({ version: '1.13.5' }) });
+    expect(probeEnv().stv).toBe('1.13.5');
+    vi.stubGlobal('SillyTavern', undefined);
   });
 
   it('优先使用 UA-CH 品牌信息', () => {
@@ -268,6 +282,7 @@ describe('累加与上报', () => {
     expect(payload.day).toBe(todayKey());
     expect(payload.tz).toBe(roundTz(-new Date().getTimezoneOffset() / 60));
     expect(payload.daily).toBe(true);
+    expect(payload.hc).toBe(0);
     expect(payload.s.opens).toBe(1);
     expect(payload.s.pages).toEqual({
       overview: 2, stats: 0, history: 0, forecast: 0, wallet: 1, settings: 0, help: 0, about: 0,
@@ -280,6 +295,41 @@ describe('累加与上报', () => {
     expect(countersAreEmpty(__peekCountersForTest())).toBe(true);
     expect(readIdentity().seq).toBe(1);
     expect(readIdentity().day).toBe(todayKey());
+  });
+
+  it('历史记录总条数为热区加冷区精确计数', () => {
+    mocks.state.history = [{}, {}, {}];
+    mocks.storage.settings = { _coldCount: 7 };
+    expect(historyRecordCount()).toBe(10);
+
+    mocks.state.history = [];
+    mocks.storage.settings = {};
+    expect(historyRecordCount()).toBe(0);
+  });
+
+  it('关闭开关时立刻发送带关闭标记的最后一次上报', async () => {
+    trackOpen();
+    flushTelemetry('close');
+    await vi.runAllTimersAsync();
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1);
+
+    // 处于 60 秒节流窗口内，关闭动作仍必须立即再发一次并带 off 标记
+    trackPage('stats');
+    flushTelemetryOnDisable();
+    await vi.runAllTimersAsync();
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(2);
+    const payload = JSON.parse((vi.mocked(fetch).mock.calls[1] as any[])[1].body);
+    expect(payload.off).toBe(true);
+    expect(payload.s.pages.stats).toBe(1);
+  });
+
+  it('关闭开关没有新计数时也会发送最后一次上报', async () => {
+    flushTelemetryOnDisable();
+    await vi.runAllTimersAsync();
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1);
+    const payload = JSON.parse((vi.mocked(fetch).mock.calls[0] as any[])[1].body);
+    expect(payload.off).toBe(true);
+    expect(payload.s.opens).toBe(0);
   });
 
   it('没有新数据时不再发起请求', async () => {

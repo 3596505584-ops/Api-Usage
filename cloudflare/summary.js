@@ -15,12 +15,18 @@ export { PAGE_KEYS };
 export const DEFAULT_WINDOW_DAYS = 30;
 /** 看板趋势窗口上限（天），与 device_daily 保留期一致 */
 export const MAX_WINDOW_DAYS = 730;
+/** 小时粒度趋势默认窗口（小时） */
+export const DEFAULT_WINDOW_HOURS = 24;
+/** 小时粒度趋势窗口上限（小时），与 device_hourly 保留期一致 */
+export const MAX_WINDOW_HOURS = 180 * 24;
 /** 看板接口缓存时长（秒） */
 export const CACHE_TTL_SECONDS = 600;
 
 export const BEIJING_OFFSET_MS = 8 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
+const HOUR_MS = 60 * 60 * 1000;
 const DAY_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
+const HOUR_KEY_RE = /^\d{4}-\d{2}-\d{2}T\d{2}$/;
 
 export function numberOrZero(value) {
   const num = Number(value);
@@ -36,6 +42,45 @@ export function beijingDayKey(now = Date.now()) {
 export function offsetDayKey(offsetDays, now = Date.now()) {
   const days = Number.isFinite(Number(offsetDays)) ? Math.round(Number(offsetDays)) : 0;
   return beijingDayKey(now + days * DAY_MS);
+}
+
+/** 北京时间小时键（YYYY-MM-DDTHH，小时粒度趋势的时间基准） */
+export function beijingHourKey(now = Date.now()) {
+  return new Date(Number(now) + BEIJING_OFFSET_MS).toISOString().slice(0, 13);
+}
+
+/** 相对北京时间当前小时偏移若干小时的小时键（负数向前） */
+export function offsetHourKey(offsetHours, now = Date.now()) {
+  const hours = Number.isFinite(Number(offsetHours)) ? Math.round(Number(offsetHours)) : 0;
+  return beijingHourKey(Number(now) + hours * HOUR_MS);
+}
+
+export function isHourKey(value) {
+  if (typeof value !== 'string' || !HOUR_KEY_RE.test(value)) return false;
+  if (!isDayKey(value.slice(0, 10))) return false;
+  const hour = Number(value.slice(11, 13));
+  return hour >= 0 && hour <= 23;
+}
+
+/** 把北京时间小时键理解为「墙上时间」，与时长换算互不依赖运行环境时区 */
+export function hourKeyToMs(hour) {
+  const base = Date.parse(String(hour) + ':00:00Z');
+  return Number.isNaN(base) ? NaN : base - BEIJING_OFFSET_MS;
+}
+
+export function shiftHour(hour, deltaHours) {
+  const base = hourKeyToMs(hour);
+  if (!Number.isFinite(base)) return String(hour);
+  const delta = Number.isFinite(Number(deltaHours)) ? Math.round(Number(deltaHours)) : 0;
+  return beijingHourKey(base + delta * HOUR_MS);
+}
+
+/** 两个小时键之间相差的小时数（可正可负） */
+export function hoursBetween(from, to) {
+  const a = hourKeyToMs(from);
+  const b = hourKeyToMs(to);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return 0;
+  return Math.round((b - a) / HOUR_MS);
 }
 
 export function isDayKey(value) {
@@ -69,6 +114,19 @@ export function normalizeWindow(fromRaw, toRaw, now = Date.now()) {
   if (from > to) from = to;
   if (daysBetween(from, to) > MAX_WINDOW_DAYS - 1) from = shiftDay(to, -(MAX_WINDOW_DAYS - 1));
   return { from, to, days: daysBetween(from, to) + 1 };
+}
+
+/**
+ * 归一小时粒度窗口：非法值回退默认 24 小时；末小时不晚于北京时间当前小时；
+ * 起止倒置时收成同一小时；跨度上限 MAX_WINDOW_HOURS 小时。
+ */
+export function normalizeHourWindow(fromRaw, toRaw, now = Date.now()) {
+  const current = beijingHourKey(now);
+  const to = isHourKey(toRaw) && String(toRaw) <= current ? String(toRaw) : current;
+  let from = isHourKey(fromRaw) ? String(fromRaw) : shiftHour(to, -(DEFAULT_WINDOW_HOURS - 1));
+  if (from > to) from = to;
+  if (hoursBetween(from, to) > MAX_WINDOW_HOURS - 1) from = shiftHour(to, -(MAX_WINDOW_HOURS - 1));
+  return { from, to, hours: hoursBetween(from, to) + 1 };
 }
 
 /** 取值计数：空值归入 unknown，按数量倒序，取前 limit 项（limit<=0 表示不截断） */
@@ -129,6 +187,27 @@ export function durationHistogram(values) {
     counts[durationBucketIndex(raw)] += 1;
   }
   return DURATION_BUCKETS.map((bucket, index) => ({ label: bucket.label, count: counts[index] }));
+}
+
+/** 历史记录条数分桶（每台设备最近一次上报的精确条数） */
+export const HISTORY_COUNT_BUCKETS = [
+  { label: '0 条', max: 0 },
+  { label: '1–10 条', max: 10 },
+  { label: '11–50 条', max: 50 },
+  { label: '51–200 条', max: 200 },
+  { label: '201–1000 条', max: 1000 },
+  { label: '1001 条以上', max: Infinity },
+];
+
+export function historyCountHistogram(values) {
+  const counts = HISTORY_COUNT_BUCKETS.map(() => 0);
+  for (const raw of Array.isArray(values) ? values : []) {
+    const value = Math.max(0, Math.floor(numberOrZero(raw)));
+    let index = HISTORY_COUNT_BUCKETS.findIndex((bucket) => value <= bucket.max);
+    if (index < 0) index = HISTORY_COUNT_BUCKETS.length - 1;
+    counts[index] += 1;
+  }
+  return HISTORY_COUNT_BUCKETS.map((bucket, index) => ({ label: bucket.label, count: counts[index] }));
 }
 
 /**
@@ -198,6 +277,7 @@ export function envBreakdown(rows) {
   return {
     browser: tally(list.map((row) => row?.browser)),
     browserVersion: tally(browserVersion),
+    stVersion: tally(list.map((row) => row?.st_version), { limit: 12 }),
     os: tally(list.map((row) => row?.os)),
     arch: tally(list.map((row) => row?.arch)),
     lang: tally(list.map((row) => row?.lang)),

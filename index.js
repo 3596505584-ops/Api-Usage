@@ -52,7 +52,7 @@ async function exportHistory() {
 		path: "",
 		proxy: ""
 	};
-	const _appVer = "3.1.3";
+	const _appVer = "3.1.4";
 	let fullHist = [];
 	try {
 		fullHist = await repository.getAllHistory();
@@ -897,6 +897,20 @@ var endpointOverride = null;
 function currentEndpoint() {
 	return endpointOverride ?? "https://stat.janmk.us.ci/collect";
 }
+/**
+* 扩展内历史记录总条数（热区 state.history + 冷区 _coldCount）。
+* 冷计数由 store/persistence 在各写入路径同步维护，因此这里可同步取到精确值。
+*/
+function historyRecordCount() {
+	try {
+		const hot = Array.isArray(state$2?.history) ? state$2.history.length : 0;
+		const settings = getExtensionSettings() || {};
+		const cold = Number(settings?._coldCount);
+		return hot + (Number.isFinite(cold) && cold > 0 ? Math.floor(cold) : 0);
+	} catch {
+		return 0;
+	}
+}
 var counters = emptyCounters();
 var sessionStart = null;
 var envCache = null;
@@ -905,7 +919,7 @@ var inFlight = false;
 var bound = false;
 function appVersion() {
 	try {
-		return String("3.1.3");
+		return String("3.1.4");
 	} catch {
 		return "";
 	}
@@ -992,8 +1006,63 @@ function probeEnv() {
 		w: widthBucket(currentViewportWidth()),
 		dark: mediaMatches("(prefers-color-scheme: dark)"),
 		standalone: mediaMatches("(display-mode: standalone)") || n?.standalone === true,
-		touch: mediaMatches("(pointer: coarse)") || Number(n?.maxTouchPoints || 0) > 0
+		touch: mediaMatches("(pointer: coarse)") || Number(n?.maxTouchPoints || 0) > 0,
+		stv: tavernVersionFromContext()
 	};
+}
+/** 版本号清洗：只保留数字、字母与 . + -，最长 16 字符；不含数字视为无效 */
+function sanitizeVersion(value) {
+	if (typeof value !== "string" && typeof value !== "number") return "";
+	const text = String(value).trim().replace(/[^0-9A-Za-z.+-]/g, "").slice(0, 16);
+	return /\d/.test(text) ? text : "";
+}
+/** 从酒馆上下文/文档元信息同步读取版本号（取不到返回空字符串） */
+function tavernVersionFromContext() {
+	try {
+		const g = globalThis;
+		const st = g?.SillyTavern;
+		const ctx = typeof st?.getContext === "function" ? st.getContext() : null;
+		const candidates = [
+			ctx?.version,
+			ctx?.stVersion,
+			st?.version,
+			g?.__ST_VERSION__
+		];
+		for (const candidate of candidates) {
+			const version = sanitizeVersion(candidate);
+			if (version) return version;
+		}
+	} catch {}
+	try {
+		const meta = (typeof document === "undefined" ? null : document)?.querySelector?.("meta[name=\"version\"]");
+		const version = sanitizeVersion(meta?.getAttribute?.("content"));
+		if (version) return version;
+	} catch {}
+	return "";
+}
+/**
+* 异步兜底：上下文没有版本号时读一次酒馆同源 `/version` 接口并缓存。
+* 只发这一个本地请求，不携带任何统计内容；失败静默忽略。
+*/
+async function refineTavernVersion() {
+	try {
+		if (!envCache || envCache.stv) return;
+		const ctx = globalThis?.SillyTavern?.getContext?.();
+		const headers = typeof ctx?.getRequestHeaders === "function" ? ctx.getRequestHeaders() : void 0;
+		const res = await fetch("/version", {
+			headers,
+			credentials: "same-origin"
+		});
+		if (!res?.ok) return;
+		const text = await res.text();
+		let version = "";
+		try {
+			version = sanitizeVersion(JSON.parse(text)?.version);
+		} catch {
+			version = text.trim().length <= 16 ? sanitizeVersion(text) : "";
+		}
+		if (envCache && version) envCache.stv = version;
+	} catch {}
 }
 /** 尽力补充 CPU 架构（Chromium 高熵值，失败保持 unknown） */
 function refineArch() {
@@ -1139,7 +1208,7 @@ function trackRender(ms) {
 		if (!envCache) envCache = probeEnv();
 	} catch {}
 }
-function buildPayload(identity, incoming, pending, now) {
+function buildPayload(identity, incoming, pending, now, final = false) {
 	const day = todayKey(now);
 	const pendingCounters = pending ? mergeCounters(emptyCounters(), {
 		opens: pending?.s?.opens,
@@ -1149,21 +1218,26 @@ function buildPayload(identity, incoming, pending, now) {
 	}) : emptyCounters();
 	const merged = pending ? mergeCounters(pendingCounters, incoming) : incoming;
 	const seq = pending && Number.isFinite(Number(pending.seq)) ? Number(pending.seq) : identity.seq + 1;
+	const env = envCache ?? probeEnv();
+	if (!env.stv) env.stv = tavernVersionFromContext();
 	return {
 		v: 1,
 		id: identity.id,
 		seq: Math.max(1, seq),
 		day,
+		ts: now,
 		tz: roundTz(-new Date(now).getTimezoneOffset() / 60),
 		app: appVersion(),
-		env: envCache ?? probeEnv(),
+		env,
 		s: {
 			opens: Math.max(0, Number(merged.opens) || 0),
 			dur_ms: Math.max(0, Math.min(MAX_DURATION_MS, Number(merged.dur_ms) || 0)),
 			pages: merged.pages,
 			render: merged.render
 		},
-		daily: pending ? pending.daily === true : identity.day !== day
+		daily: pending ? pending.daily === true : identity.day !== day,
+		hc: historyRecordCount(),
+		...final ? { off: true } : {}
 	};
 }
 /**
@@ -1243,9 +1317,10 @@ async function sendWithRetry(payload) {
 * 上报入口。数据为空且没有待发缓存时直接返回，不发请求。
 * close：关闭面板触发（主要路径）；hide：页面隐藏/卸载触发；manual：设置页手动触发。
 */
-function flushTelemetry(reason = "close") {
+function flushTelemetry(reason = "close", options) {
 	try {
-		if (!isTelemetryEnabled()) {
+		const final = options?.final === true;
+		if (!isTelemetryEnabled() && !final) {
 			resetCounters();
 			return;
 		}
@@ -1254,11 +1329,11 @@ function flushTelemetry(reason = "close") {
 		const now = Date.now();
 		counters.dur_ms = currentDuration(now);
 		const gap = reason === "hide" ? PASSIVE_FLUSH_GAP : CLOSE_FLUSH_GAP;
-		if (lastFlushAt && now - lastFlushAt < gap) return;
+		if (!final && lastFlushAt && now - lastFlushAt < gap) return;
 		const identity = ensureIdentity();
 		const pending = identity.pending && typeof identity.pending === "object" ? identity.pending : null;
-		if (!pending && countersAreEmpty(counters)) return;
-		const payload = buildPayload(identity, counters, pending, now);
+		if (!final && !pending && countersAreEmpty(counters)) return;
+		const payload = buildPayload(identity, counters, pending, now, final);
 		inFlight = true;
 		reserveSeq(payload);
 		if (reason === "hide") {
@@ -1275,6 +1350,13 @@ function flushTelemetry(reason = "close") {
 		inFlight = false;
 		log.warn("匿名统计上报失败", error);
 	}
+}
+/**
+* 关闭匿名统计开关时的最后一次上报。
+* 必须在把 telemetryEnabled 写为 false 之前调用：本次会带上关闭标记并立即发送。
+*/
+function flushTelemetryOnDisable() {
+	flushTelemetry("manual", { final: true });
 }
 function bindLifecycle() {
 	if (bound) return;
@@ -1309,6 +1391,7 @@ function initTelemetry() {
 		if (!ensureIdentity().id) return;
 		if (!envCache) envCache = probeEnv();
 		refineArch();
+		refineTavernVersion();
 		bindLifecycle();
 	} catch (error) {
 		log.warn("匿名统计初始化失败", error);
@@ -1822,9 +1905,13 @@ function renderSettings(doc) {
 	};
 	const telemetryToggle = doc.getElementById("aus-telemetry-enabled");
 	if (telemetryToggle) telemetryToggle.onchange = (e) => {
-		state$2.settings.telemetryEnabled = !!e.target.checked;
+		const enabled = !!e.target.checked;
+		if (!enabled) try {
+			flushTelemetryOnDisable();
+		} catch {}
+		state$2.settings.telemetryEnabled = enabled;
 		const slider = doc.getElementById("aus-telemetry-slider");
-		if (slider) slider.style.left = e.target.checked ? "23px" : "3px";
+		if (slider) slider.style.left = enabled ? "23px" : "3px";
 		saveHot({ settings: state$2.settings });
 		renderTelemetryStatus(doc);
 	};
@@ -8114,7 +8201,7 @@ function createPanel() {
           <span class="aus-brand-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--ds-orange);">${icon("brand", 20)}</span>
           <div style="display:flex;flex-direction:column;min-width:0;">
             <span style="font-size:15px;font-weight:700;color:var(--ds-text);white-space:nowrap;">API用量统计</span>
-            <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);white-space:nowrap;">v3.1.3</span>
+            <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);white-space:nowrap;">v3.1.4</span>
           </div>
         </div>
         <button id="aus-sidebar-toggle" style="width:30px;height:30px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);color:var(--ds-text-2);cursor:pointer;flex-shrink:0;font-size:var(--aus-fs-base);padding:0;line-height:1;">${icon("chevron-left", 14)}</button>
@@ -8284,7 +8371,6 @@ function createPanel() {
           </div>
           <div data-view="help" style="display:none;">
             <div style="display:grid;gap:12px;">
-              <div class="ds-card" style="line-height:1.7;font-size:var(--aus-fs-base);"><div style="font-size:var(--aus-fs-sm);color:#0EA5E9;font-weight:600;margin-bottom:6px;">📊 匿名使用统计</div><div style="color:var(--ds-text-2);display:grid;gap:4px;"><div>本扩展默认开启匿名使用统计，仅上报浏览器环境分桶（浏览器名与主版本、系统、架构、语言、窄屏分桶、深色偏好、standalone、时区偏移）、8 个页面的使用次数、打开次数、扩展版本与面板渲染耗时分桶。</div><div>不采集对话名称或内容、模型名、密钥、余额、费用、接口地址等任何隐私数据；服务端不记录 IP 地址。数据按匿名随机标识汇总，仅用于了解用户规模与改进方向。</div><div>可在「设置 → 匿名使用统计」随时关闭，关闭后立即停止采集与上报；也可在那里重置匿名标识。</div><div>完整说明见 <a href="https://janmk1453.github.io/Api-Usage/#privacy" target="_blank" rel="noreferrer" style="color:var(--ds-text);text-decoration:underline;">隐私声明</a>。</div></div></div>
               <div class="ds-card" style="line-height:1.7;font-size:var(--aus-fs-base);"><div style="font-size:var(--aus-fs-sm);color:#FF6A00;font-weight:600;margin-bottom:6px;">完整使用文档</div><div style="color:var(--ds-text-2);">详细说明各页面、筛选、钱包、定价、同步、隐私与常见问题。</div><a href="https://janmk1453.github.io/Api-Usage/" target="_blank" rel="noreferrer" style="display:inline-flex;align-items:center;justify-content:center;margin-top:10px;padding:8px 14px;border-radius:999px;background:var(--ds-black);color:var(--ds-black-text);text-decoration:none;font-size:var(--aus-fs-base);font-weight:600;">前往完整使用文档</a></div>
               <div class="ds-card" style="line-height:1.7;font-size:var(--aus-fs-base);"><div style="font-size:var(--aus-fs-sm);color:#DC2626;font-weight:600;margin-bottom:6px;">隐私声明（完整版：<a href="https://janmk1453.github.io/Api-Usage/#privacy" target="_blank" rel="noreferrer" style="color:#DC2626;text-decoration:underline;">https://janmk1453.github.io/Api-Usage/#privacy</a>）</div><div style="color:var(--ds-text-2);display:grid;gap:6px;"><div>本扩展有且只能获得用户在酒馆本身中填写的：密钥条目的编号、用户备注和掩码末三位，仅用于独立区分请求来源，不会且无法读取、保存或上传完整明文密钥。</div><div>用户储存在酒馆本身的密钥是安全的，本扩展无法获取真实密钥。</div><div>用户主动填入本扩展的校准密钥是实际可用的密钥，且仅会被用于查询 DeepSeek 官方余额，不会额外造成扣费或消耗；它仅经 XOR 混淆后存放于 SillyTavern，不进入历史记录、统计、日志、导入导出或 WebDAV。自动校准时仅由浏览器直接发送至 <a href="https://api.deepseek.com/user/balance" target="_blank" rel="noreferrer" style="color:var(--ds-text);text-decoration:underline;">https://api.deepseek.com/user/balance</a> API 查询。</div><div>XOR 不是安全加密，请使用权限受限的密钥并自行评估风险。</div><div>本扩展完整代码开源可审查。</div><div style="margin-top:2px;padding-top:6px;border-top:1px solid var(--ds-border);font-weight:600;color:#DC2626;">免责声明（完整版见上方链接）</div><div>本扩展不对功能“价格来源”、“自动同步”等利用 <a href="https://models.dev" target="_blank" rel="noreferrer" style="color:var(--ds-text);text-decoration:underline;">models.dev</a> 获取的数据中出现或可能出现的商业化中转站负责；我们不建议使用任何商业化中转站，尽管我们已经尽力筛选数据，但由于对大量数据进行完全筛选难以实现，因此我们不对可能出现的任何商业化中转站名称负责，不构成推荐，和 models.dev 或任何中转站没有商业往来，坚定不移的反对商业化。</div><div>我们将尽可能维护扩展的安全和隐私性，但本扩展不对因酒馆/本扩展的安全漏洞或因间接原因导致的任何形式的密钥泄露及产生的损失负责。</div></div></div>
               <div class="ds-card" style="line-height:1.7;font-size:var(--aus-fs-base);"><div style="font-size:var(--aus-fs-sm);color:#0BA25E;font-weight:600;margin-bottom:6px;">钱包</div><div style="color:var(--ds-text-2);display:grid;gap:4px;"><div>1. 扩展按识别到的接入链接自动创建和汇总钱包，默认始终保留 DeepSeek 官方钱包；同名链接下识别的密钥和模型会归入同一钱包。</div><div>2. 每个钱包可独立维护名称、余额、模型价格、峰谷规则和价格来源；钱包默认收起，展开状态按钱包记忆。价格来源仅展示第一方模型厂商，不展示中转站或聚合平台。</div><div>3. 请求进入后会先匹配所属钱包，再使用该钱包的模型价格和峰谷规则计费，并从对应钱包余额预扣；未配置价格的模型先记零费用，保存或同步价格后自动重算冷热历史。</div><div>4. 自动余额校准仅支持 DeepSeek 官方直连，校准密钥需在钱包内单独填写；其他接入可使用手工余额，多个密钥不会自动相加。</div><div>5. 删除钱包会进入“已忽略接入”，后续请求不会自动重建、不参与余额合计，历史记录仍保留归属，需要时可恢复显示。</div></div></div>
@@ -8316,7 +8402,7 @@ function createPanel() {
                   </div>
                   <button id="aus-check-update" class="ds-btn-pill" style="padding:6px 14px;font-size:var(--aus-fs-sm);">检查更新</button>
                   <button id="aus-run-update" class="ds-btn-pill" style="display:none;padding:6px 14px;font-size:var(--aus-fs-sm);">立即更新</button>
-                  <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);">当前 v3.1.3 · 每 1 小时自动检查</span>
+                  <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);">当前 v3.1.4 · 每 1 小时自动检查</span>
                 </div>
                 <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);">可选择 main 或 dev 分支直接更新，默认 main；更新完成后自动刷新网页。非 Git 安装请使用“管理扩展程序”。</div>
               </div>
@@ -8479,7 +8565,7 @@ function createPanel() {
 		initForecastView();
 	} catch {}
 	try {
-		import("./update-DIc7hiBc.js").then((m) => {
+		import("./update-A1-gVOsB.js").then((m) => {
 			const branchBtn = doc.getElementById("aus-update-branch-btn");
 			const branchLabel = doc.getElementById("aus-update-branch-label");
 			const branchDrop = doc.getElementById("aus-update-branch-dropdown");
@@ -8518,7 +8604,7 @@ function createPanel() {
 		if (updBtn) updBtn.onclick = () => {
 			updBtn.textContent = "检查中…";
 			updBtn.setAttribute("disabled", "");
-			import("./update-DIc7hiBc.js").then((m) => m.checkUpdate(true).finally(() => {
+			import("./update-A1-gVOsB.js").then((m) => m.checkUpdate(true).finally(() => {
 				updBtn.textContent = "检查更新";
 				updBtn.removeAttribute("disabled");
 			}));
@@ -8528,7 +8614,7 @@ function createPanel() {
 			if (runUpdBtn.hasAttribute("disabled")) return;
 			runUpdBtn.textContent = "更新中…";
 			runUpdBtn.setAttribute("disabled", "");
-			import("./update-DIc7hiBc.js").then((m) => m.updateSelf()).then((res) => {
+			import("./update-A1-gVOsB.js").then((m) => m.updateSelf()).then((res) => {
 				if (res.ok && res.changed) {
 					const bannerEl = doc.getElementById("aus-update-banner");
 					if (bannerEl) {
@@ -8618,7 +8704,7 @@ function openPanel() {
 	panelOpen = true;
 	refreshUI();
 	try {
-		import("./update-DIc7hiBc.js").then((m) => m.maybeAutoCheck());
+		import("./update-A1-gVOsB.js").then((m) => m.maybeAutoCheck());
 	} catch {}
 }
 function closePanel() {

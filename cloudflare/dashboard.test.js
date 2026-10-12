@@ -19,6 +19,7 @@ const summaryData = {
   totals: {
     users: 42, opens: 1234, durMs: 30 * 60 * 1000, avgDurMsPerUser: 44 * 1000,
     todayUsers: 3, todayActiveUsers: 28, todayOpens: 57, todayDurMs: 12 * 60 * 1000,
+    disabledUsers: 5, disabledRate: 5 / 42,
   },
   userGrowth: [
     { day: '2026-10-09', added: 1, cumulative: 40 },
@@ -28,11 +29,20 @@ const summaryData = {
   pages: {
     overview: 12, stats: 9, history: 7, forecast: 5, wallet: 4, settings: 3, help: 2, about: 1, total: 43,
   },
+  historyCount: [
+    { label: '0 条', count: 2 },
+    { label: '1–10 条', count: 10 },
+    { label: '11–50 条', count: 18 },
+    { label: '51–200 条', count: 9 },
+    { label: '201–1000 条', count: 3 },
+    { label: '1001 条以上', count: 0 },
+  ],
   // 数量与版本高低故意逆序（低版本数量更高），用于验证展示层按版本号降序排列
   versions: [{ label: '3.1.1', count: 40 }, { label: '3.1.2', count: 2 }],
   env: {
     browser: [{ label: 'Chrome', count: 30 }, { label: 'Firefox', count: 12 }],
     browserVersion: [{ label: 'Firefox 128', count: 30 }, { label: 'Chrome 141', count: 12 }],
+    stVersion: [{ label: '1.13.4', count: 30 }, { label: '1.13.5', count: 12 }],
     os: [{ label: 'Windows', count: 30 }, { label: 'Android', count: 12 }],
     arch: [{ label: 'x86_64', count: 33 }, { label: 'arm64', count: 9 }],
     lang: [{ label: 'zh-CN', count: 40 }, { label: 'en-US', count: 2 }],
@@ -221,6 +231,17 @@ function createHarness(mode) {
   };
 }
 
+describe('看板页小时粒度控件', () => {
+  it('四个趋势图提供按天/按小时切换与最近 24 小时选项', () => {
+    expect(html).toContain('data-bucket="hour"');
+    expect(html).toContain('data-hours="24"');
+    expect(html).toContain('最近 24 小时');
+    expect(html).toContain('bucket=hour');
+    // 小时 X 轴标签精确到小时
+    expect(html).toContain('function shortHour(');
+  });
+});
+
 describe('看板页渲染（图表库不可用）', () => {
   it('渲染总计卡片、分布兜底列表与缓存徽标', async () => {
     const harness = createHarness('no-lib');
@@ -229,6 +250,9 @@ describe('看板页渲染（图表库不可用）', () => {
     expect(harness.text('cards-life')).toContain('不重复累计用户');
     expect(harness.text('cards-life')).toContain('42');
     expect(harness.text('cards-life')).toContain('44 秒');
+    expect(harness.text('cards-life')).toContain('匿名统计关闭率');
+    expect(harness.text('cards-life')).toContain('11.9%');
+    expect(harness.text('cards-life')).toContain('5 / 42');
     expect(harness.text('cards-today')).toContain('当日新增用户');
     expect(harness.text('cards-today')).toContain('57');
     expect(harness.text('cards-today')).toContain('当日不重复用户');
@@ -240,6 +264,7 @@ describe('看板页渲染（图表库不可用）', () => {
     expect(harness.text('fallback-arch')).toContain('x86_64');
     expect(harness.text('fallback-duration')).toContain('≥30 小时');
     expect(harness.text('fallback-env-tz')).toContain('UTC+8');
+    expect(harness.text('fallback-env-st-version')).toContain('1.13.5');
 
     const renderHtml = harness.text('fallback-render');
     expect(renderHtml.indexOf('3.1.2')).toBeLessThan(renderHtml.indexOf('3.1.1'));
@@ -276,6 +301,11 @@ describe('看板页渲染（图表库可用）', () => {
     const aboutSeries = dailyPages.series.find((item) => item.name === '关于');
     expect(aboutSeries.data).toEqual([3.3, 0, null]);
 
+    const historyCount = option('history-count');
+    expect(historyCount.series[0].type).toBe('pie');
+    expect(historyCount.series[0].data.map((item) => item.name)).toContain('1–10 条');
+    expect(historyCount.series[0].data.map((item) => item.value).reduce((sum, value) => sum + value, 0)).toBe(42);
+
     const os = option('os');
     expect(os.series[0].type).toBe('pie');
     expect(os.series[0].data).toHaveLength(2);
@@ -297,6 +327,11 @@ describe('看板页渲染（图表库可用）', () => {
     const browserVersionLabels = option('env-browser-version').yAxis.data;
     expect(browserVersionLabels[browserVersionLabels.length - 1]).toBe('Chrome 141');
     expect(browserVersionLabels[0]).toBe('Firefox 128');
+
+    // 酒馆版本分布：按版本号降序
+    const stVersionLabels = option('env-st-version').yAxis.data;
+    expect(stVersionLabels[stVersionLabels.length - 1]).toBe('1.13.5');
+    expect(stVersionLabels[0]).toBe('1.13.4');
 
     expect(harness.localGetEl('lib-banner').hidden).toBe(true);
     expect(harness.localGetEl('fallback-pages').hidden).toBe(true);
