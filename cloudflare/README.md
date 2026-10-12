@@ -8,12 +8,15 @@
 | --- | --- |
 | `worker.js` | Worker 入口：`POST /collect`、`GET /dashboard`、`GET /vendor/echarts.js`、`GET /api/summary`、`GET /api/trend`、`GET /health`，以及每月清理的定时任务 |
 | `vendor/echarts.min.js` | 自托管图表库（ECharts 6.1.0 的 simple 构建，取自 `node_modules/echarts/dist/echarts.simple.min.js`），由 `/vendor/echarts.js` 同源提供 |
-| `summary.js` | 看板聚合纯函数（日期基准、计数截断、时长分桶、渲染耗时估算、环境画像），`summary.test.js` 覆盖 |
+| `summary.js` | 看板聚合纯函数（日期与小时基准、趋势窗口归一、计数截断、时长分桶、渲染耗时估算、环境画像），`summary.test.js` 覆盖 |
 | `payload.js` | 上报体白名单校验与数值钳制（纯函数，`payload.test.js` 覆盖） |
 | `worker.test.js` | Worker 接口测试：鉴权、`/collect` 契约、总计/趋势口径、定时清理 |
-| `schema.sql` | D1 建表脚本（`device` 设备维度汇总 + `device_daily` 逐设备日数据），新库直接执行 |
+| `schema.sql` | D1 建表脚本（`device` 设备维度汇总 + `device_daily` 逐设备日数据 + `device_hourly` 逐设备小时数据），新库直接执行 |
 | `migrate-device-totals.sql` | 已有库的一次性迁移与回填脚本（新增累计列并用 `device_daily` 回填） |
 | `migrate-backfill-device-totals.sql` | 只做累计列回填与校验（可安全重复执行），用于「列已存在」或需要重新回填时 |
+| `migrate-hourly.sql` | 已有库升级到小时粒度趋势（新增 `device_hourly` 表与索引，不改动既有表，可安全重复执行） |
+| `migrate-st-version.sql` | 已有库补充 `device.st_version` 酒馆版本号列（不改动既有数据，重复执行会提示列已存在） |
+| `migrate-device-off.sql` | 已有库新增 `device_off` 表（`CREATE TABLE IF NOT EXISTS`，可安全重复执行；未执行时 Worker 自动降级，不影响上报） |
 | `wrangler.toml` | Worker 配置模板（D1 绑定、Cron、文本模块规则）；`database_id` 保持占位符，真实值放本地 `wrangler.local.toml` |
 | `dashboard.html` | 看板页模板，作为文本模块打包进 Worker |
 
@@ -58,6 +61,31 @@ npx wrangler deploy -c cloudflare/wrangler.local.toml
 - 顺序必须是「先回填、再部署」：新版 Worker 会把每次上报的增量累加进累计列，若先部署再回填，回填会整体覆盖累计值。
 - 回填与部署之间的窗口（通常几分钟）内的上报不会计入累计列，建议在低活跃时段执行；`device_daily` 明细不受影响（趋势与当日数据照常统计）。
 
+### 已有库升级（新增小时粒度趋势）
+
+小时粒度趋势依赖 `device_hourly` 表。已有库执行一次迁移即可，新旧 Worker 均可安全共存：
+
+```bash
+npx wrangler d1 execute api_usage_stat --remote --file cloudflare/migrate-hourly.sql
+```
+
+- 只新增表与索引，不修改既有表结构，可安全重复执行。
+- **未执行迁移也不会影响上报**：新版 Worker 写入小时表失败时会自动降级为原有的 `device` + `device_daily` 两条写入，`/collect` 仍返回 `204`，旧版本扩展照常上报；只是看板的小时粒度视图会提示尚未迁移。
+- 小时数据只保留 180 天（日数据仍为 730 天），迁移只能从此刻开始积累，历史小时无法回溯。
+
+其他可选表结构的迁移脚本见目录内容一节（`migrate-device-off.sql` 等），可按需执行；未执行时 Worker 会走兼容降级，不影响 `/collect`。
+
+### 已有库升级（新增酒馆版本号列）
+
+看板「用户与设备画像」中的酒馆版本分布依赖 `device.st_version`：
+
+```bash
+npx wrangler d1 execute api_usage_stat --remote --file cloudflare/migrate-st-version.sql
+```
+
+- 只新增一列，不改动既有数据；重复执行会提示 `duplicate column name`，正常忽略即可。
+- **未执行迁移也不会影响上报**：Worker 会先尝试带该列的写入，失败后自动回退到旧列集合，`/collect` 仍返回 `204`；只是酒馆版本分布暂时为空。
+
 > 仓库内的 `wrangler.toml` 只保留占位符，请不要把真实的 `database_id`、账号 ID、API Token 等信息写进任何被提交的文件；`wrangler.local.toml` 与 `.dev.vars` 已在 `.gitignore` 中忽略。
 
 部署成功后会输出访问地址：
@@ -83,12 +111,13 @@ npx wrangler deploy -c cloudflare/wrangler.local.toml
 | 总计速览 | 不重复累计用户、累计打开面板、累计使用时长、人均使用时长；当日新增用户 / 打开 / 时长 / 不重复用户（按北京时间） |
 | 增长与活跃趋势 | 累计用户趋势、每日打开面板次数、每日不重复用户数、每日面板打开占比（8 条线，按面板固定配色） |
 | 面板使用构成 | 各面板全部时间累计打开次数（横向长条） |
-| 用户与设备画像 | 扩展版本分布、CPU 架构饼图、操作系统饼图、浏览器 / 浏览器主版本 / 语言 / 宽度分桶 / 深浅色 / 显示形态 / 指针类型 / 时区（横向长条） |
+| 用户与设备画像 | 扩展版本分布、酒馆版本分布、CPU 架构饼图、操作系统饼图、浏览器 / 浏览器主版本 / 语言 / 宽度分桶 / 深浅色 / 显示形态 / 指针类型 / 时区（横向长条） |
 | 使用时长与渲染性能 | 每设备累计使用时长分布（直方图）、按扩展版本区分的渲染耗时（横向长条） |
 
 交互与口径：
 
-- **每个趋势图有独立的时间控件**（30 / 90 / 365 天预设 + 自定义起止日期），默认最近 30 天，最长 730 天（与数据保留期一致）；总计类指标固定为全时段累计，不随时间控件变化。
+- **每个趋势图有独立的粒度与时间控件**（按天：30 / 90 / 365 天预设 + 自定义起止日期；按小时：最近 24 小时 / 最近 7 天 / 最近 30 天），默认按天最近 30 天；按小时粒度最长 180 天（与小时数据保留期一致），总计类指标固定为全时段累计，不随时间控件变化。
+- 小时粒度的 X 轴精确到小时（`MM-DD HH:00`），四个趋势图各自独立记忆粒度；小时桶按北京时间整点归集，跨天不会混淆。
 - 「人均使用时长」= 累计使用时长 ÷ 不重复累计用户数。
 - 「当日」按北京时间（UTC+8）计算，与多数用户客户端上报的本地日期一致。
 - 环境维度取**每台设备最近一次上报的状态**（浏览器、系统、架构、语言、宽度、深浅色、独立窗口、触屏、时区都是设备维度去重值，一台设备只计一次）。
@@ -111,9 +140,10 @@ npx wrangler deploy -c cloudflare/wrangler.local.toml
 
 | 接口 | 说明 |
 | --- | --- |
-| `POST /collect` | 接收匿名上报，返回 `204`；请求体契约与旧版完全一致（扩展端无需改动） |
+| `POST /collect` | 接收匿名上报，返回 `204`；兼容旧版扩展的上报体（`v1`、无 `ts`），新版新增可选 `ts`（毫秒时间戳，服务端归一为分钟精度） |
 | `GET /api/summary` | 总计、当日、累计用户序列、面板累计、版本分布、环境画像、时长直方图；支持 `?force=1` |
 | `GET /api/trend?from=YYYY-MM-DD&to=YYYY-MM-DD&parts=daily\|render\|both` | 每日趋势（不重复用户 / 打开次数 / 使用时长 / 面板明细）与按版本渲染耗时；支持 `?force=1` |
+| `GET /api/trend?bucket=hour&from=YYYY-MM-DDTHH&to=YYYY-MM-DDTHH&parts=daily` | 小时粒度趋势（同上指标，X 轴为北京时间整点，缺失小时补 0，另返回累计用户序列）；缺省窗口为最近 24 小时，最长 180 天；支持 `?force=1` |
 | `GET /vendor/echarts.js` | 自托管图表库（公开、无需口令，仅返回 ECharts 静态文件） |
 | `GET /dashboard` | 口令保护的看板页 |
 | `GET /health` | 健康检查，无需口令 |
@@ -156,24 +186,25 @@ Cloudflare 免费额度（2026 年 4 月官方文档）：Workers **10 万请求
 | --- | --- | --- |
 | 请求次数 | 客户端在会话内只累加，关闭面板/页面隐藏时才合并上报 | 每设备每天通常 1~3 个请求 |
 | CORS | 上报体用 `text/plain` 简单请求 + `sendBeacon` | 不触发 OPTIONS 预检，一次上报只算 1 个请求 |
-| 写入行数 | `device` 每次有效上报 1 行（累计列增量累加）+ `device_daily` 1 行 | 每次上报 2 行写，重复上报 0 行 |
-| 幂等 | `device.last_seq < seq` 与 `device_daily.last_seq < seq` 双重判据 | 重发/重复提交不重复计数、不重复累加 |
-| 读取行数 | 总计与画像走 `device` 表一次全表读（行数 = 设备数）；趋势按 `day` 索引范围扫描（行数 = 天数 × 日活） | 单次冷加载 ≈ 设备数 + 日活 + 2 × 天数 × 日活 |
-| 缓存 | `/api/summary` 与 `/api/trend` 走 Cache API 600 秒 | 重复查看、切换范围都不会重复扫表；「刷新」按钮才强制重查 |
-| 保留期 | 每月 1 号清理超过 730 天的逐设备日数据（设备维度汇总长期保留） | 长期占用远低于 5 GB |
+| 写入行数 | `device` 每次有效上报 1 行（累计列增量累加）+ `device_daily` 1 行 + `device_hourly` 1 行 | 每次上报 3 行写，重复上报 0 行；小时表缺失时自动降级为 2 行 |
+| 幂等 | `device.last_seq < seq`、`device_daily.last_seq < seq` 与 `device_hourly.last_seq < seq` 三重判据 | 重发/重复提交不重复计数、不重复累加 |
+| 读取行数 | 总计与画像走 `device` 表一次全表读（行数 = 设备数）；趋势按 `day` / `hour` 索引范围扫描（行数 = 桶数 × 桶内活跃设备） | 单次冷加载 ≈ 设备数 + 日活 + 2 × 窗口桶数 × 桶内活跃设备 |
+| 缓存 | `/api/summary` 与 `/api/trend` 走 Cache API 600 秒 | 重复查看、切换范围与粒度都不会重复扫表；「刷新」按钮才强制重查 |
+| 保留期 | 每月 1 号清理超过 730 天的逐设备日数据与超过 180 天的逐设备小时数据（设备维度汇总长期保留） | 长期占用远低于 5 GB |
 
 读量估算：日活 5000、累计设备 2 万、趋势窗口 30 天时，单次冷加载约 `2 万 + 0.5 万 + 2 × 15 万 ≈ 33 万行`，配合 10 分钟缓存远低于 500 万行/天。若日后 30 天窗口的单次读行数逼近 100 万，可再加一层按日汇总表（本期未做）。
 
-写量估算：日活 1 万台、每台每天上报 1 次时约 1 万次上报 → 2 万行写，远低于 10 万行/天。
+写量估算：日活 1 万台、每台每天上报 1 次时约 1 万次上报 → 3 万行写，远低于 10 万行/天；小时表按 180 天清理，长期行数约为日表的三分之一。
 
 ## 隐私边界
 
-采集字段严格限定为：匿名随机标识、上报序号、客户端本地日期、时区偏移、扩展版本、浏览器名与主版本、操作系统、CPU 架构、语言、窄屏分桶、深色偏好、standalone、触屏标记、8 个页面使用次数、打开面板次数、会话时长、面板渲染耗时分桶。
+采集字段严格限定为：匿名随机标识、上报序号、客户端本地日期、**上报时刻（时间戳，服务端归一为分钟精度）**、时区偏移、扩展版本、**酒馆版本号**、浏览器名与主版本、操作系统、CPU 架构、语言、窄屏分桶、深色偏好、standalone、触屏标记、8 个页面使用次数、打开面板次数、会话时长、面板渲染耗时分桶。分钟级时间戳仅用于按小时聚合趋势，旧版本扩展不含该字段时由服务端接收时间兜底，不影响上报。
 
 服务端存储：
 
 - `device`：每台匿名设备一行，保存最近一次上报的环境状态与去标识化的累计计数（累计打开次数、累计使用时长、各面板累计次数、首次出现日期、最近序号）；这些累计值由同一份白名单上报数据累加得到，不新增任何采集字段。
 - `device_daily`：每台设备每天一行，保存当天分桶与计数，730 天后自动清理。
+- `device_hourly`：每台设备每（北京时间）小时一行，保存该小时分桶与计数与分钟级首末上报时间，180 天后自动清理。
 
 不采集、不存库的内容包括：IP 地址、User-Agent 原文、对话名称或内容、模型名、密钥信息、余额与费用、接口地址、历史条数、精确屏幕分辨率。Worker 只把校验后的白名单字段写入 D1，原始请求体不做持久化，也不开启访问日志。
 
@@ -196,9 +227,12 @@ npx wrangler d1 execute api_usage_stat --remote --command \
 npx wrangler d1 execute api_usage_stat --remote --command \
   "DELETE FROM device_daily WHERE day < date('now','-730 day')"
 
+npx wrangler d1 execute api_usage_stat --remote --command \
+  "DELETE FROM device_hourly WHERE hour < strftime('%Y-%m-%dT%H', datetime('now','-180 day'))"
+
 # 用户要求删除其数据（需要对方提供设置页显示的匿名标识前 8 位）
 npx wrangler d1 execute api_usage_stat --remote --command \
-  "DELETE FROM device_daily WHERE device_id LIKE 'xxxxxxxx%'; DELETE FROM device WHERE device_id LIKE 'xxxxxxxx%'"
+  "DELETE FROM device_daily WHERE device_id LIKE 'xxxxxxxx%'; DELETE FROM device_hourly WHERE device_id LIKE 'xxxxxxxx%'; DELETE FROM device_off WHERE device_id LIKE 'xxxxxxxx%'; DELETE FROM device WHERE device_id LIKE 'xxxxxxxx%'"
 ```
 
 ## 常见问题

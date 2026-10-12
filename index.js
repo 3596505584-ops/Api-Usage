@@ -992,8 +992,63 @@ function probeEnv() {
 		w: widthBucket(currentViewportWidth()),
 		dark: mediaMatches("(prefers-color-scheme: dark)"),
 		standalone: mediaMatches("(display-mode: standalone)") || n?.standalone === true,
-		touch: mediaMatches("(pointer: coarse)") || Number(n?.maxTouchPoints || 0) > 0
+		touch: mediaMatches("(pointer: coarse)") || Number(n?.maxTouchPoints || 0) > 0,
+		stv: tavernVersionFromContext()
 	};
+}
+/** 版本号清洗：只保留数字、字母与 . + -，最长 16 字符；不含数字视为无效 */
+function sanitizeVersion(value) {
+	if (typeof value !== "string" && typeof value !== "number") return "";
+	const text = String(value).trim().replace(/[^0-9A-Za-z.+-]/g, "").slice(0, 16);
+	return /\d/.test(text) ? text : "";
+}
+/** 从酒馆上下文/文档元信息同步读取版本号（取不到返回空字符串） */
+function tavernVersionFromContext() {
+	try {
+		const g = globalThis;
+		const st = g?.SillyTavern;
+		const ctx = typeof st?.getContext === "function" ? st.getContext() : null;
+		const candidates = [
+			ctx?.version,
+			ctx?.stVersion,
+			st?.version,
+			g?.__ST_VERSION__
+		];
+		for (const candidate of candidates) {
+			const version = sanitizeVersion(candidate);
+			if (version) return version;
+		}
+	} catch {}
+	try {
+		const meta = (typeof document === "undefined" ? null : document)?.querySelector?.("meta[name=\"version\"]");
+		const version = sanitizeVersion(meta?.getAttribute?.("content"));
+		if (version) return version;
+	} catch {}
+	return "";
+}
+/**
+* 异步兜底：上下文没有版本号时读一次酒馆同源 `/version` 接口并缓存。
+* 只发这一个本地请求，不携带任何统计内容；失败静默忽略。
+*/
+async function refineTavernVersion() {
+	try {
+		if (!envCache || envCache.stv) return;
+		const ctx = globalThis?.SillyTavern?.getContext?.();
+		const headers = typeof ctx?.getRequestHeaders === "function" ? ctx.getRequestHeaders() : void 0;
+		const res = await fetch("/version", {
+			headers,
+			credentials: "same-origin"
+		});
+		if (!res?.ok) return;
+		const text = await res.text();
+		let version = "";
+		try {
+			version = sanitizeVersion(JSON.parse(text)?.version);
+		} catch {
+			version = text.trim().length <= 16 ? sanitizeVersion(text) : "";
+		}
+		if (envCache && version) envCache.stv = version;
+	} catch {}
 }
 /** 尽力补充 CPU 架构（Chromium 高熵值，失败保持 unknown） */
 function refineArch() {
@@ -1139,7 +1194,7 @@ function trackRender(ms) {
 		if (!envCache) envCache = probeEnv();
 	} catch {}
 }
-function buildPayload(identity, incoming, pending, now) {
+function buildPayload(identity, incoming, pending, now, final = false) {
 	const day = todayKey(now);
 	const pendingCounters = pending ? mergeCounters(emptyCounters(), {
 		opens: pending?.s?.opens,
@@ -1149,21 +1204,25 @@ function buildPayload(identity, incoming, pending, now) {
 	}) : emptyCounters();
 	const merged = pending ? mergeCounters(pendingCounters, incoming) : incoming;
 	const seq = pending && Number.isFinite(Number(pending.seq)) ? Number(pending.seq) : identity.seq + 1;
+	const env = envCache ?? probeEnv();
+	if (!env.stv) env.stv = tavernVersionFromContext();
 	return {
 		v: 1,
 		id: identity.id,
 		seq: Math.max(1, seq),
 		day,
+		ts: now,
 		tz: roundTz(-new Date(now).getTimezoneOffset() / 60),
 		app: appVersion(),
-		env: envCache ?? probeEnv(),
+		env,
 		s: {
 			opens: Math.max(0, Number(merged.opens) || 0),
 			dur_ms: Math.max(0, Math.min(MAX_DURATION_MS, Number(merged.dur_ms) || 0)),
 			pages: merged.pages,
 			render: merged.render
 		},
-		daily: pending ? pending.daily === true : identity.day !== day
+		daily: pending ? pending.daily === true : identity.day !== day,
+		...final ? { off: true } : {}
 	};
 }
 /**
@@ -1243,9 +1302,10 @@ async function sendWithRetry(payload) {
 * 上报入口。数据为空且没有待发缓存时直接返回，不发请求。
 * close：关闭面板触发（主要路径）；hide：页面隐藏/卸载触发；manual：设置页手动触发。
 */
-function flushTelemetry(reason = "close") {
+function flushTelemetry(reason = "close", options) {
 	try {
-		if (!isTelemetryEnabled()) {
+		const final = options?.final === true;
+		if (!isTelemetryEnabled() && !final) {
 			resetCounters();
 			return;
 		}
@@ -1254,11 +1314,11 @@ function flushTelemetry(reason = "close") {
 		const now = Date.now();
 		counters.dur_ms = currentDuration(now);
 		const gap = reason === "hide" ? PASSIVE_FLUSH_GAP : CLOSE_FLUSH_GAP;
-		if (lastFlushAt && now - lastFlushAt < gap) return;
+		if (!final && lastFlushAt && now - lastFlushAt < gap) return;
 		const identity = ensureIdentity();
 		const pending = identity.pending && typeof identity.pending === "object" ? identity.pending : null;
-		if (!pending && countersAreEmpty(counters)) return;
-		const payload = buildPayload(identity, counters, pending, now);
+		if (!final && !pending && countersAreEmpty(counters)) return;
+		const payload = buildPayload(identity, counters, pending, now, final);
 		inFlight = true;
 		reserveSeq(payload);
 		if (reason === "hide") {
@@ -1275,6 +1335,13 @@ function flushTelemetry(reason = "close") {
 		inFlight = false;
 		log.warn("匿名统计上报失败", error);
 	}
+}
+/**
+* 关闭匿名统计开关时的最后一次上报。
+* 必须在把 telemetryEnabled 写为 false 之前调用：本次会带上关闭标记并立即发送。
+*/
+function flushTelemetryOnDisable() {
+	flushTelemetry("manual", { final: true });
 }
 function bindLifecycle() {
 	if (bound) return;
@@ -1309,6 +1376,7 @@ function initTelemetry() {
 		if (!ensureIdentity().id) return;
 		if (!envCache) envCache = probeEnv();
 		refineArch();
+		refineTavernVersion();
 		bindLifecycle();
 	} catch (error) {
 		log.warn("匿名统计初始化失败", error);
@@ -1473,7 +1541,7 @@ function renderSettings(doc) {
       <!-- 匿名使用统计（默认开启，可随时关闭） -->
       <div class="ds-card">
         <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);">匿名使用统计</span><label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;"><input type="checkbox" id="aus-telemetry-enabled" style="opacity:0;width:0;height:0;"><span style="position:absolute;inset:0;background:var(--ds-border);border-radius:12px;transition:0.2s;"><span id="aus-telemetry-slider" style="position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:var(--ds-card-inner);border-radius:50%;transition:0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.15);"></span></span></label></div>
-        <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-top:6px;line-height:1.6;">仅匿名上报浏览器环境参数（浏览器名与版本、系统、架构、语言、窄屏分桶、standalone、时区）、扩展版本与面板渲染耗时分桶等开发数据；<strong>不含对话内容、密钥等任何隐私信息，数据经过匿名化处理，仅用于开发与完善兼容性。</strong>关闭后立即停止采集与上报。<a href="https://janmk1453.github.io/Api-Usage/#privacy" target="_blank" rel="noreferrer" style="color:var(--ds-text);text-decoration:underline;">隐私声明</a></div>
+        <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-top:6px;line-height:1.6;">仅匿名上报浏览器环境参数（浏览器名与版本、系统、架构、语言、窄屏分桶、standalone、时区）、上报时刻（分钟精度）、扩展版本、酒馆版本号与面板渲染耗时分桶等开发数据；<strong>不含对话内容、密钥等任何隐私信息，数据经过匿名化处理，仅用于开发与完善兼容性。</strong>关闭后立即停止采集与上报。<a href="https://janmk1453.github.io/Api-Usage/#privacy" target="_blank" rel="noreferrer" style="color:var(--ds-text);text-decoration:underline;">隐私声明</a></div>
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;flex-wrap:wrap;"><span id="aus-telemetry-id" style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);">匿名标识：待生成</span><button id="aus-telemetry-reset" style="padding:6px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:var(--aus-fs-sm);cursor:pointer;">重置匿名标识</button></div>
         <div id="aus-telemetry-status" style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);margin-top:6px;"></div>
       </div>
@@ -1822,9 +1890,13 @@ function renderSettings(doc) {
 	};
 	const telemetryToggle = doc.getElementById("aus-telemetry-enabled");
 	if (telemetryToggle) telemetryToggle.onchange = (e) => {
-		state$2.settings.telemetryEnabled = !!e.target.checked;
+		const enabled = !!e.target.checked;
+		if (!enabled) try {
+			flushTelemetryOnDisable();
+		} catch {}
+		state$2.settings.telemetryEnabled = enabled;
 		const slider = doc.getElementById("aus-telemetry-slider");
-		if (slider) slider.style.left = e.target.checked ? "23px" : "3px";
+		if (slider) slider.style.left = enabled ? "23px" : "3px";
 		saveHot({ settings: state$2.settings });
 		renderTelemetryStatus(doc);
 	};

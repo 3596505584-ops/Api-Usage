@@ -23,19 +23,26 @@ import { MAX_BODY_BYTES, PAGE_KEYS, normalizePayload } from './payload.js';
 import {
   CACHE_TTL_SECONDS,
   beijingDayKey,
+  beijingHourKey,
   cumulativeGrowth,
   durationHistogram,
   envBreakdown,
   estimateRenderMs,
+  hourKeyToMs,
+  normalizeHourWindow,
   normalizeWindow,
   numberOrZero,
   renderSampleCount,
+  shiftHour,
   sumBy,
   tally,
 } from './summary.js';
 
 /** 逐设备日数据保留天数（设备维度汇总表长期保留） */
 const RETENTION_DAYS = 730;
+/** 逐设备小时数据保留天数：只服务小时粒度趋势，按较短周期清理以省 D1 空间 */
+const HOURLY_RETENTION_DAYS = 180;
+const HOUR_MS = 60 * 60 * 1000;
 /** 渲染耗时档位下标 */
 const RENDER_INDEXES = [0, 1, 2, 3, 4];
 /** 累计列（与 schema.sql 的 *_total 一一对应） */
@@ -48,24 +55,8 @@ const CORS_HEADERS = {
   'Access-Control-Max-Age': '86400',
 };
 
-/**
- * 设备维度汇总上行：环境字段刷新为该设备最近一次上报的状态（空值不覆盖旧值），
- * 累计列按本次上报增量累加；`WHERE excluded.last_seq > device.last_seq` 保证
- * 重复/重发上报（同 seq）不重复累加，与 device_daily 的幂等判据一致。
- */
-const DEVICE_UPSERT_SQL = `
-INSERT INTO device (
-  device_id, first_seen, last_seen, app_version, browser, browser_major, os, arch,
-  lang, width_bucket, dark, standalone, touch, tz_offset,
-  first_day, last_seq, opens_total, dur_ms_total,
-  p_overview_total, p_stats_total, p_history_total, p_forecast_total,
-  p_wallet_total, p_settings_total, p_help_total, p_about_total
-) VALUES (
-  ?1, ?2, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13,
-  ?14, ?15, ?16, ?17,
-  ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25
-)
-ON CONFLICT(device_id) DO UPDATE SET
+/** 设备维度通用 UPSERT 片段：环境字段刷新为最近状态，累计列按本次上报增量累加 */
+const DEVICE_UPSERT_SET = `ON CONFLICT(device_id) DO UPDATE SET
   last_seen = excluded.last_seen,
   last_seq = excluded.last_seq,
   app_version = COALESCE(NULLIF(excluded.app_version, ''), device.app_version),
@@ -81,7 +72,43 @@ ON CONFLICT(device_id) DO UPDATE SET
   tz_offset = excluded.tz_offset,
   opens_total = device.opens_total + excluded.opens_total,
   dur_ms_total = device.dur_ms_total + excluded.dur_ms_total,
-  ${TOTAL_COLUMNS.map((column) => `${column} = device.${column} + excluded.${column}`).join(',\n  ')}
+  ${TOTAL_COLUMNS.map((column) => `${column} = device.${column} + excluded.${column}`).join(',\n  ')}`;
+
+const DEVICE_BASE_COLUMNS = `device_id, first_seen, last_seen, app_version, browser, browser_major, os, arch,
+  lang, width_bucket, dark, standalone, touch, tz_offset,
+  first_day, last_seq, opens_total, dur_ms_total`;
+
+const DEVICE_BASE_VALUES = `?1, ?2, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13,
+  ?14, ?15, ?16, ?17`;
+
+/**
+ * 设备维度汇总上行（含酒馆版本号）：
+ * `WHERE excluded.last_seq > device.last_seq` 保证重复/重发上报不重复累加，
+ * 与 device_daily / device_hourly 的幂等判据一致。
+ */
+const DEVICE_UPSERT_SQL = `
+INSERT INTO device (
+  ${DEVICE_BASE_COLUMNS},
+  ${TOTAL_COLUMNS.join(', ')}, st_version
+) VALUES (
+  ${DEVICE_BASE_VALUES},
+  ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26
+)
+${DEVICE_UPSERT_SET},
+  st_version = COALESCE(NULLIF(excluded.st_version, ''), device.st_version)
+WHERE excluded.last_seq > device.last_seq
+`;
+
+/** 未执行 migrate-st-version.sql 的旧库回退语句：列集合与旧版完全一致 */
+const DEVICE_UPSERT_LEGACY_SQL = `
+INSERT INTO device (
+  ${DEVICE_BASE_COLUMNS},
+  ${TOTAL_COLUMNS.join(', ')}
+) VALUES (
+  ${DEVICE_BASE_VALUES},
+  ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25
+)
+${DEVICE_UPSERT_SET}
 WHERE excluded.last_seq > device.last_seq
 `;
 
@@ -118,13 +145,62 @@ ON CONFLICT(day, device_id) DO UPDATE SET
 WHERE device_daily.last_seq < excluded.last_seq
 `;
 
+const DEVICE_HOURLY_UPSERT_SQL = `
+INSERT INTO device_hourly (
+  hour, device_id, sessions, opens, dur_ms,
+  p_overview, p_stats, p_history, p_forecast, p_wallet, p_settings, p_help, p_about,
+  r0, r1, r2, r3, r4, app_version, last_seq, first_ts, last_ts
+) VALUES (
+  ?1, ?2, 1, ?3, ?4,
+  ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12,
+  ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?20
+)
+ON CONFLICT(hour, device_id) DO UPDATE SET
+  sessions = device_hourly.sessions + 1,
+  opens = device_hourly.opens + excluded.opens,
+  dur_ms = device_hourly.dur_ms + excluded.dur_ms,
+  p_overview = device_hourly.p_overview + excluded.p_overview,
+  p_stats = device_hourly.p_stats + excluded.p_stats,
+  p_history = device_hourly.p_history + excluded.p_history,
+  p_forecast = device_hourly.p_forecast + excluded.p_forecast,
+  p_wallet = device_hourly.p_wallet + excluded.p_wallet,
+  p_settings = device_hourly.p_settings + excluded.p_settings,
+  p_help = device_hourly.p_help + excluded.p_help,
+  p_about = device_hourly.p_about + excluded.p_about,
+  r0 = device_hourly.r0 + excluded.r0,
+  r1 = device_hourly.r1 + excluded.r1,
+  r2 = device_hourly.r2 + excluded.r2,
+  r3 = device_hourly.r3 + excluded.r3,
+  r4 = device_hourly.r4 + excluded.r4,
+  app_version = excluded.app_version,
+  last_seq = excluded.last_seq,
+  last_ts = excluded.last_ts
+WHERE device_hourly.last_seq < excluded.last_seq
+`;
+
+/** 关闭匿名统计开关的最终上报：记录该设备曾关闭过开关（低频写入） */
+const DEVICE_OFF_UPSERT_SQL = `
+INSERT INTO device_off (device_id, off_at, last_seq)
+VALUES (?1, ?2, ?3)
+ON CONFLICT(device_id) DO UPDATE SET
+  off_at = excluded.off_at,
+  last_seq = excluded.last_seq
+WHERE device_off.last_seq < excluded.last_seq
+`;
+
 /** 设备维度汇总：一次全表读（行数 = 设备数）覆盖总计、环境画像、版本分布与时长分布 */
 const DEVICE_SELECT_SQL = `
-SELECT app_version, browser, browser_major, os, arch, lang, width_bucket,
+SELECT app_version, st_version, browser, browser_major, os, arch, lang, width_bucket,
        dark, standalone, touch, tz_offset, first_day, first_seen,
        opens_total, dur_ms_total,
        ${TOTAL_COLUMNS.join(', ')}
 FROM device
+`;
+
+/** 曾关闭匿名统计的设备数（表未迁移时由调用方兜底为空） */
+const DEVICE_OFF_SELECT_SQL = `
+SELECT COUNT(*) AS total
+FROM device_off
 `;
 
 /** 当日汇总：只扫当天行（行数 = 当日活跃设备数），同时给出当日去重设备数（日活） */
@@ -147,6 +223,37 @@ FROM device_daily
 WHERE day >= ?1 AND day <= ?2
 GROUP BY day
 ORDER BY day
+`;
+
+/** 小时粒度趋势：按 hour 索引范围扫描后按小时聚合（行数 = 小时数 × 小时活跃设备数） */
+const HOURLY_SELECT_SQL = `
+SELECT hour,
+       COUNT(*) AS devices,
+       COALESCE(SUM(opens), 0) AS opens,
+       COALESCE(SUM(dur_ms), 0) AS dur_ms,
+       COALESCE(SUM(sessions), 0) AS sessions,
+       ${PAGE_KEYS.map((key) => `COALESCE(SUM(p_${key}), 0) AS p_${key}`).join(',\n       ')}
+FROM device_hourly
+WHERE hour >= ?1 AND hour <= ?2
+GROUP BY hour
+ORDER BY hour
+`;
+
+/** 小时粒度累计用户：窗口内按设备首次出现时间（分钟精度）分桶 */
+const GROWTH_HOUR_SELECT_SQL = `
+SELECT strftime('%Y-%m-%dT%H', CAST(first_seen / 1000 AS INTEGER), 'unixepoch', '+8 hours') AS hour,
+       COUNT(*) AS added
+FROM device
+WHERE first_seen >= ?1 AND first_seen <= ?2
+GROUP BY hour
+ORDER BY hour
+`;
+
+/** 小时粒度累计用户基线：窗口开始前已出现的设备数 */
+const GROWTH_BASELINE_SELECT_SQL = `
+SELECT COUNT(*) AS total
+FROM device
+WHERE first_seen < ?1
 `;
 
 /** 按扩展版本聚合渲染耗时分桶（客户端只上报 5 档，均值由 summary.js 估算） */
@@ -244,7 +351,11 @@ async function handleCollect(request, env) {
 
 async function writeRow(db, payload, now) {
   const { env, counters } = payload;
-  const deviceStmt = db.prepare(DEVICE_UPSERT_SQL).bind(
+  // 上报时间精确到分钟：ts 由客户端给出并在 payload.js 归一，旧客户端回退服务端当前分钟
+  const ts = Number.isFinite(Number(payload.ts)) ? Number(payload.ts) : now;
+  const hour = beijingHourKey(ts);
+
+  const deviceArgs = [
     payload.id, now, payload.app,
     env.b, env.bv, env.os, env.arch, env.lang,
     env.w, env.dark, env.standalone, env.touch, payload.tz,
@@ -252,16 +363,63 @@ async function writeRow(db, payload, now) {
     counters.opens, counters.dur_ms,
     counters.pages.overview, counters.pages.stats, counters.pages.history, counters.pages.forecast,
     counters.pages.wallet, counters.pages.settings, counters.pages.help, counters.pages.about,
-  );
-  const dailyStmt = db.prepare(DEVICE_DAILY_UPSERT_SQL).bind(
+  ];
+  const dailyArgs = [
     payload.day, payload.id,
     counters.opens, counters.dur_ms,
     counters.pages.overview, counters.pages.stats, counters.pages.history, counters.pages.forecast,
     counters.pages.wallet, counters.pages.settings, counters.pages.help, counters.pages.about,
     counters.render[0], counters.render[1], counters.render[2], counters.render[3], counters.render[4],
-    payload.app, payload.seq, now,
-  );
-  await db.batch([deviceStmt, dailyStmt]);
+    payload.app, payload.seq, ts,
+  ];
+  const hourlyArgs = [hour, ...dailyArgs.slice(1)];
+
+  // 每次重试重新 prepare：batch 事务失败会整体回滚，last_seq 判据保证重放不会重复累加
+  const buildDevice = (withStVersion) => db
+    .prepare(withStVersion ? DEVICE_UPSERT_SQL : DEVICE_UPSERT_LEGACY_SQL)
+    .bind(...(withStVersion ? [...deviceArgs, env.stv] : deviceArgs));
+  const buildDaily = () => db.prepare(DEVICE_DAILY_UPSERT_SQL).bind(...dailyArgs);
+  const buildHourly = () => db.prepare(DEVICE_HOURLY_UPSERT_SQL).bind(...hourlyArgs);
+
+  const buildOff = () => db.prepare(DEVICE_OFF_UPSERT_SQL).bind(payload.id, ts, payload.seq);
+
+  if (Number(payload.off) === 1) {
+    // 关闭开关的最终上报：尽量同时写入关闭标记，任何一张可选表缺失都不阻断核心写入
+    try {
+      await db.batch([buildDevice(true), buildDaily(), buildHourly(), buildOff()]);
+      return;
+    } catch {}
+    try {
+      await db.batch([buildDevice(true), buildDaily(), buildOff()]);
+      return;
+    } catch {}
+    try {
+      await db.batch([buildDevice(true), buildDaily()]);
+      return;
+    } catch {}
+    try {
+      await db.batch([buildDevice(false), buildDaily(), buildOff()]);
+      return;
+    } catch {}
+    await db.batch([buildDevice(false), buildDaily()]);
+    return;
+  }
+
+  try {
+    await db.batch([buildDevice(true), buildDaily(), buildHourly()]);
+    return;
+  } catch {
+    // 继续走降级链：可能是 device_hourly 表缺失，也可能是 device.st_version 列缺失
+  }
+  try {
+    // 小时表尚未迁移（migrate-hourly.sql）：保留原有的设备 + 日两条写入
+    await db.batch([buildDevice(true), buildDaily()]);
+    return;
+  } catch {
+    // 设备表的 st_version 列也尚未迁移（migrate-st-version.sql）：回退旧列集合。
+    // 这一步保证未迁移的既有库与旧版本扩展照常上报，/collect 始终返回 204。
+  }
+  await db.batch([buildDevice(false), buildDaily()]);
 }
 
 /* ---------------------------------- 看板接口 ---------------------------------- */
@@ -273,8 +431,16 @@ function handleSummary(request, env) {
 function handleTrend(request, env) {
   return respondWithCache(request, env, async () => {
     const url = new URL(request.url);
-    const window = normalizeWindow(url.searchParams.get('from'), url.searchParams.get('to'), Date.now());
     const parts = String(url.searchParams.get('parts') || 'both');
+    // bucket=hour 时 from/to 为北京时间小时键（YYYY-MM-DDTHH），缺省为最近 24 小时
+    if (url.searchParams.get('bucket') === 'hour') {
+      const window = normalizeHourWindow(url.searchParams.get('from'), url.searchParams.get('to'), Date.now());
+      return buildTrend(env, window, {
+        hourly: parts === 'both' || parts === 'daily',
+        render: parts === 'both' || parts === 'render',
+      });
+    }
+    const window = normalizeWindow(url.searchParams.get('from'), url.searchParams.get('to'), Date.now());
     return buildTrend(env, window, {
       daily: parts === 'both' || parts === 'daily',
       render: parts === 'both' || parts === 'render',
@@ -289,9 +455,11 @@ function handleTrend(request, env) {
 async function buildSummary(env) {
   const now = Date.now();
   const today = beijingDayKey(now);
-  const [deviceRows, todayRows] = await Promise.all([
+  const [deviceRows, todayRows, disabledRows] = await Promise.all([
     queryAll(env, DEVICE_SELECT_SQL),
     queryAll(env, TODAY_SELECT_SQL, [today]),
+    // 关闭标记表可能尚未迁移：查询失败按 0 处理，不能影响整个看板
+    queryAll(env, DEVICE_OFF_SELECT_SQL).catch(() => []),
   ]);
 
   const users = deviceRows.length;
@@ -333,6 +501,7 @@ async function buildSummary(env) {
       todayActiveUsers: numberOrZero(todayAgg.devices),
       todayOpens: numberOrZero(todayAgg.opens),
       todayDurMs: numberOrZero(todayAgg.dur_ms),
+      disabledUsers: numberOrZero(disabledRows?.[0]?.total),
     },
     userGrowth,
     pages: { ...pages, total: pageTotal },
@@ -344,9 +513,12 @@ async function buildSummary(env) {
 
 /** 趋势类汇总：按天聚合（一次范围扫描）+ 按版本聚合渲染耗时（一次范围扫描） */
 async function buildTrend(env, window, parts) {
+  const hourlyMode = !!parts.hourly;
   const payload = {
     generatedAt: Date.now(),
-    window: { from: window.from, to: window.to, days: window.days },
+    window: hourlyMode
+      ? { from: window.from, to: window.to, hours: window.hours, bucket: 'hour' }
+      : { from: window.from, to: window.to, days: window.days },
   };
   const tasks = [];
 
@@ -373,8 +545,28 @@ async function buildTrend(env, window, parts) {
     }));
   }
 
+  if (hourlyMode) {
+    // 小时粒度：趋势行按小时补全（缺失补 0），累计用户以窗口开始前的设备数为基线
+    const fromMs = hourKeyToMs(window.from);
+    const toMs = hourKeyToMs(window.to) + HOUR_MS - 1;
+    tasks.push(Promise.all([
+      queryAll(env, HOURLY_SELECT_SQL, [window.from, window.to]),
+      queryAll(env, GROWTH_HOUR_SELECT_SQL, [fromMs, toMs]),
+      queryAll(env, GROWTH_BASELINE_SELECT_SQL, [fromMs]),
+    ]).then(([rows, growthRows, baselineRows]) => {
+      fillHourlyTrend(payload, window, rows, growthRows, baselineRows);
+    }).catch(() => {
+      // 既有库尚未执行 migrate-hourly.sql：返回全 0 曲线并标记，避免看板整体报错
+      fillHourlyTrend(payload, window, [], [], []);
+      payload.hourlyError = true;
+    }));
+  }
+
   if (parts.render) {
-    tasks.push(queryAll(env, RENDER_SELECT_SQL, [window.from, window.to]).then((rows) => {
+    // 小时模式的渲染图仍按天聚合：只取小时窗口覆盖到的日期范围
+    const renderFrom = hourlyMode ? String(window.from).slice(0, 10) : window.from;
+    const renderTo = hourlyMode ? String(window.to).slice(0, 10) : window.to;
+    tasks.push(queryAll(env, RENDER_SELECT_SQL, [renderFrom, renderTo]).then((rows) => {
       payload.renderByVersion = rows
         .map((row) => {
           const buckets = RENDER_INDEXES.map((index) => numberOrZero(row[`r${index}`]));
@@ -397,6 +589,42 @@ async function buildTrend(env, window, parts) {
 
   await Promise.all(tasks);
   return payload;
+}
+
+/**
+ * 把小时聚合结果补全为连续小时序列，并计算累计用户基线。
+ * 独立成函数便于小时表缺失时以全 0 数据兜底。
+ */
+function fillHourlyTrend(payload, window, rows, growthRows, baselineRows) {
+  const rowsByHour = new Map((rows || []).map((row) => [String(row.hour), row]));
+  const addedByHour = new Map((growthRows || []).map((row) => [String(row.hour), numberOrZero(row.added)]));
+  let running = numberOrZero(baselineRows?.[0]?.total);
+  payload.hourly = [];
+  payload.userGrowthHourly = [];
+  let cursor = window.from;
+  for (let i = 0; i < window.hours; i++) {
+    const row = rowsByHour.get(cursor);
+    const hourPages = {};
+    let hourTotal = 0;
+    for (const key of PAGE_KEYS) {
+      const value = row ? numberOrZero(row[`p_${key}`]) : 0;
+      hourPages[key] = value;
+      hourTotal += value;
+    }
+    payload.hourly.push({
+      hour: cursor,
+      devices: row ? numberOrZero(row.devices) : 0,
+      opens: row ? numberOrZero(row.opens) : 0,
+      durMs: row ? numberOrZero(row.dur_ms) : 0,
+      sessions: row ? numberOrZero(row.sessions) : 0,
+      pageTotal: hourTotal,
+      pages: hourPages,
+    });
+    const added = addedByHour.get(cursor) || 0;
+    running += added;
+    payload.userGrowthHourly.push({ hour: cursor, added, cumulative: running });
+    cursor = shiftHour(cursor, 1);
+  }
 }
 
 /**
@@ -450,6 +678,10 @@ async function prune(env) {
   const cutoff = beijingDayKey(Date.now() - RETENTION_DAYS * 86400000);
   try {
     await env.DB.prepare('DELETE FROM device_daily WHERE day < ?1').bind(cutoff).run();
+  } catch {}
+  const hourCutoff = beijingHourKey(Date.now() - HOURLY_RETENTION_DAYS * 86400000);
+  try {
+    await env.DB.prepare('DELETE FROM device_hourly WHERE hour < ?1').bind(hourCutoff).run();
   } catch {}
 }
 

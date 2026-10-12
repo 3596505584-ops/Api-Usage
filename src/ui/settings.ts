@@ -16,7 +16,7 @@ import { syncPricingFromModelsDev, previewSync, fetchModelsDevCatalog, removeSyn
 import { fetchLiveRate } from '../services/currency';
 import { toast } from '../utils/logger';
 import { repository } from '../data/repository';
-import { telemetryStatus, resetIdentity } from '../services/telemetry';
+import { telemetryStatus, resetIdentity, flushTelemetryOnDisable } from '../services/telemetry';
 
 function esc(s: string) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
@@ -169,7 +169,7 @@ export function renderSettings(doc: Document) {
       <!-- 匿名使用统计（默认开启，可随时关闭） -->
       <div class="ds-card">
         <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);">匿名使用统计</span><label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;"><input type="checkbox" id="aus-telemetry-enabled" style="opacity:0;width:0;height:0;"><span style="position:absolute;inset:0;background:var(--ds-border);border-radius:12px;transition:0.2s;"><span id="aus-telemetry-slider" style="position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:var(--ds-card-inner);border-radius:50%;transition:0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.15);"></span></span></label></div>
-        <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-top:6px;line-height:1.6;">仅匿名上报浏览器环境参数（浏览器名与版本、系统、架构、语言、窄屏分桶、standalone、时区）、扩展版本与面板渲染耗时分桶等开发数据；<strong>不含对话内容、密钥等任何隐私信息，数据经过匿名化处理，仅用于开发与完善兼容性。</strong>关闭后立即停止采集与上报。<a href="https://janmk1453.github.io/Api-Usage/#privacy" target="_blank" rel="noreferrer" style="color:var(--ds-text);text-decoration:underline;">隐私声明</a></div>
+        <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-top:6px;line-height:1.6;">仅匿名上报浏览器环境参数（浏览器名与版本、系统、架构、语言、窄屏分桶、standalone、时区）、上报时刻（分钟精度）、扩展版本、酒馆版本号与面板渲染耗时分桶等开发数据；<strong>不含对话内容、密钥等任何隐私信息，数据经过匿名化处理，仅用于开发与完善兼容性。</strong>关闭后立即停止采集与上报。<a href="https://janmk1453.github.io/Api-Usage/#privacy" target="_blank" rel="noreferrer" style="color:var(--ds-text);text-decoration:underline;">隐私声明</a></div>
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;flex-wrap:wrap;"><span id="aus-telemetry-id" style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);">匿名标识：待生成</span><button id="aus-telemetry-reset" style="padding:6px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:var(--aus-fs-sm);cursor:pointer;">重置匿名标识</button></div>
         <div id="aus-telemetry-status" style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);margin-top:6px;"></div>
       </div>
@@ -469,9 +469,14 @@ export function renderSettings(doc: Document) {
   doc.getElementById('aus-reset-dot')!.onclick = () => { try { localStorage.removeItem('ds_ds_peak_dot_pos'); const dot = (window.parent as any)?.document?.getElementById('aus-peak-dot-indicator') as HTMLElement | null; if (dot) { dot.style.left = ''; dot.style.top = '60px'; dot.style.right = '16px'; } } catch {} alert('已重置'); };
   const telemetryToggle = doc.getElementById('aus-telemetry-enabled') as HTMLInputElement | null;
   if (telemetryToggle) telemetryToggle.onchange = (e: any) => {
-    (state.settings as any).telemetryEnabled = !!e.target.checked;
+    const enabled = !!e.target.checked;
+    // 关闭开关前先发一次带关闭标记的最终上报；必须在写入 settings 之前触发
+    if (!enabled) {
+      try { flushTelemetryOnDisable(); } catch {}
+    }
+    (state.settings as any).telemetryEnabled = enabled;
     const slider = doc.getElementById('aus-telemetry-slider') as HTMLElement | null;
-    if (slider) slider.style.left = e.target.checked ? '23px' : '3px';
+    if (slider) slider.style.left = enabled ? '23px' : '3px';
     saveHot({ settings: state.settings });
     renderTelemetryStatus(doc);
   };

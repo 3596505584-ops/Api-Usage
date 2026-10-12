@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import worker from './worker.js';
-import { beijingDayKey, offsetDayKey } from './summary.js';
+import { beijingDayKey, beijingHourKey, offsetDayKey, shiftHour } from './summary.js';
 
 const TOKEN = 'test-token';
 const MIN = 60 * 1000;
@@ -12,12 +12,14 @@ function authHeaders() {
 }
 
 /** 按 SQL 特征返回预置结果，避免测试里依赖真实 SQLite 引擎 */
-function createDb(fixtures) {
+function createDb(fixtures, options) {
+  const opts = options || {};
   const calls = [];
   return {
     calls,
     prepare(sql) {
       const stmt = {
+        sql,
         params: [],
         bind(...params) {
           stmt.params = params;
@@ -25,6 +27,10 @@ function createDb(fixtures) {
         },
         async all() {
           calls.push({ sql, params: stmt.params });
+          if (sql.includes('FROM device_off')) return { results: fixtures.deviceOff };
+          if (sql.includes('strftime')) return { results: fixtures.growthHourly };
+          if (sql.includes('first_seen <')) return { results: fixtures.growthBaseline };
+          if (sql.includes('GROUP BY hour')) return { results: fixtures.hourly };
           if (sql.includes('GROUP BY day')) return { results: fixtures.daily };
           if (sql.includes('GROUP BY app_version')) return { results: fixtures.render };
           if (sql.includes('FROM device_daily')) return { results: fixtures.today };
@@ -38,7 +44,21 @@ function createDb(fixtures) {
       return stmt;
     },
     async batch(stmts) {
-      calls.push({ batch: stmts.length });
+      calls.push({
+        batch: stmts.length,
+        sqls: stmts.map((stmt) => stmt.sql),
+        params: stmts.map((stmt) => stmt.params),
+      });
+      // 模拟既有库尚未执行 migrate-hourly.sql：带小时表的三条事务整体失败
+      if (opts.failTripleBatch && stmts.length === 3) throw new Error('no such table: device_hourly');
+      // 模拟既有库尚未执行 migrate-st-version.sql：含 st_version 列的语句整体失败
+      if (opts.failStvColumn && stmts[0] && String(stmts[0].sql).includes('st_version')) {
+        throw new Error('no such column: st_version');
+      }
+      // 模拟既有库尚未执行 migrate-device-off.sql：含关闭标记表的语句整体失败
+      if (opts.failOffTable && stmts.some((stmt) => String(stmt.sql).includes('device_off'))) {
+        throw new Error('no such table: device_off');
+      }
       return stmts.map(() => ({ success: true }));
     },
   };
@@ -49,7 +69,7 @@ function deviceRow(overrides) {
     app_version: '3.1.2',
     browser: 'Chrome', browser_major: '141', os: 'Windows', arch: 'x86_64',
     lang: 'zh-CN', width_bucket: 'gt1024', dark: 0, standalone: 0, touch: 0,
-    tz_offset: 8, first_day: YESTERDAY, first_seen: 1000,
+    tz_offset: 8, first_day: YESTERDAY, first_seen: 1000, st_version: '1.13.5',
     opens_total: 5, dur_ms_total: 8 * MIN,
   };
   for (const key of ['overview', 'stats', 'history', 'forecast', 'wallet', 'settings', 'help', 'about']) {
@@ -96,14 +116,36 @@ const RENDER = [
   },
 ];
 
-function makeEnv(fixtures = {}) {
+const PREV_HOUR = shiftHour(beijingHourKey(), -1);
+const NOW_HOUR = beijingHourKey();
+
+const HOURLY = [
+  {
+    hour: PREV_HOUR, devices: 1, opens: 2, dur_ms: 2 * MIN, sessions: 1,
+    p_overview: 2, p_stats: 0, p_history: 0, p_forecast: 0, p_wallet: 0,
+    p_settings: 0, p_help: 0, p_about: 0,
+  },
+  {
+    hour: NOW_HOUR, devices: 2, opens: 3, dur_ms: 3 * MIN, sessions: 2,
+    p_overview: 1, p_stats: 1, p_history: 0, p_forecast: 0, p_wallet: 4,
+    p_settings: 0, p_help: 0, p_about: 0,
+  },
+];
+
+const GROWTH_HOURLY = [{ hour: NOW_HOUR, added: 1 }];
+
+function makeEnv(fixtures = {}, options = {}) {
   const db = createDb({
     devices: DEVICES,
     daily: DAILY,
     today: [{ devices: 2, opens: 3, dur_ms: 4 * MIN }],
     render: RENDER,
+    hourly: HOURLY,
+    growthHourly: GROWTH_HOURLY,
+    growthBaseline: [{ total: 5 }],
+    deviceOff: [{ total: 3 }],
     ...fixtures,
-  });
+  }, options);
   return { env: { DB: db, DASHBOARD_TOKEN: TOKEN }, db };
 }
 
@@ -133,6 +175,9 @@ describe('鉴权与健康检查', () => {
     const html = await res.text();
     expect(html).toContain('总计速览');
     expect(html).toContain('/api/trend');
+    // 四个趋势图可选按小时粒度，并提供最近 24 小时快捷选项
+    expect(html).toContain('data-bucket="hour"');
+    expect(html).toContain('最近 24 小时');
     // 图表库首选同源自托管，公共 CDN 仅作兜底
     expect(html).toContain("'/vendor/echarts.js?v=6.1.0-simple'");
     expect(html).toContain('echarts@6.1.0');
@@ -149,35 +194,115 @@ describe('鉴权与健康检查', () => {
   });
 });
 
+/** 旧版本扩展的上报体：字段与 v1 契约一致，且没有新增的 ts 字段 */
+function legacyBody(extra = {}) {
+  return JSON.stringify({
+    v: 1,
+    id: '0123456789abcdef0123456789abcdef',
+    seq: 7,
+    day: TODAY,
+    tz: 8,
+    app: '3.1.2',
+    env: {
+      b: 'Chrome', bv: '141', os: 'Windows', arch: 'x86_64', lang: 'zh-CN',
+      w: 'gt1024', dark: false, standalone: false, touch: false,
+    },
+    s: {
+      opens: 2,
+      dur_ms: 60000,
+      pages: { overview: 2, stats: 0, history: 0, forecast: 0, wallet: 0, settings: 0, help: 0, about: 0 },
+      render: [1, 0, 0, 0, 0],
+    },
+    daily: true,
+    ...extra,
+  });
+}
+
 describe('/collect 写入契约保持不变', () => {
-  it('合法上报返回 204 且只写一行设备数据与一行日数据', async () => {
+  it('合法上报返回 204 且分别写入设备、日与小时数据', async () => {
     const { env, db } = makeEnv();
-    const body = JSON.stringify({
-      v: 1,
-      id: '0123456789abcdef0123456789abcdef',
-      seq: 7,
-      day: TODAY,
-      tz: 8,
-      app: '3.1.2',
-      env: {
-        b: 'Chrome', bv: '141', os: 'Windows', arch: 'x86_64', lang: 'zh-CN',
-        w: 'gt1024', dark: false, standalone: false, touch: false,
-      },
-      s: {
-        opens: 2,
-        dur_ms: 60000,
-        pages: { overview: 2, stats: 0, history: 0, forecast: 0, wallet: 0, settings: 0, help: 0, about: 0 },
-        render: [1, 0, 0, 0, 0],
-      },
-      daily: true,
-    });
     const res = await worker.fetch(new Request('https://stat.example.com/collect', {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-      body,
+      body: legacyBody({
+        ts: Date.now() - 61000,
+        env: {
+          b: 'Chrome', bv: '141', os: 'Windows', arch: 'x86_64', lang: 'zh-CN',
+          w: 'gt1024', dark: false, standalone: false, touch: false, stv: '1.13.5',
+        },
+      }),
     }), env, { waitUntil() {} });
     expect(res.status).toBe(204);
-    expect(db.calls.find((call) => call.batch)).toEqual({ batch: 2 });
+    const batch = db.calls.find((call) => call.batch);
+    expect(batch.batch).toBe(3);
+    expect(batch.sqls[0]).toContain('INSERT INTO device');
+    expect(batch.sqls[1]).toContain('INSERT INTO device_daily');
+    expect(batch.sqls[2]).toContain('INSERT INTO device_hourly');
+    // 酒馆版本号列在设备语句末位；小时桶为北京时间小时键；时间戳为分钟精度
+    expect(batch.params[0][25]).toBe('1.13.5');
+    expect(batch.params[2][0]).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}$/);
+    expect(batch.params[2][19] % 60000).toBe(0);
+  });
+
+  it('旧版本上报（无 ts 字段）仍写入设备、日与小时数据', async () => {
+    // 该上报体与旧版扩展完全一致：没有 ts 字段
+    expect(JSON.parse(legacyBody()).ts).toBeUndefined();
+    const { env, db } = makeEnv();
+    const res = await worker.fetch(new Request('https://stat.example.com/collect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+      body: legacyBody(),
+    }), env, { waitUntil() {} });
+    expect(res.status).toBe(204);
+    expect(db.calls.find((call) => call.batch && call.batch === 3)).toBeTruthy();
+  });
+
+  it('小时表尚未迁移时降级为原有两条写入，上报仍返回 204', async () => {
+    const { env, db } = makeEnv({}, { failTripleBatch: true });
+    const res = await worker.fetch(new Request('https://stat.example.com/collect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+      body: legacyBody(),
+    }), env, { waitUntil() {} });
+    expect(res.status).toBe(204);
+    expect(db.calls.filter((call) => call.batch).map((call) => call.batch)).toEqual([3, 2]);
+  });
+
+  it('关闭开关的最终上报额外写入关闭标记', async () => {
+    const { env, db } = makeEnv();
+    const res = await worker.fetch(new Request('https://stat.example.com/collect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+      body: legacyBody({ off: true }),
+    }), env, { waitUntil() {} });
+    expect(res.status).toBe(204);
+    const batch = db.calls.find((call) => call.batch);
+    expect(batch.batch).toBe(4);
+    expect(batch.sqls[3]).toContain('INSERT INTO device_off');
+  });
+
+  it('关闭标记表尚未迁移时降级，关闭上报仍返回 204', async () => {
+    const { env, db } = makeEnv({}, { failOffTable: true });
+    const res = await worker.fetch(new Request('https://stat.example.com/collect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+      body: legacyBody({ off: true }),
+    }), env, { waitUntil() {} });
+    expect(res.status).toBe(204);
+    expect(db.calls.filter((call) => call.batch).map((call) => call.batch)).toEqual([4, 3, 2]);
+  });
+
+  it('酒馆版本列尚未迁移时回退旧列集合，上报仍返回 204', async () => {
+    const { env, db } = makeEnv({}, { failStvColumn: true });
+    const res = await worker.fetch(new Request('https://stat.example.com/collect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+      body: legacyBody(),
+    }), env, { waitUntil() {} });
+    expect(res.status).toBe(204);
+    const batches = db.calls.filter((call) => call.batch);
+    expect(batches.map((call) => call.batch)).toEqual([3, 2, 2]);
+    expect(batches[2].sqls[0]).not.toContain('st_version');
   });
 
   it('非法上报返回 400 且不写库', async () => {
@@ -208,6 +333,7 @@ describe('/api/summary 总计口径', () => {
     expect(data.totals.todayActiveUsers).toBe(2);
     expect(data.totals.todayOpens).toBe(3);
     expect(data.totals.todayDurMs).toBe(4 * MIN);
+    expect(data.totals.disabledUsers).toBe(3);
 
     expect(data.userGrowth).toEqual([
       { day: YESTERDAY, added: 1, cumulative: 1 },
@@ -221,6 +347,7 @@ describe('/api/summary 总计口径', () => {
       { label: 'Firefox', count: 1 },
     ]);
     expect(data.env.browserVersion).toHaveLength(2);
+    expect(data.env.stVersion).toEqual([{ label: '1.13.5', count: 2 }]);
     expect(data.env.dark[0]).toEqual({ label: '浅色偏好', count: 1 });
     expect(data.env.tz.map((item) => item.label)).toEqual(['UTC+8', 'UTC+9']);
     expect(data.durationHistogram).toHaveLength(9);
@@ -230,13 +357,14 @@ describe('/api/summary 总计口径', () => {
   });
 
   it('空库时返回零值而不是报错', async () => {
-    const { env } = makeEnv({ devices: [], today: [] });
+    const { env } = makeEnv({ devices: [], today: [], deviceOff: [{ total: 0 }] });
     const res = await get('/api/summary', env);
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.totals).toEqual({
       users: 0, opens: 0, durMs: 0, avgDurMsPerUser: 0,
       todayUsers: 0, todayActiveUsers: 0, todayOpens: 0, todayDurMs: 0,
+      disabledUsers: 0,
     });
     expect(data.userGrowth).toEqual([]);
     expect(data.env.browser).toEqual([]);
@@ -278,6 +406,32 @@ describe('/api/trend 趋势口径', () => {
     expect(renderOnly.renderByVersion).toHaveLength(2);
   });
 
+  it('bucket=hour 返回连续小时序列与累计用户基线', async () => {
+    const { env } = makeEnv();
+    const res = await get('/api/trend?bucket=hour&from=' + PREV_HOUR + '&to=' + NOW_HOUR + '&parts=daily', env);
+    const data = await res.json();
+    expect(data.window).toEqual({ from: PREV_HOUR, to: NOW_HOUR, hours: 2, bucket: 'hour' });
+    expect(data.hourly).toHaveLength(2);
+    expect(data.hourly[0].hour).toBe(PREV_HOUR);
+    expect(data.hourly[0].opens).toBe(2);
+    expect(data.hourly[1].opens).toBe(3);
+    expect(data.hourly[1].pages.wallet).toBe(4);
+    expect(data.userGrowthHourly).toEqual([
+      { hour: PREV_HOUR, added: 0, cumulative: 5 },
+      { hour: NOW_HOUR, added: 1, cumulative: 6 },
+    ]);
+    expect(data.daily).toBeUndefined();
+  });
+
+  it('bucket=hour 缺省窗口为最近 24 小时并补全空桶', async () => {
+    const { env } = makeEnv();
+    const data = await (await get('/api/trend?bucket=hour&parts=daily', env)).json();
+    expect(data.window.hours).toBe(24);
+    expect(data.window.bucket).toBe('hour');
+    expect(data.hourly).toHaveLength(24);
+    expect(data.userGrowthHourly).toHaveLength(24);
+  });
+
   it('非法与倒置区间被归一，末日期不晚于今天', async () => {
     const { env } = makeEnv();
     const future = await (await get('/api/trend?from=2026-10-05&to=2026-10-01', env)).json();
@@ -300,5 +454,9 @@ describe('定时清理', () => {
     const deletion = db.calls.find((call) => call.sql.includes('DELETE FROM device_daily'));
     expect(deletion).toBeTruthy();
     expect(deletion.params[0]).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+
+    const hourDeletion = db.calls.find((call) => call.sql.includes('DELETE FROM device_hourly'));
+    expect(hourDeletion).toBeTruthy();
+    expect(hourDeletion.params[0]).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}$/);
   });
 });

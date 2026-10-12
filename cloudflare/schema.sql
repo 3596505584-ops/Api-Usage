@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS device (
   first_seen INTEGER NOT NULL,
   last_seen INTEGER NOT NULL,
   app_version TEXT,
+  st_version TEXT,
   browser TEXT,
   browser_major TEXT,
   os TEXT,
@@ -64,6 +65,45 @@ CREATE TABLE IF NOT EXISTS device_daily (
 
 -- 按天聚合查询（日活、折线、窗口统计）走该索引，避免全表扫描
 CREATE INDEX IF NOT EXISTS idx_device_daily_day ON device_daily (day);
+
+-- 逐设备小时数据：每设备每「北京时间小时」一行，用于小时粒度趋势与最近 24 小时视图。
+-- hour 为北京时间小时键（YYYY-MM-DDTHH）；last_seq 保证重复/重发上报不重复累加。
+-- 只按较短保留期清理（见 worker.js），日粒度历史仍由 device_daily 长期保留。
+CREATE TABLE IF NOT EXISTS device_hourly (
+  hour TEXT NOT NULL,
+  device_id TEXT NOT NULL,
+  sessions INTEGER NOT NULL DEFAULT 0,
+  opens INTEGER NOT NULL DEFAULT 0,
+  dur_ms INTEGER NOT NULL DEFAULT 0,
+  p_overview INTEGER NOT NULL DEFAULT 0,
+  p_stats INTEGER NOT NULL DEFAULT 0,
+  p_history INTEGER NOT NULL DEFAULT 0,
+  p_forecast INTEGER NOT NULL DEFAULT 0,
+  p_wallet INTEGER NOT NULL DEFAULT 0,
+  p_settings INTEGER NOT NULL DEFAULT 0,
+  p_help INTEGER NOT NULL DEFAULT 0,
+  p_about INTEGER NOT NULL DEFAULT 0,
+  r0 INTEGER NOT NULL DEFAULT 0,
+  r1 INTEGER NOT NULL DEFAULT 0,
+  r2 INTEGER NOT NULL DEFAULT 0,
+  r3 INTEGER NOT NULL DEFAULT 0,
+  r4 INTEGER NOT NULL DEFAULT 0,
+  app_version TEXT,
+  last_seq INTEGER NOT NULL DEFAULT 0,
+  first_ts INTEGER,
+  last_ts INTEGER,
+  PRIMARY KEY (hour, device_id)
+);
+
+-- 小时粒度趋势按 hour 索引范围扫描
+CREATE INDEX IF NOT EXISTS idx_device_hourly_hour ON device_hourly (hour);
+
+-- 关闭匿名统计开关的最终上报：每台曾关闭过的设备一行（用于知晓关闭行为，不含其他信息）
+CREATE TABLE IF NOT EXISTS device_off (
+  device_id TEXT PRIMARY KEY,
+  off_at INTEGER NOT NULL,
+  last_seq INTEGER NOT NULL DEFAULT 0
+);
 
 -- 设备表按最近活跃排序/清理时使用
 CREATE INDEX IF NOT EXISTS idx_device_last_seen ON device (last_seen);

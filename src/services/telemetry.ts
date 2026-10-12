@@ -59,6 +59,8 @@ export type TelemetryEnv = {
   standalone: boolean;
   /** 是否粗指针/触屏设备 */
   touch: boolean;
+  /** 酒馆版本号（无法探测时为空字符串） */
+  stv: string;
 };
 
 export type TelemetryCounters = {
@@ -73,11 +75,15 @@ export type TelemetryPayload = {
   id: string;
   seq: number;
   day: string;
+  /** 上报时刻（毫秒），服务端归一为分钟精度用于小时粒度趋势；旧版本客户端不含该字段 */
+  ts: number;
   tz: number;
   app: string;
   env: TelemetryEnv;
   s: TelemetryCounters;
   daily: boolean;
+  /** 关闭匿名统计开关时的最后一次上报标记（仅该次为 true，服务端用于知晓关闭行为） */
+  off?: boolean;
 };
 
 type TelemetryIdentity = {
@@ -331,7 +337,61 @@ export function probeEnv(): TelemetryEnv {
     dark: mediaMatches('(prefers-color-scheme: dark)'),
     standalone: mediaMatches('(display-mode: standalone)') || n?.standalone === true,
     touch: mediaMatches('(pointer: coarse)') || Number(n?.maxTouchPoints || 0) > 0,
+    stv: tavernVersionFromContext(),
   };
+}
+
+/** 版本号清洗：只保留数字、字母与 . + -，最长 16 字符；不含数字视为无效 */
+export function sanitizeVersion(value: unknown): string {
+  if (typeof value !== 'string' && typeof value !== 'number') return '';
+  const text = String(value).trim().replace(/[^0-9A-Za-z.+-]/g, '').slice(0, 16);
+  return /\d/.test(text) ? text : '';
+}
+
+/** 从酒馆上下文/文档元信息同步读取版本号（取不到返回空字符串） */
+function tavernVersionFromContext(): string {
+  try {
+    const g: any = globalThis as any;
+    const st: any = g?.SillyTavern;
+    const ctx: any = typeof st?.getContext === 'function' ? st.getContext() : null;
+    const candidates = [ctx?.version, ctx?.stVersion, st?.version, g?.__ST_VERSION__];
+    for (const candidate of candidates) {
+      const version = sanitizeVersion(candidate);
+      if (version) return version;
+    }
+  } catch {}
+  try {
+    const doc: any = typeof document === 'undefined' ? null : document;
+    const meta = doc?.querySelector?.('meta[name="version"]');
+    const version = sanitizeVersion(meta?.getAttribute?.('content'));
+    if (version) return version;
+  } catch {}
+  return '';
+}
+
+/**
+ * 异步兜底：上下文没有版本号时读一次酒馆同源 `/version` 接口并缓存。
+ * 只发这一个本地请求，不携带任何统计内容；失败静默忽略。
+ */
+async function refineTavernVersion(): Promise<void> {
+  try {
+    if (!envCache || envCache.stv) return;
+    const g: any = globalThis as any;
+    const ctx: any = g?.SillyTavern?.getContext?.();
+    const headers = typeof ctx?.getRequestHeaders === 'function' ? ctx.getRequestHeaders() : undefined;
+    const res = await fetch('/version', { headers, credentials: 'same-origin' });
+    if (!res?.ok) return;
+    const text = await res.text();
+    let version = '';
+    try {
+      const data: any = JSON.parse(text);
+      version = sanitizeVersion(data?.version);
+    } catch {
+      // 非 JSON 响应只接受很短的文本，避免把登录页/错误页的 HTML 误当版本号
+      version = text.trim().length <= 16 ? sanitizeVersion(text) : '';
+    }
+    if (envCache && version) envCache.stv = version;
+  } catch {}
 }
 
 /** 尽力补充 CPU 架构（Chromium 高熵值，失败保持 unknown） */
@@ -515,6 +575,7 @@ function buildPayload(
   incoming: TelemetryCounters,
   pending: TelemetryPayload | null,
   now: number,
+  final = false,
 ): TelemetryPayload {
   const day = todayKey(now);
   // 上次发送失败的计数按白名单重新归一后再与本次合并，避免脏字段进入上报体
@@ -528,14 +589,18 @@ function buildPayload(
     : emptyCounters();
   const merged = pending ? mergeCounters(pendingCounters, incoming) : incoming;
   const seq = pending && Number.isFinite(Number(pending.seq)) ? Number(pending.seq) : identity.seq + 1;
+  const env = envCache ?? probeEnv();
+  // 异步补全可能还没回来，发送前再尝试一次同步来源，尽量让首报也带上酒馆版本号
+  if (!env.stv) env.stv = tavernVersionFromContext();
   return {
     v: 1,
     id: identity.id,
     seq: Math.max(1, seq),
     day,
+    ts: now,
     tz: roundTz(-new Date(now).getTimezoneOffset() / 60),
     app: appVersion(),
-    env: envCache ?? probeEnv(),
+    env,
     s: {
       opens: Math.max(0, Number(merged.opens) || 0),
       dur_ms: Math.max(0, Math.min(MAX_DURATION_MS, Number(merged.dur_ms) || 0)),
@@ -543,6 +608,7 @@ function buildPayload(
       render: merged.render,
     },
     daily: pending ? pending.daily === true : identity.day !== day,
+    ...(final ? { off: true } : {}),
   };
 }
 
@@ -631,9 +697,10 @@ async function sendWithRetry(payload: TelemetryPayload): Promise<void> {
  * 上报入口。数据为空且没有待发缓存时直接返回，不发请求。
  * close：关闭面板触发（主要路径）；hide：页面隐藏/卸载触发；manual：设置页手动触发。
  */
-export function flushTelemetry(reason: TelemetryFlushReason = 'close'): void {
+export function flushTelemetry(reason: TelemetryFlushReason = 'close', options?: { final?: boolean }): void {
   try {
-    if (!isTelemetryEnabled()) {
+    const final = options?.final === true;
+    if (!isTelemetryEnabled() && !final) {
       resetCounters();
       return;
     }
@@ -642,11 +709,12 @@ export function flushTelemetry(reason: TelemetryFlushReason = 'close'): void {
     const now = Date.now();
     counters.dur_ms = currentDuration(now);
     const gap = reason === 'hide' ? PASSIVE_FLUSH_GAP : CLOSE_FLUSH_GAP;
-    if (lastFlushAt && now - lastFlushAt < gap) return;
+    // 关闭开关的最后一次上报必须立即发出：不受节流与空数据判断限制
+    if (!final && lastFlushAt && now - lastFlushAt < gap) return;
     const identity = ensureIdentity();
     const pending = identity.pending && typeof identity.pending === 'object' ? identity.pending : null;
-    if (!pending && countersAreEmpty(counters)) return;
-    const payload = buildPayload(identity, counters, pending, now);
+    if (!final && !pending && countersAreEmpty(counters)) return;
+    const payload = buildPayload(identity, counters, pending, now, final);
     inFlight = true;
     reserveSeq(payload);
     if (reason === 'hide') {
@@ -661,6 +729,14 @@ export function flushTelemetry(reason: TelemetryFlushReason = 'close'): void {
     inFlight = false;
     log.warn('匿名统计上报失败', error);
   }
+}
+
+/**
+ * 关闭匿名统计开关时的最后一次上报。
+ * 必须在把 telemetryEnabled 写为 false 之前调用：本次会带上关闭标记并立即发送。
+ */
+export function flushTelemetryOnDisable(): void {
+  flushTelemetry('manual', { final: true });
 }
 
 /* ---------------------------------- 初始化 ---------------------------------- */
@@ -693,6 +769,7 @@ export function initTelemetry(): void {
     if (!identity.id) return;
     if (!envCache) envCache = probeEnv();
     refineArch();
+    void refineTavernVersion();
     bindLifecycle();
   } catch (error) {
     log.warn('匿名统计初始化失败', error);

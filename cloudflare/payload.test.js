@@ -3,6 +3,7 @@ import {
   MAX_BODY_BYTES,
   PAGE_KEYS,
   isDayKey,
+  normalizeMinute,
   normalizePayload,
   withinDayWindow,
 } from './payload.js';
@@ -19,7 +20,7 @@ function goodPayload(overrides = {}) {
     app: '3.1.1',
     env: {
       b: 'Chrome', bv: '141', os: 'Windows', arch: 'x86_64', lang: 'zh-CN',
-      w: 'gt1024', dark: true, standalone: false, touch: false,
+      w: 'gt1024', dark: true, standalone: false, touch: false, stv: '1.13.5',
     },
     s: {
       opens: 2,
@@ -50,6 +51,17 @@ describe('日期校验', () => {
   });
 });
 
+describe('上报时间归一（分钟精度）', () => {
+  it('向下取整到分钟，非法值与超出时钟偏差回退当前分钟', () => {
+    expect(normalizeMinute(NOW + 61 * 1000, NOW)).toBe(NOW + 60000);
+    expect(normalizeMinute(NOW, NOW)).toBe(NOW);
+    expect(normalizeMinute('bad', NOW)).toBe(NOW);
+    expect(normalizeMinute(null, NOW)).toBe(NOW);
+    expect(normalizeMinute(NOW - 3 * 86400000, NOW)).toBe(NOW);
+    expect(normalizeMinute(NOW + 30 * 60000, NOW)).toBe(NOW);
+  });
+});
+
 describe('上报体归一', () => {
   it('接受合法上报体并保留白名单字段', () => {
     const result = normalizePayload(goodPayload(), NOW);
@@ -61,13 +73,30 @@ describe('上报体归一', () => {
     expect(result.value.app).toBe('3.1.1');
     expect(result.value.env).toEqual({
       b: 'Chrome', bv: '141', os: 'Windows', arch: 'x86_64', lang: 'zh-CN',
-      w: 'gt1024', dark: 1, standalone: 0, touch: 0,
+      w: 'gt1024', dark: 1, standalone: 0, touch: 0, stv: '1.13.5',
     });
     expect(result.value.counters.opens).toBe(2);
     expect(result.value.counters.pages).toEqual({
       overview: 3, stats: 1, history: 0, forecast: 0, wallet: 1, settings: 0, help: 0, about: 0,
     });
     expect(result.value.counters.render).toEqual([2, 1, 0, 0, 0]);
+  });
+
+  it('保留分钟精度的上报时间，旧客户端缺失时回退当前分钟', () => {
+    const withTs = normalizePayload(goodPayload({ ts: NOW + 61 * 1000 }), NOW);
+    expect(withTs.ok).toBe(true);
+    expect(withTs.value.ts).toBe(NOW + 60000);
+
+    const legacy = normalizePayload(goodPayload(), NOW);
+    expect(legacy.ok).toBe(true);
+    expect(legacy.value.ts).toBe(NOW);
+  });
+
+  it('关闭标记只接受布尔真值', () => {
+    expect(normalizePayload(goodPayload({ off: true }), NOW).value.off).toBe(1);
+    expect(normalizePayload(goodPayload(), NOW).value.off).toBe(0);
+    expect(normalizePayload(goodPayload({ off: 'yes' }), NOW).value.off).toBe(0);
+    expect(normalizePayload(goodPayload({ off: 1 }), NOW).value.off).toBe(0);
   });
 
   it('丢弃未知字段，不写入任何额外内容', () => {
@@ -137,6 +166,23 @@ describe('上报体归一', () => {
     expect(result.value.env.standalone).toBe(0);
     expect(result.value.env.touch).toBe(0);
     expect(result.value.env.b).toBe('');
+  });
+
+  it('酒馆版本号清洗非法字符并在缺失时为空', () => {
+    const dirty = normalizePayload(goodPayload({
+      env: { ...goodPayload().env, stv: 'v1.13.5-beta/恶意' },
+    }), NOW);
+    expect(dirty.value.env.stv).toBe('v1.13.5-beta');
+
+    const missing = normalizePayload(goodPayload({
+      env: { ...goodPayload().env, stv: undefined },
+    }), NOW);
+    expect(missing.value.env.stv).toBe('');
+
+    const huge = normalizePayload(goodPayload({
+      env: { ...goodPayload().env, stv: '1'.repeat(64) },
+    }), NOW);
+    expect(huge.value.env.stv.length).toBe(16);
   });
 
   it('字符串超长会被截断', () => {

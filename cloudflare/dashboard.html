@@ -88,6 +88,8 @@
     padding-bottom: 8px; border-bottom: 1px dashed var(--border);
   }
   .range-bar .custom { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+  .range-bar [hidden] { display: none !important; }
+  .range-bar .range-group { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
   .range-bar input[type="date"] {
     font-family: inherit; font-size: 11.5px; color: var(--text); background: var(--inner);
     border: 1px solid var(--border); border-radius: 8px; padding: 3px 6px; min-height: 26px;
@@ -193,8 +195,11 @@
   const NEUTRAL = '#94A3B8';
   const BAR_LIMIT = 8;
   const DEFAULT_RANGE_DAYS = 30;
+  /** 小时粒度默认窗口（小时），与「最近 24 小时」按钮一致 */
+  const HOUR_RANGE_HOURS = 24;
+  const HOUR_MS = 60 * 60 * 1000;
   /** 看板构建标识：每次改动看板后更新，便于确认浏览器拿到的是否为最新页面 */
-  const BUILD_ID = '2026-10-12.2';
+  const BUILD_ID = '2026-10-12.4';
   /**
    * 图表库来源。第一组（同源自托管 + 最快的公共 CDN）**并发竞速**，先成功者胜出：
    * 不同网络的拦截策略不一样——有的网络挡第三方域名，有的网络大响应会被中断，
@@ -224,6 +229,7 @@
     { grid: 'grid-trend', id: 'daily-pages', title: '每日面板打开占比', note: '各面板当日打开次数占当日面板打开总数的百分比', kind: 'line', range: true, tall: true },
     { grid: 'grid-usage', id: 'pages', title: '面板累计打开次数', note: '全部时间累计', kind: 'bar' },
     { grid: 'grid-profile', id: 'versions', title: '扩展版本分布', note: '每台设备最近一次上报的版本', kind: 'bar' },
+    { grid: 'grid-profile', id: 'env-st-version', title: '酒馆版本', note: '每台设备最近一次上报', kind: 'bar' },
     { grid: 'grid-profile', id: 'arch', title: 'CPU 架构占比', note: '每台设备最近一次上报', kind: 'pie' },
     { grid: 'grid-profile', id: 'os', title: '操作系统占比', note: '每台设备最近一次上报', kind: 'pie' },
     { grid: 'grid-profile', id: 'env-browser', title: '浏览器', note: '每台设备最近一次上报', kind: 'bar' },
@@ -245,7 +251,7 @@
   /** 横条图的完整数据，供「展开全部 / 收起」重绘 */
   const barData = new Map();
   const ranges = {};
-  const dailyCache = new Map();
+  const trendCache = new Map();
   const renderCache = new Map();
   let echartsOk = false;
   let summary = null;
@@ -290,6 +296,25 @@
     return new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
   }
 
+  /** 北京时间小时键（YYYY-MM-DDTHH），与后端 summary.js#beijingHourKey 同口径 */
+  function beijingHourNow() {
+    return new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, 13);
+  }
+
+  /** 小时键按「墙上时间」平移，不依赖运行环境时区 */
+  function shiftHourKey(hour, deltaHours) {
+    const base = Date.parse(String(hour) + ':00:00Z');
+    if (Number.isNaN(base)) return hour;
+    return new Date(base + Number(deltaHours || 0) * 3600000).toISOString().slice(0, 13);
+  }
+
+  function hoursBetween(from, to) {
+    const a = Date.parse(String(from) + ':00:00Z');
+    const b = Date.parse(String(to) + ':00:00Z');
+    if (Number.isNaN(a) || Number.isNaN(b)) return 0;
+    return Math.round((b - a) / 3600000) + 1;
+  }
+
   function shiftDay(day, deltaDays) {
     const base = Date.parse(day + 'T00:00:00Z');
     if (Number.isNaN(base)) return day;
@@ -304,6 +329,9 @@
   }
 
   function shortDay(day) { return String(day).slice(5); }
+
+  /** 小时 X 轴标签：MM-DD HH:00，跨天也不会混淆 */
+  function shortHour(hour) { return String(hour).slice(5, 13).replace('T', ' ') + ':00'; }
 
   /** 与后端 summary.js#mergeTail 同口径：超出条目合并为「其他」 */
   function mergeTail(items, limit) {
@@ -448,7 +476,6 @@
       renderUsage(summary);
       renderProfile(summary);
       renderDuration(summary);
-      paintGrowth();
     }
     refreshAllTrends(false);
   }
@@ -505,10 +532,22 @@
 
   function rangeBarHtml(id) {
     return '<div class="range-bar" data-range="' + id + '">'
+      // 粒度可选：按天（默认，保留原时间控件）/ 按小时（含最近 24 小时）
+      + '<span class="range-group" data-mode="both">'
+      + '<button class="chip" type="button" data-bucket="day">按天</button>'
+      + '<button class="chip" type="button" data-bucket="hour">按小时</button>'
+      + '</span>'
+      + '<span class="range-group" data-mode="day">'
       + '<button class="chip" type="button" data-days="30">30 天</button>'
       + '<button class="chip" type="button" data-days="90">90 天</button>'
       + '<button class="chip" type="button" data-days="365">365 天</button>'
-      + '<span class="custom">'
+      + '</span>'
+      + '<span class="range-group" data-mode="hour" hidden>'
+      + '<button class="chip" type="button" data-hours="24">最近 24 小时</button>'
+      + '<button class="chip" type="button" data-hours="168">最近 7 天</button>'
+      + '<button class="chip" type="button" data-hours="720">最近 30 天</button>'
+      + '</span>'
+      + '<span class="custom" data-mode="day">'
       + '<input type="date" data-role="from" aria-label="开始日期">'
       + '<span class="tilde">~</span>'
       + '<input type="date" data-role="to" aria-label="结束日期">'
@@ -532,13 +571,17 @@
         + '<div class="fallback" id="fallback-' + panel.id + '" hidden></div>'
         + '<div class="panel-foot" id="foot-' + panel.id + '" hidden><button class="chip" type="button" data-role="expand">展开全部</button></div>';
       host.appendChild(section);
-      if (panel.range) ranges[panel.id] = defaultRange();
+      if (panel.range) ranges[panel.id] = defaultRange('day');
     }
   }
 
-  function defaultRange() {
+  function defaultRange(bucket) {
+    if (bucket === 'hour') {
+      const to = beijingHourNow();
+      return { bucket: 'hour', from: shiftHourKey(to, -(HOUR_RANGE_HOURS - 1)), to };
+    }
     const to = beijingToday();
-    return { from: shiftDay(to, -(DEFAULT_RANGE_DAYS - 1)), to: to };
+    return { bucket: 'day', from: shiftDay(to, -(DEFAULT_RANGE_DAYS - 1)), to };
   }
 
   /* ---------------------------------- 绘制 ---------------------------------- */
@@ -785,6 +828,7 @@
       card('累计打开面板', fmtInt(totals.opens), '全部时间累计次数'),
       card('累计使用时长', fmtDuration(totals.durMs), '设备会话时长之和'),
       card('人均使用时长', fmtDuration(totals.avgDurMsPerUser), '累计时长 ÷ 累计用户'),
+      card('曾关闭匿名统计', fmtInt(totals.disabledUsers), '历史上曾关闭过该开关的设备数'),
     ].join('');
     el('cards-today').innerHTML = [
       card('当日新增用户', fmtInt(totals.todayUsers), '首次出现在 ' + (data.today || '')),
@@ -808,6 +852,7 @@
     const env = data.env || {};
     // 版本类横条按版本号从高到低展示（drawBar 反转后数组首项显示在最顶）
     drawBar('versions', sortByVersionDesc(data.versions), { color: themeColors().orange });
+    drawBar('env-st-version', sortByVersionDesc(env.stVersion), { color: PIE_COLORS[3] });
     drawPie('arch', env.arch || []);
     drawPie('os', env.os || []);
     drawBar('env-browser', env.browser || [], { color: themeColors().blue });
@@ -826,7 +871,7 @@
 
   /* ---------------------------------- 趋势数据 ---------------------------------- */
 
-  function cacheKey(range) { return range.from + '|' + range.to; }
+  function cacheKey(range) { return (range.bucket || 'day') + '|' + range.from + '|' + range.to; }
 
   async function fetchJSON(url) {
     const res = await fetch(url, { headers: { Accept: 'application/json' }, cache: 'no-store' });
@@ -836,17 +881,31 @@
     return data;
   }
 
-  function ensureDaily(range, force) {
+  /**
+   * 按窗口粒度取趋势数据：
+   * - 按天：取 daily 行，累计用户沿用 summary.userGrowth；
+   * - 按小时：取 hourly 行与 userGrowthHourly（后端已按小时补全并带窗口前基线）。
+   */
+  function ensureTrend(range, force) {
     const key = cacheKey(range);
-    if (force) dailyCache.delete(key);
-    if (!dailyCache.has(key)) {
-      const url = '/api/trend?from=' + range.from + '&to=' + range.to + '&parts=daily' + (force ? '&force=1' : '');
-      const promise = fetchJSON(url)
-        .then((data) => ({ rows: data.daily || [], cache: data.__cache, generatedAt: data.generatedAt }))
-        .catch((error) => { dailyCache.delete(key); throw error; });
-      dailyCache.set(key, promise);
+    if (force) trendCache.delete(key);
+    if (!trendCache.has(key)) {
+      const bucket = range.bucket || 'day';
+      const query = 'from=' + encodeURIComponent(range.from) + '&to=' + encodeURIComponent(range.to)
+        + '&parts=daily' + (bucket === 'hour' ? '&bucket=hour' : '') + (force ? '&force=1' : '');
+      const promise = fetchJSON('/api/trend?' + query)
+        .then((data) => ({
+          bucket,
+          rows: bucket === 'hour' ? (data.hourly || []) : (data.daily || []),
+          growthRows: bucket === 'hour' ? (data.userGrowthHourly || []) : ((summary && summary.userGrowth) || []),
+          error: data.hourlyError === true,
+          cache: data.__cache,
+          generatedAt: data.generatedAt,
+        }))
+        .catch((error) => { trendCache.delete(key); throw error; });
+      trendCache.set(key, promise);
     }
-    return dailyCache.get(key);
+    return trendCache.get(key);
   }
 
   function ensureRender(range, force) {
@@ -862,37 +921,45 @@
     return renderCache.get(key);
   }
 
-  function paintGrowth() {
-    const range = ranges.growth;
-    const all = (summary && summary.userGrowth) || [];
-    const rows = all.filter((row) => row.day >= range.from && row.day <= range.to);
+  /** X 轴标签：按天用 MM-DD，按小时用 MM-DD HH:00 */
+  function trendLabel(range, row) {
+    return (range.bucket || 'day') === 'hour'
+      ? shortHour(row.hour || row.day)
+      : shortDay(row.day || row.hour);
+  }
+
+  function paintGrowth(range, result) {
+    const rows = (result.growthRows || []).filter((row) => {
+      const key = row.hour || row.day;
+      return key >= range.from && key <= range.to;
+    });
     drawLine('growth',
-      rows.map((row) => shortDay(row.day)),
+      rows.map((row) => trendLabel(range, row)),
       [{ name: '累计用户', color: themeColors().orange, area: true, data: rows.map((row) => row.cumulative) }],
       { yName: '累计用户' });
   }
 
-  function paintDailyOpens(rows) {
+  function paintDailyOpens(range, result) {
     drawLine('daily-opens',
-      rows.map((row) => shortDay(row.day)),
-      [{ name: '打开次数', color: themeColors().orange, area: true, data: rows.map((row) => row.opens) }],
+      result.rows.map((row) => trendLabel(range, row)),
+      [{ name: '打开次数', color: themeColors().orange, area: true, data: result.rows.map((row) => row.opens) }],
       { yName: '次数' });
   }
 
-  function paintDailyUsers(rows) {
+  function paintDailyUsers(range, result) {
     drawLine('daily-users',
-      rows.map((row) => shortDay(row.day)),
-      [{ name: '不重复用户', color: themeColors().blue, area: true, data: rows.map((row) => row.devices) }],
+      result.rows.map((row) => trendLabel(range, row)),
+      [{ name: '不重复用户', color: themeColors().blue, area: true, data: result.rows.map((row) => row.devices) }],
       { yName: '用户数' });
   }
 
-  function paintDailyPages(rows) {
+  function paintDailyPages(range, result) {
     drawLine('daily-pages',
-      rows.map((row) => shortDay(row.day)),
+      result.rows.map((row) => trendLabel(range, row)),
       PAGE_KEYS.map((key, index) => ({
         name: PAGE_LABELS[key],
         color: PAGE_COLORS[index % PAGE_COLORS.length],
-        data: rows.map((row) => {
+        data: result.rows.map((row) => {
           const total = Number(row.pageTotal) || 0;
           if (!total) return null;
           return Math.round(((Number(row.pages && row.pages[key]) || 0) / total) * 1000) / 10;
@@ -931,20 +998,28 @@
     if (button) button.textContent = expanded.has(id) ? '收起' : '展开全部';
   }
 
-  async function refreshDailyViews(force) {
-    const ids = ['daily-opens', 'daily-users', 'daily-pages'];
-    await Promise.all(ids.map(async (id) => {
-      const range = ranges[id];
-      try {
-        const result = await ensureDaily(range, force);
-        if (id === 'daily-opens') paintDailyOpens(result.rows);
-        if (id === 'daily-users') paintDailyUsers(result.rows);
-        if (id === 'daily-pages') paintDailyPages(result.rows);
-        noteCache(result);
-      } catch (error) {
-        showPanelError(id, error);
+  const TREND_IDS = ['growth', 'daily-opens', 'daily-users', 'daily-pages'];
+
+  async function refreshTrendView(id, force) {
+    const range = ranges[id];
+    try {
+      const result = await ensureTrend(range, force);
+      if (result.error) {
+        showPanelError(id, new Error('小时数据表尚未迁移，请先执行 cloudflare/migrate-hourly.sql'));
+        return;
       }
-    }));
+      if (id === 'growth') paintGrowth(range, result);
+      if (id === 'daily-opens') paintDailyOpens(range, result);
+      if (id === 'daily-users') paintDailyUsers(range, result);
+      if (id === 'daily-pages') paintDailyPages(range, result);
+      noteCache(result);
+    } catch (error) {
+      showPanelError(id, error);
+    }
+  }
+
+  async function refreshTrendViews(force) {
+    await Promise.all(TREND_IDS.map((id) => refreshTrendView(id, force)));
   }
 
   async function refreshRenderView(force) {
@@ -1001,7 +1076,6 @@
     renderUsage(data);
     renderProfile(data);
     renderDuration(data);
-    paintGrowth();
     noteCache({ cache: data.__cache });
     const generated = new Date(data.generatedAt).toLocaleString('zh-CN', { hour12: false });
     setMeta('数据生成于 <b>' + escapeHtml(generated) + '</b> · 今日（北京时间）<b>'
@@ -1010,7 +1084,7 @@
 
   async function refreshAllTrends(force) {
     await Promise.all([
-      refreshDailyViews(force),
+      refreshTrendViews(force),
       refreshRenderView(force),
     ]);
   }
@@ -1028,23 +1102,45 @@
   /* ---------------------------------- 时间控件 ---------------------------------- */
 
   function applyRange(id, range, silent) {
+    range.bucket = range.bucket || 'day';
     ranges[id] = range;
     const bar = document.querySelector('[data-range="' + id + '"]');
     if (bar) {
-      const fromInput = bar.querySelector('[data-role="from"]');
-      const toInput = bar.querySelector('[data-role="to"]');
-      if (fromInput) fromInput.value = range.from;
-      if (toInput) toInput.value = range.to;
-      const current = bar.querySelector('[data-role="current"]');
-      if (current) current.textContent = range.from + ' ~ ' + range.to + '（' + daysBetween(range.from, range.to) + ' 天）';
-      const days = daysBetween(range.from, range.to);
-      bar.querySelectorAll('[data-days]').forEach((button) => {
-        button.classList.toggle('active', Number(button.getAttribute('data-days')) === days);
+      const mode = range.bucket;
+      bar.setAttribute('data-bucket', mode);
+      // 粒度胶囊：按天 / 按小时，同一图表两个粒度各自记忆窗口
+      bar.querySelectorAll('[data-bucket]').forEach((button) => {
+        button.classList.toggle('active', button.getAttribute('data-bucket') === mode);
       });
+      bar.querySelectorAll('[data-mode]').forEach((node) => {
+        const want = node.getAttribute('data-mode');
+        if (want === 'both') return;
+        node.hidden = want !== mode;
+      });
+      const current = bar.querySelector('[data-role="current"]');
+      if (mode === 'hour') {
+        const count = hoursBetween(range.from, range.to);
+        if (current) {
+          current.textContent = String(range.from).replace('T', ' ') + ':00 ~ '
+            + String(range.to).replace('T', ' ') + ':59（' + count + ' 小时）';
+        }
+        bar.querySelectorAll('[data-hours]').forEach((button) => {
+          button.classList.toggle('active', Number(button.getAttribute('data-hours')) === count);
+        });
+      } else {
+        const fromInput = bar.querySelector('[data-role="from"]');
+        const toInput = bar.querySelector('[data-role="to"]');
+        if (fromInput) fromInput.value = range.from;
+        if (toInput) toInput.value = range.to;
+        const days = daysBetween(range.from, range.to);
+        if (current) current.textContent = range.from + ' ~ ' + range.to + '（' + days + ' 天）';
+        bar.querySelectorAll('[data-days]').forEach((button) => {
+          button.classList.toggle('active', Number(button.getAttribute('data-days')) === days);
+        });
+      }
     }
     if (silent) return;
-    if (id === 'growth') paintGrowth();
-    if (id === 'daily-opens' || id === 'daily-users' || id === 'daily-pages') refreshDailyViews(false);
+    if (TREND_IDS.indexOf(id) >= 0) refreshTrendView(id, false);
     if (id === 'render') refreshRenderView(false);
   }
 
@@ -1054,17 +1150,30 @@
       bar.addEventListener('click', (event) => {
         const target = event.target;
         if (!target || !target.getAttribute) return;
-        const days = target.getAttribute('data-days');
-        if (days) {
-          const to = beijingToday();
-          const count = Number(days) || DEFAULT_RANGE_DAYS;
-          const from = shiftDay(to, -(count - 1));
-          applyRange(id, { from, to });
-          bar.querySelectorAll('[data-days]').forEach((button) => {
-            button.classList.toggle('active', button === target);
-          });
+
+        // 粒度切换：按天回到默认 30 天，按小时默认最近 24 小时
+        const bucket = target.getAttribute('data-bucket');
+        if (bucket === 'day' || bucket === 'hour') {
+          applyRange(id, defaultRange(bucket));
           return;
         }
+
+        const hours = target.getAttribute('data-hours');
+        if (hours) {
+          const count = Math.max(1, Number(hours) || HOUR_RANGE_HOURS);
+          const to = beijingHourNow();
+          applyRange(id, { bucket: 'hour', from: shiftHourKey(to, -(count - 1)), to });
+          return;
+        }
+
+        const days = target.getAttribute('data-days');
+        if (days) {
+          const count = Number(days) || DEFAULT_RANGE_DAYS;
+          const to = beijingToday();
+          applyRange(id, { bucket: 'day', from: shiftDay(to, -(count - 1)), to });
+          return;
+        }
+
         if (target.getAttribute('data-role') === 'apply') {
           const fromInput = bar.querySelector('[data-role="from"]');
           const toInput = bar.querySelector('[data-role="to"]');
@@ -1074,8 +1183,7 @@
           if (to > today) to = today;
           if (from > to) from = to;
           if (daysBetween(from, to) > 730) from = shiftDay(to, -729);
-          applyRange(id, { from, to });
-          bar.querySelectorAll('[data-days]').forEach((button) => button.classList.remove('active'));
+          applyRange(id, { bucket: 'day', from, to });
         }
       });
     });
