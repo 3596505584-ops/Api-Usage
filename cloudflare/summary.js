@@ -192,33 +192,48 @@ export function durationHistogram(values) {
 /**
  * 历史记录条数分布曲线（每台设备取最近一次上报的精确条数）
  *
- * X 轴 = 条数分组，固定每 10 条一组（1–9、10–19、…），Y 轴 = 该组设备数。
+ * X 轴 = 条数分组，Y 轴 = 该组设备数。分组步长分两段，避免尾部点过密或过疏：
+ * - 1–{@link HISTORY_COUNT_CURVE_MID - 1}：每 {@link HISTORY_COUNT_CURVE_STEP} 条一组（1–9、10–19、…）
+ * - {HISTORY_COUNT_CURVE_MID}–{HISTORY_COUNT_CURVE_MAX - 1}：每 {@link HISTORY_COUNT_CURVE_WIDE_STEP} 条一组（500–549、550–599、…）
+ * - {HISTORY_COUNT_CURVE_MAX} 条以上：全部并入末组
+ *
  * **0 条的设备整组排除**：那表示从未产生过历史记录，与「有少量记录」是两种状态，
  * 混进首组会把曲线左端拉成一个高大尖峰，掩盖真实分布。
- * 条数跨度可能很大（见过 1600+ 的设备），直接按 10 条铺开会产出上百个点，
- * 因此 1–{@link HISTORY_COUNT_CURVE_MAX} 逐 10 条一组，更大的全部并入末组「{MAX} 条以上」。
+ * 合计固定 1 + 49 + 10 + 1 = 61 个点。
  */
 export const HISTORY_COUNT_CURVE_STEP = 10;
-/** 逐 10 条展开的上限（条数）；超过此值的设备计入末组 */
-export const HISTORY_COUNT_CURVE_MAX = 500;
+/** 1–499 段每 10 条一组 */
+export const HISTORY_COUNT_CURVE_MID = 500;
+/** 500–999 段每 50 条一组 */
+export const HISTORY_COUNT_CURVE_WIDE_STEP = 50;
+/** 末组「N 条以上」的起点（条数） */
+export const HISTORY_COUNT_CURVE_MAX = 1000;
 
 export function historyCountCurve(values) {
   const groups = [];
-  // 首组 1–9（0 条已单独排除），其余从 10 起每 10 条一组：10–19、20–29、…
-  groups.push({ from: 1, to: HISTORY_COUNT_CURVE_STEP - 1, count: 0 });
-  for (let from = HISTORY_COUNT_CURVE_STEP; from < HISTORY_COUNT_CURVE_MAX; from += HISTORY_COUNT_CURVE_STEP) {
-    groups.push({ from, to: from + HISTORY_COUNT_CURVE_STEP - 1, count: 0 });
+  const push = (from, to) => groups.push({ from, to, count: 0 });
+  // 1–9 单列（0 条已单独排除），10 起每 10 条一组直到 499
+  push(1, HISTORY_COUNT_CURVE_STEP - 1);
+  for (let from = HISTORY_COUNT_CURVE_STEP; from < HISTORY_COUNT_CURVE_MID; from += HISTORY_COUNT_CURVE_STEP) {
+    push(from, from + HISTORY_COUNT_CURVE_STEP - 1);
   }
-  // 末组吸收上限之上的设备，避免尾部出现空洞
-  groups.push({ from: HISTORY_COUNT_CURVE_MAX, to: null, count: 0 });
+  // 500 起每 50 条一组直到 999
+  const wideStart = groups.length;
+  for (let from = HISTORY_COUNT_CURVE_MID; from < HISTORY_COUNT_CURVE_MAX; from += HISTORY_COUNT_CURVE_WIDE_STEP) {
+    push(from, from + HISTORY_COUNT_CURVE_WIDE_STEP - 1);
+  }
+  // 末组吸收 1000 条以上的设备，避免尾部出现空洞
+  push(HISTORY_COUNT_CURVE_MAX, null);
 
   for (const raw of Array.isArray(values) ? values : []) {
     const value = Math.max(0, Math.floor(numberOrZero(raw)));
     if (value < 1) continue;
-    const index = value >= HISTORY_COUNT_CURVE_MAX
-      ? groups.length - 1
-      : Math.min(groups.length - 1, Math.floor(value / HISTORY_COUNT_CURVE_STEP));
-    groups[index].count += 1;
+    let index;
+    if (value >= HISTORY_COUNT_CURVE_MAX) index = groups.length - 1;
+    else if (value >= HISTORY_COUNT_CURVE_MID) {
+      index = wideStart + Math.floor((value - HISTORY_COUNT_CURVE_MID) / HISTORY_COUNT_CURVE_WIDE_STEP);
+    } else index = Math.floor(value / HISTORY_COUNT_CURVE_STEP);
+    groups[Math.min(index, groups.length - 1)].count += 1;
   }
 
   return groups.map((group) => ({

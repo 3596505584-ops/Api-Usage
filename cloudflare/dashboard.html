@@ -199,7 +199,7 @@
   const HOUR_RANGE_HOURS = 24;
   const HOUR_MS = 60 * 60 * 1000;
   /** 看板构建标识：每次改动看板后更新，便于确认浏览器拿到的是否为最新页面 */
-  const BUILD_ID = '2026-10-12.10';
+  const BUILD_ID = '2026-10-12.11';
   /**
    * 图表库来源：**仅自托管**（Worker 同源的 `/vendor/echarts.js`），不使用任何第三方 CDN。
    * 这样看板不会向外部站点发起请求，也就不会被广告拦截类扩展或网络策略误伤；
@@ -226,7 +226,7 @@
     { grid: 'grid-trend', id: 'daily-users', title: '每日不重复用户数', note: '当日产生遥测数据的去重设备数', kind: 'line', range: true },
     { grid: 'grid-trend', id: 'daily-pages', title: '每日面板打开占比', note: '各面板当日打开次数占当日面板打开总数的百分比', kind: 'line', range: true, tall: true },
     { grid: 'grid-usage', id: 'pages', title: '面板累计打开次数', note: '全部时间累计', kind: 'bar' },
-    { grid: 'grid-usage', id: 'history-count', title: '历史记录条数分布', note: 'X 轴每 10 条一组（不含 0 条），Y 轴为该组设备数，取每台设备最新上报值', kind: 'line' },
+    { grid: 'grid-usage', id: 'history-count', title: '历史记录条数分布', note: 'X 轴分段分组（1–499 每 10 条、500–999 每 50 条，不含 0 条），Y 轴为该组设备数，取每台设备最新上报值', kind: 'line' },
     { grid: 'grid-profile', id: 'versions', title: '扩展版本分布', note: '每台设备最近一次上报的版本', kind: 'bar' },
     { grid: 'grid-profile', id: 'env-st-version', title: '酒馆版本', note: '每台设备最近一次上报', kind: 'bar' },
     { grid: 'grid-profile', id: 'arch', title: 'CPU 架构占比', note: '每台设备最近一次上报', kind: 'pie' },
@@ -964,8 +964,8 @@
   }
 
   /**
-   * 历史记录条数分布：X 轴为条数分组（每 10 条一组，从 1–9 起），Y 轴为该组的设备数。
-   * 分组由服务端按固定步长生成，因此这里直接按顺序画折线，
+   * 历史记录条数分布：X 轴为条数分组（1–499 每 10 条、500–999 每 50 条、1000 以上合并），
+   * Y 轴为该组的设备数。分组由服务端按固定步长生成，因此这里直接按顺序画折线，
    * 空组为 0 也要保留（曲线才能看出分布形状），不用断点。
    */
   function paintHistoryCount(rows) {

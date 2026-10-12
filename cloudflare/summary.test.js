@@ -257,16 +257,22 @@ describe('环境画像聚合', () => {
     expect(env.stVersion).toEqual([{ label: '1.13.5', count: 3 }]);
   });
 
-  it('历史记录条数按设备最新值每 10 条一组分桶', () => {
-    const items = historyCountCurve([1, 9, 10, 11, 19, 20, 505]);
-    expect(items.length).toBe(51);
+  it('历史记录条数按设备最新值分段分组（1–499 每 10 条，500–999 每 50 条）', () => {
+    const items = historyCountCurve([1, 9, 10, 19, 20, 499, 500, 549, 550, 999, 1000, 1638]);
+    expect(items.length).toBe(61);
     expect(items[0]).toEqual({ from: 1, to: 9, label: '1–9 条', count: 2 });
-    expect(items[1]).toEqual({ from: 10, to: 19, label: '10–19 条', count: 3 });
+    expect(items[1]).toEqual({ from: 10, to: 19, label: '10–19 条', count: 2 });
     expect(items[2]).toEqual({ from: 20, to: 29, label: '20–29 条', count: 1 });
-    // 上限之上的设备并入末组，避免尾部空洞
-    const last = items[items.length - 1];
-    expect(last).toEqual({ from: HISTORY_COUNT_CURVE_MAX, to: null, label: HISTORY_COUNT_CURVE_MAX + ' 条以上', count: 1 });
-    expect(items.reduce((sum, item) => sum + item.count, 0)).toBe(7);
+    // 1–499 段末组
+    expect(items[49]).toEqual({ from: 490, to: 499, label: '490–499 条', count: 1 });
+    // 500–999 段改为每 50 条一组
+    expect(items[50]).toEqual({ from: 500, to: 549, label: '500–549 条', count: 2 });
+    expect(items[51]).toEqual({ from: 550, to: 599, label: '550–599 条', count: 1 });
+    expect(items[59]).toEqual({ from: 950, to: 999, label: '950–999 条', count: 1 });
+    // 1000 条以上并入末组
+    const last = items[60];
+    expect(last).toEqual({ from: 1000, to: null, label: '1000 条以上', count: 2 });
+    expect(items.reduce((sum, item) => sum + item.count, 0)).toBe(12);
   });
 
   it('历史记录条数为 0 的设备不计入曲线（0 条与少量记录是两种状态）', () => {
@@ -280,9 +286,10 @@ describe('环境画像聚合', () => {
 
   it('历史记录条数分桶固定返回完整分组序列（空组为 0）', () => {
     const items = historyCountCurve([]);
-    expect(items).toHaveLength(51);
+    expect(items).toHaveLength(61);
     expect(items.every((item) => item.count === 0)).toBe(true);
     expect(items[0].label).toBe('1–9 条');
+    expect(items[items.length - 1].label).toBe('1000 条以上');
   });
 
   it('标签格式化', () => {
