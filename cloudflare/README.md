@@ -7,7 +7,7 @@
 | 文件 | 作用 |
 | --- | --- |
 | `worker.js` | Worker 入口：`POST /collect`、`GET /dashboard`、`GET /vendor/echarts.js`、`GET /api/summary`、`GET /api/trend`、`GET /health`，以及每月清理的定时任务 |
-| `vendor/echarts.min.js` | 自托管图表库（ECharts 6.1.0 的 simple 构建，取自 `node_modules/echarts/dist/echarts.simple.min.js`），由 `/vendor/echarts.js` 同源提供 |
+| `vendor/echarts.min.js` | 自托管图表库（ECharts 6.1.0 的 **full 构建**，取自 `node_modules/echarts/dist/echarts.min.js`），由 `/vendor/echarts.js` 同源提供。**不可换回 simple 构建**：simple 不含 Tooltip 组件 |
 | `summary.js` | 看板聚合纯函数（日期与小时基准、趋势窗口归一、计数截断、时长分桶、渲染耗时估算、环境画像），`summary.test.js` 覆盖 |
 | `payload.js` | 上报体白名单校验与数值钳制（纯函数，`payload.test.js` 覆盖） |
 | `worker.test.js` | Worker 接口测试：鉴权、`/collect` 契约、总计/趋势口径、定时清理 |
@@ -132,10 +132,10 @@ npx wrangler d1 execute api_usage_stat --remote --file cloudflare/migrate-st-ver
 - 看板右上角「刷新」按钮使用 `?force=1` 绕过缓存重新查询并回填缓存，页面顶部显示数据生成时间。
 - 图表库 ECharts（固定 `6.1.0`）**仅自托管加载**：只请求 Worker 同源的 `GET /vendor/echarts.js`（返回 `cloudflare/vendor/echarts.min.js`，浏览器 brotli 压缩后约 380 KiB、缓存 24 小时），不再使用任何第三方 CDN（npmmirror / jsdelivr / unpkg 已全部移除）。这样看板页不会向外部站点发起请求，不会留下第三方访问痕迹，也不会被广告拦截类扩展或网络策略误伤。
 - 看板页头会显示实际生效的来源徽标（`图表库：自托管`）；若加载失败，顶部横幅会列出尝试结果（成功/失败 + 耗时）并提示可点「重试加载图表库」，此时纯文本数值列表照常可用。
-- 页头「数据生成于 … · 看板构建 `2026-10-12.7`」里的构建标识用于确认浏览器拿到的是否为最新页面；改动看板后请同步更新 `dashboard.html` 中的 `BUILD_ID`。
+- 页头「数据生成于 … · 看板构建 `2026-10-12.8`」里的构建标识用于确认浏览器拿到的是否为最新页面；改动看板后请同步更新 `dashboard.html` 中的 `BUILD_ID`。
 - **移动端触屏读数**：触屏没有 hover，ECharts 默认的 tooltip 在指尖一抬就消失。看板改为「点一下图表即固定数值提示」——`touchstart` 按触点像素换算出最近的数据点（先用 zrender 命中检测覆盖饼图等无坐标系系列，再用 `convertFromPixel` 退化为最近 X 点）后 `dispatchAction showTip`，`touchend` 后延迟 80ms 再钉一次；手指按住本图滑动可逐点跟读，点页面空白处或 6 秒后自动收起，且同一时间只保留一个图表的提示。桌面端 hover 行为不受影响。
 - 若来源超时判负、但脚本随后仍下载并执行成功，看板会自动检测到（每 1.5 秒回看一次 `window.echarts`，最多 90 秒）并补画图表、收起失败提示，页头来源徽标显示「迟到加载」——不会出现「图表已经画出来、横幅还提示失败」的矛盾状态。
-- 自托管文件用的是 ECharts **simple 构建**（含折线/柱状/饼图与 tooltip/legend/grid，500 KiB，brotli 后约 170 KiB，比全量构建小一半多）。升级时把 `node_modules/echarts/dist/echarts.simple.min.js` 覆盖到 `cloudflare/vendor/echarts.min.js`，同步 `dashboard.html` 里的 `?v=` 查询串，再重新部署（当前 Worker 约 560 KiB / gzip 188 KiB，仍在免费额度内）。
+- 自托管文件用的是 ECharts **full 构建**（`echarts.min.js`，1122 KiB，brotli 后约 380 KiB）。**曾因用 simple 构建导致看板完全没有数值提示**：`echarts.simple.min.js` 里不含 Tooltip 组件，option 中的 `tooltip` 与 `axisPointer` 会被静默忽略——图表正常绘制，但鼠标划过和触屏点按都不出提示，且不报任何错。已实测确认（simple 构建 `getComponent('tooltip')` 为 `null`、划过时 `showTip` 触发 0 次；full 构建为 `present` 且正常触发）。升级时把 `node_modules/echarts/dist/echarts.min.js`（注意不是 `.simple.min.js`）覆盖到 `cloudflare/vendor/echarts.min.js`，同步 `dashboard.html` 里的 `?v=` 查询串，再重新部署。
 
 ## 接口
 

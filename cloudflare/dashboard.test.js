@@ -357,7 +357,9 @@ describe('图表库仅自托管加载', () => {
     expect(html).not.toContain('npmmirror');
     expect(html).not.toContain('cdn.jsdelivr.net');
     expect(html).not.toContain('unpkg.com');
-    expect(html).toContain("'/vendor/echarts.js?v=6.1.0-simple'");
+    expect(html).toContain("'/vendor/echarts.js?v=6.1.0-full'");
+    // 加载 URL 不能指向 simple 构建：它不含 Tooltip 组件，tooltip 会被静默忽略
+    expect(html).not.toMatch(/echarts\.js\?v=[^'"]*simple/);
   });
 
   it('自托管可用时使用自托管并正常渲染', async () => {

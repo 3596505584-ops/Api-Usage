@@ -199,14 +199,18 @@
   const HOUR_RANGE_HOURS = 24;
   const HOUR_MS = 60 * 60 * 1000;
   /** 看板构建标识：每次改动看板后更新，便于确认浏览器拿到的是否为最新页面 */
-  const BUILD_ID = '2026-10-12.7';
+  const BUILD_ID = '2026-10-12.8';
   /**
    * 图表库来源：**仅自托管**（Worker 同源的 `/vendor/echarts.js`），不使用任何第三方 CDN。
    * 这样看板不会向外部站点发起请求，也就不会被广告拦截类扩展或网络策略误伤；
    * 加载失败时页面的纯文本兜底列表照常工作。
+   *
+   * 注意：这里必须用 **full 构建**（echarts.min.js）。
+   * 曾用 simple 构建（echarts.simple.min.js）时它**不含 Tooltip 组件**，
+   * option 里的 tooltip / axisPointer 被静默忽略 —— 图表能画出来却永远没有数值提示。
    */
   const ECHARTS_SOURCES = [
-    { label: '自托管', url: '/vendor/echarts.js?v=6.1.0-simple' },
+    { label: '自托管', url: '/vendor/echarts.js?v=6.1.0-full' },
   ];
   /** 单个来源的加载超时（毫秒） */
   const SCRIPT_TIMEOUT_MS = 10000;

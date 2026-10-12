@@ -175,7 +175,7 @@ describe('鉴权与健康检查', () => {
     expect(html).toContain('data-bucket="hour"');
     expect(html).toContain('最近 24 小时');
     // 图表库仅走同源自托管，不再引用任何第三方 CDN
-    expect(html).toContain("'/vendor/echarts.js?v=6.1.0-simple'");
+    expect(html).toContain("'/vendor/echarts.js?v=6.1.0-full'");
     expect(html).not.toContain('echarts@6.1.0');
   });
 
@@ -187,6 +187,8 @@ describe('鉴权与健康检查', () => {
     const body = await res.text();
     expect(body.length).toBeGreaterThan(100000);
     expect(body).toContain('echarts');
+    // 必须是 full 构建：simple 构建不含 Tooltip 组件，数值提示会整个失效
+    expect(body).toContain('showTip');
   });
 });
 
