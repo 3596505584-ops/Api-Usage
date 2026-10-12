@@ -325,15 +325,12 @@ describe('/api/summary 总计口径', () => {
     expect(data.totals.todayDurMs).toBe(4 * MIN);
     expect(data.totals.disabledUsers).toBe(1);
     expect(data.totals.disabledRate).toBe(0.5);
-    const historyBuckets = data.historyCount.map((item) => [item.label, item.count]);
-    expect(historyBuckets).toEqual([
-      ['0 条', 0],
-      ['1–10 条', 1],
-      ['11–50 条', 0],
-      ['51–200 条', 1],
-      ['201–1000 条', 0],
-      ['1001 条以上', 0],
-    ]);
+    // 历史记录条数：X 轴每 10 条一组，Y 轴为该组设备数
+    expect(data.historyCount).toHaveLength(51);
+    const at = (from) => data.historyCount.find((item) => item.from === from);
+    expect(at(0)).toEqual({ from: 0, to: 9, label: '0–9 条', count: 1 });
+    expect(at(120)).toEqual({ from: 120, to: 129, label: '120–129 条', count: 1 });
+    expect(at(500)).toEqual({ from: 500, to: null, label: '500 条以上', count: 0 });
 
     expect(data.userGrowth).toEqual([
       { day: YESTERDAY, added: 1, cumulative: 1 },

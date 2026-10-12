@@ -12,7 +12,9 @@ import {
   durationHistogram,
   envBreakdown,
   estimateRenderMs,
-  historyCountHistogram,
+  historyCountCurve,
+  HISTORY_COUNT_CURVE_MAX,
+  HISTORY_COUNT_CURVE_STEP,
   isDayKey,
   isHourKey,
   mergeTail,
@@ -255,10 +257,24 @@ describe('环境画像聚合', () => {
     expect(env.stVersion).toEqual([{ label: '1.13.5', count: 3 }]);
   });
 
-  it('历史记录条数按设备最新值分桶', () => {
-    const items = historyCountHistogram([0, 1, 10, 11, 50, 51, 200, 201, 1000, 1001, -3, 'bad']);
-    expect(items.map((item) => item.label)).toEqual(['0 条', '1–10 条', '11–50 条', '51–200 条', '201–1000 条', '1001 条以上']);
-    expect(items.map((item) => item.count)).toEqual([3, 2, 2, 2, 2, 1]);
+  it('历史记录条数按设备最新值每 10 条一组分桶', () => {
+    const items = historyCountCurve([0, 1, 9, 10, 11, 19, 20, 505, -3, 'bad']);
+    expect(items.length).toBe(HISTORY_COUNT_CURVE_MAX / HISTORY_COUNT_CURVE_STEP + 1);
+    // 0/1/9/-3/'bad' 共 5 个都落进 0–9 组（负数与非法值按 0 处理）
+    expect(items[0]).toEqual({ from: 0, to: 9, label: '0–9 条', count: 5 });
+    expect(items[1]).toEqual({ from: 10, to: 19, label: '10–19 条', count: 3 });
+    expect(items[2]).toEqual({ from: 20, to: 29, label: '20–29 条', count: 1 });
+    // 上限之上的设备并入末组，避免尾部空洞
+    const last = items[items.length - 1];
+    expect(last).toEqual({ from: HISTORY_COUNT_CURVE_MAX, to: null, label: HISTORY_COUNT_CURVE_MAX + ' 条以上', count: 1 });
+    expect(items.reduce((sum, item) => sum + item.count, 0)).toBe(10);
+  });
+
+  it('历史记录条数分桶固定返回完整分组序列（空组为 0）', () => {
+    const items = historyCountCurve([]);
+    expect(items).toHaveLength(51);
+    expect(items.every((item) => item.count === 0)).toBe(true);
+    expect(items[0].label).toBe('0–9 条');
   });
 
   it('标签格式化', () => {

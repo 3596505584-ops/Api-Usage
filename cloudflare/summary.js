@@ -189,25 +189,39 @@ export function durationHistogram(values) {
   return DURATION_BUCKETS.map((bucket, index) => ({ label: bucket.label, count: counts[index] }));
 }
 
-/** 历史记录条数分桶（每台设备最近一次上报的精确条数） */
-export const HISTORY_COUNT_BUCKETS = [
-  { label: '0 条', max: 0 },
-  { label: '1–10 条', max: 10 },
-  { label: '11–50 条', max: 50 },
-  { label: '51–200 条', max: 200 },
-  { label: '201–1000 条', max: 1000 },
-  { label: '1001 条以上', max: Infinity },
-];
+/**
+ * 历史记录条数分布曲线（每台设备取最近一次上报的精确条数）
+ *
+ * X 轴 = 条数分组，固定每 10 条一组（0–9、10–19、…），Y 轴 = 该组设备数。
+ * 条数跨度可能很大（见过 1600+ 的设备），直接按 10 条铺开会产出上百个点，
+ * 因此 0–{@link HISTORY_COUNT_CURVE_MAX} 逐 10 条一组，更大的全部并入末组「{MAX} 条以上」。
+ */
+export const HISTORY_COUNT_CURVE_STEP = 10;
+/** 逐 10 条展开的上限（条数）；超过此值的设备计入末组 */
+export const HISTORY_COUNT_CURVE_MAX = 500;
 
-export function historyCountHistogram(values) {
-  const counts = HISTORY_COUNT_BUCKETS.map(() => 0);
+export function historyCountCurve(values) {
+  const groups = [];
+  for (let from = 0; from < HISTORY_COUNT_CURVE_MAX; from += HISTORY_COUNT_CURVE_STEP) {
+    groups.push({ from, to: from + HISTORY_COUNT_CURVE_STEP - 1, count: 0 });
+  }
+  // 末组吸收上限之上的设备，避免尾部出现空洞
+  groups.push({ from: HISTORY_COUNT_CURVE_MAX, to: null, count: 0 });
+
   for (const raw of Array.isArray(values) ? values : []) {
     const value = Math.max(0, Math.floor(numberOrZero(raw)));
-    let index = HISTORY_COUNT_BUCKETS.findIndex((bucket) => value <= bucket.max);
-    if (index < 0) index = HISTORY_COUNT_BUCKETS.length - 1;
-    counts[index] += 1;
+    const index = value >= HISTORY_COUNT_CURVE_MAX
+      ? groups.length - 1
+      : Math.min(groups.length - 1, Math.floor(value / HISTORY_COUNT_CURVE_STEP));
+    groups[index].count += 1;
   }
-  return HISTORY_COUNT_BUCKETS.map((bucket, index) => ({ label: bucket.label, count: counts[index] }));
+
+  return groups.map((group) => ({
+    from: group.from,
+    to: group.to,
+    label: group.to === null ? HISTORY_COUNT_CURVE_MAX + ' 条以上' : group.from + '–' + group.to + ' 条',
+    count: group.count,
+  }));
 }
 
 /**

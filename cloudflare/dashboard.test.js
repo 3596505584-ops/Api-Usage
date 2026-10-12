@@ -29,14 +29,13 @@ const summaryData = {
   pages: {
     overview: 12, stats: 9, history: 7, forecast: 5, wallet: 4, settings: 3, help: 2, about: 1, total: 43,
   },
-  historyCount: [
-    { label: '0 条', count: 2 },
-    { label: '1–10 条', count: 10 },
-    { label: '11–50 条', count: 18 },
-    { label: '51–200 条', count: 9 },
-    { label: '201–1000 条', count: 3 },
-    { label: '1001 条以上', count: 0 },
-  ],
+  // 历史记录条数：X 轴每 10 条一组，Y 轴为该组设备数（服务端固定生成 51 组）
+  historyCount: Array.from({ length: 51 }, (_, index) => ({
+    from: index * 10,
+    to: index === 50 ? null : index * 10 + 9,
+    label: index === 50 ? '500 条以上' : index * 10 + '–' + (index * 10 + 9) + ' 条',
+    count: index === 0 ? 2 : index === 1 ? 10 : index === 2 ? 18 : index === 5 ? 9 : index === 20 ? 3 : 0,
+  })),
   // 数量与版本高低故意逆序（低版本数量更高），用于验证展示层按版本号降序排列
   versions: [{ label: '3.1.1', count: 40 }, { label: '3.1.2', count: 2 }],
   env: {
@@ -315,10 +314,14 @@ describe('看板页渲染（图表库可用）', () => {
     const aboutSeries = dailyPages.series.find((item) => item.name === '关于');
     expect(aboutSeries.data).toEqual([3.3, 0, null]);
 
+    // 历史记录条数改为曲线：X 轴条数分组、Y 轴该组设备数
     const historyCount = option('history-count');
-    expect(historyCount.series[0].type).toBe('pie');
-    expect(historyCount.series[0].data.map((item) => item.name)).toContain('1–10 条');
-    expect(historyCount.series[0].data.map((item) => item.value).reduce((sum, value) => sum + value, 0)).toBe(42);
+    expect(historyCount.series[0].type).toBe('line');
+    expect(historyCount.xAxis.data).toHaveLength(51);
+    expect(historyCount.xAxis.data[0]).toBe(0);
+    expect(historyCount.xAxis.data[50]).toBe(500);
+    expect(historyCount.series[0].data.reduce((sum, value) => sum + value, 0)).toBe(42);
+    expect(typeof historyCount.tooltip.formatter).toBe('function');
 
     const os = option('os');
     expect(os.series[0].type).toBe('pie');
