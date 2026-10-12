@@ -104,6 +104,7 @@ function makeEl(tag, id) {
     className: '',
     style: {},
     _attrs: {},
+    _listeners: [],
     classList: { add() {}, remove() {}, toggle() {}, contains() { return false; } },
     setAttribute(key, value) { el._attrs[key] = value; },
     getAttribute(key) { return Object.prototype.hasOwnProperty.call(el._attrs, key) ? el._attrs[key] : null; },
@@ -111,8 +112,13 @@ function makeEl(tag, id) {
     remove() {},
     querySelector() { return null; },
     querySelectorAll() { return []; },
-    addEventListener() {},
+    addEventListener(type, fn) { el._listeners.push({ type, fn }); },
     closest() { return null; },
+    getBoundingClientRect() { return { left: 0, top: 0, width: 600, height: 260 }; },
+    /** 测试用：手动触发已注册的事件监听 */
+    fire(type, event) {
+      el._listeners.filter((item) => item.type === type).forEach((item) => item.fn(event));
+    },
   };
   return el;
 }
@@ -125,13 +131,23 @@ function makeEl(tag, id) {
 function createHarness(mode) {
   const elements = new Map();
   const options = new Map();
+  const instances = new Map();
+  const actions = [];
   const mockEcharts = {
     init(host) {
-      return {
+      const instance = {
         setOption(option) { options.set(host && host.id ? host.id : 'unknown', option); },
         resize() {},
         dispose() {},
+        dispatchAction(action) { actions.push(action); },
+        convertFromPixel(finder, point) {
+          // 简单线性映射：x=100 落在第 2 个数据点
+          return [Math.round((point[0] - 20) / 40), point[1]];
+        },
+        getZr() { return { getDom: () => host, handler: { findHover: () => null } }; },
       };
+      instances.set(host && host.id ? host.id : 'unknown', instance);
+      return instance;
     },
   };
 
@@ -222,6 +238,8 @@ function createHarness(mode) {
   return {
     localGetEl,
     options,
+    instances,
+    actions,
     text: (id) => localGetEl(id).innerHTML,
     settle: () => new Promise((resolve) => setTimeout(resolve, 320)),
   };
@@ -371,4 +389,66 @@ describe('图表库仅自托管加载', () => {
     expect(harness.localGetEl('lib-badge').textContent).toContain('迟到加载');
     expect(harness.options.get('chart-pages')).toBeTruthy();
   }, 12000);
+});
+
+describe('看板页移动端触屏提示', () => {
+  /** 模拟一次触屏点按：clientX=100 经 convertFromPixel 换算为第 2 个数据点 */
+  function touchChart(harness, id, clientX) {
+    const host = harness.localGetEl('chart-' + id);
+    const instance = harness.instances.get('chart-' + id);
+    host.fire('touchstart', { touches: [{ clientX: clientX === undefined ? 100 : clientX, clientY: 80 }] });
+    return instance;
+  }
+
+  it('触屏点按图表后固定显示数值提示（抬手不消失）', async () => {
+    const harness = createHarness('echarts-ready');
+    await harness.settle();
+    touchChart(harness, 'growth', 100);
+
+    const show = harness.actions.filter((item) => item.type === 'showTip');
+    expect(show).toHaveLength(1);
+    expect(show[0]).toEqual({ type: 'showTip', seriesIndex: 0, dataIndex: 2 });
+
+    // 抬手后延迟再钉一次，避免 ECharts 在 touchend 收起提示
+    const before = harness.actions.length;
+    harness.localGetEl('chart-growth').fire('touchend', {});
+    await new Promise((resolve) => setTimeout(resolve, 160));
+    expect(harness.actions.slice(before)).toEqual([{ type: 'showTip', seriesIndex: 0, dataIndex: 2 }]);
+  });
+
+  it('所有图表都绑定了触屏提示，折线、条形与饼图均可', async () => {
+    const harness = createHarness('echarts-ready');
+    await harness.settle();
+    for (const id of ['growth', 'pages', 'os', 'duration']) {
+      const host = harness.localGetEl('chart-' + id);
+      expect(host._listeners.some((item) => item.type === 'touchstart')).toBe(true);
+      touchChart(harness, id);
+    }
+    expect(harness.actions.filter((item) => item.type === 'showTip')).toHaveLength(4);
+  });
+
+  it('手指在图上滑动时逐点跟读，抬手后停止更新', async () => {
+    const harness = createHarness('echarts-ready');
+    await harness.settle();
+    const host = harness.localGetEl('chart-growth');
+
+    host.fire('touchstart', { touches: [{ clientX: 100, clientY: 80 }] });
+    harness.actions.length = 0;
+    host.fire('touchmove', { touches: [{ clientX: 140, clientY: 80 }] });
+    expect(harness.actions.filter((item) => item.type === 'showTip')).toEqual([
+      { type: 'showTip', seriesIndex: 0, dataIndex: 3 },
+    ]);
+
+    host.fire('touchend', {});
+    harness.actions.length = 0;
+    host.fire('touchmove', { touches: [{ clientX: 180, clientY: 80 }] });
+    expect(harness.actions.filter((item) => item.type === 'showTip')).toHaveLength(0);
+  });
+
+  it('图表库不可用时不绑定触屏提示（无图表可提示）', async () => {
+    const harness = createHarness('no-lib');
+    await harness.settle();
+    expect(harness.localGetEl('chart-growth')._listeners).toHaveLength(0);
+    expect(harness.actions).toHaveLength(0);
+  });
 });

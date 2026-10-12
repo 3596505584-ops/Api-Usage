@@ -132,7 +132,8 @@ npx wrangler d1 execute api_usage_stat --remote --file cloudflare/migrate-st-ver
 - 看板右上角「刷新」按钮使用 `?force=1` 绕过缓存重新查询并回填缓存，页面顶部显示数据生成时间。
 - 图表库 ECharts（固定 `6.1.0`）**仅自托管加载**：只请求 Worker 同源的 `GET /vendor/echarts.js`（返回 `cloudflare/vendor/echarts.min.js`，浏览器 brotli 压缩后约 380 KiB、缓存 24 小时），不再使用任何第三方 CDN（npmmirror / jsdelivr / unpkg 已全部移除）。这样看板页不会向外部站点发起请求，不会留下第三方访问痕迹，也不会被广告拦截类扩展或网络策略误伤。
 - 看板页头会显示实际生效的来源徽标（`图表库：自托管`）；若加载失败，顶部横幅会列出尝试结果（成功/失败 + 耗时）并提示可点「重试加载图表库」，此时纯文本数值列表照常可用。
-- 页头「数据生成于 … · 看板构建 `2026-10-12.6`」里的构建标识用于确认浏览器拿到的是否为最新页面；改动看板后请同步更新 `dashboard.html` 中的 `BUILD_ID`。
+- 页头「数据生成于 … · 看板构建 `2026-10-12.7`」里的构建标识用于确认浏览器拿到的是否为最新页面；改动看板后请同步更新 `dashboard.html` 中的 `BUILD_ID`。
+- **移动端触屏读数**：触屏没有 hover，ECharts 默认的 tooltip 在指尖一抬就消失。看板改为「点一下图表即固定数值提示」——`touchstart` 按触点像素换算出最近的数据点（先用 zrender 命中检测覆盖饼图等无坐标系系列，再用 `convertFromPixel` 退化为最近 X 点）后 `dispatchAction showTip`，`touchend` 后延迟 80ms 再钉一次；手指按住本图滑动可逐点跟读，点页面空白处或 6 秒后自动收起，且同一时间只保留一个图表的提示。桌面端 hover 行为不受影响。
 - 若来源超时判负、但脚本随后仍下载并执行成功，看板会自动检测到（每 1.5 秒回看一次 `window.echarts`，最多 90 秒）并补画图表、收起失败提示，页头来源徽标显示「迟到加载」——不会出现「图表已经画出来、横幅还提示失败」的矛盾状态。
 - 自托管文件用的是 ECharts **simple 构建**（含折线/柱状/饼图与 tooltip/legend/grid，500 KiB，brotli 后约 170 KiB，比全量构建小一半多）。升级时把 `node_modules/echarts/dist/echarts.simple.min.js` 覆盖到 `cloudflare/vendor/echarts.min.js`，同步 `dashboard.html` 里的 `?v=` 查询串，再重新部署（当前 Worker 约 560 KiB / gzip 188 KiB，仍在免费额度内）。
 
