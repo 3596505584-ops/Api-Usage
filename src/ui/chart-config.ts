@@ -25,12 +25,17 @@ export const X_OPTIONS: Array<{key:XKey,label:string}> = [
 
 export const X_OPTIONS_WITHOUT_ROUND: Array<{key:XKey,label:string}> = X_OPTIONS.filter((option) => option.key !== 'round');
 
-let ySelected: Set<YKey> = new Set<YKey>(['total_token']);
-let xSelected: XKey = 'day';
+/** 自定义图表的默认选中项：缓存命中 + 缓存未命中 + 输出 Token 三段拆分，配总费用曲线 */
+export const DEFAULT_Y_KEYS: YKey[] = ['input_hit_token', 'input_miss_token', 'output_token', 'total_cost'];
+/** 自定义图表的默认横轴：按轮次逐条展示 */
+export const DEFAULT_X_KEY: XKey = 'round';
+
+let ySelected: Set<YKey> = new Set<YKey>(DEFAULT_Y_KEYS);
+let xSelected: XKey = DEFAULT_X_KEY;
 
 export function getYSelected(): YKey[] { return Array.from(ySelected); }
 export function getXSelected(): XKey { return xSelected; }
-export function setYSelected(keys: YKey[]) { ySelected = new Set(keys.length?keys:['total_token']); }
+export function setYSelected(keys: YKey[]) { ySelected = new Set(keys.length?keys:DEFAULT_Y_KEYS); }
 export function setXSelected(k: XKey) { xSelected = k; }
 export function toggleY(key: YKey) {
   if (ySelected.has(key)) { if (ySelected.size>1) ySelected.delete(key); }
@@ -89,7 +94,7 @@ function getYValue(e: any, y: YKey): number {
 
 export function aggregateForChart(entries: any[], yKeys: YKey[], xKey: XKey): { labels: string[]; series: Array<{name:string,data:number[],kind:'token'|'cost',color:string}> } {
   const yMeta = new Map<string, typeof Y_OPTIONS[number]>(Y_OPTIONS.map(o=>[o.key,o] as any));
-  if (!yKeys.length) yKeys = ['total_token'] as any;
+  if (!yKeys.length) yKeys = DEFAULT_Y_KEYS as any;
   if (xKey==='round') {
     const labels = entries.map((_, i)=>`#${i+1}`);
     const series = yKeys.map(k=>{

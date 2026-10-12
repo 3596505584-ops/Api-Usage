@@ -3700,8 +3700,17 @@ var X_OPTIONS = [
 	}
 ];
 var X_OPTIONS_WITHOUT_ROUND = X_OPTIONS.filter((option) => option.key !== "round");
-var ySelected = /* @__PURE__ */ new Set(["total_token"]);
-var xSelected = "day";
+/** 自定义图表的默认选中项：缓存命中 + 缓存未命中 + 输出 Token 三段拆分，配总费用曲线 */
+var DEFAULT_Y_KEYS = [
+	"input_hit_token",
+	"input_miss_token",
+	"output_token",
+	"total_cost"
+];
+/** 自定义图表的默认横轴：按轮次逐条展示 */
+var DEFAULT_X_KEY = "round";
+var ySelected = new Set(DEFAULT_Y_KEYS);
+var xSelected = DEFAULT_X_KEY;
 function getYSelected() {
 	return Array.from(ySelected);
 }
@@ -3764,7 +3773,7 @@ function getYValue$1(e, y) {
 }
 function aggregateForChart(entries, yKeys, xKey) {
 	const yMeta = new Map(Y_OPTIONS.map((o) => [o.key, o]));
-	if (!yKeys.length) yKeys = ["total_token"];
+	if (!yKeys.length) yKeys = DEFAULT_Y_KEYS;
 	if (xKey === "round") return {
 		labels: entries.map((_, i) => `#${i + 1}`),
 		series: yKeys.map((k) => {
