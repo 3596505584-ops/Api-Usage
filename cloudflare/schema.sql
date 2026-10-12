@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS device (
   last_seen INTEGER NOT NULL,
   app_version TEXT,
   st_version TEXT,
+  history_count INTEGER NOT NULL DEFAULT 0,
+  telemetry_off INTEGER NOT NULL DEFAULT 0,
   browser TEXT,
   browser_major TEXT,
   os TEXT,
@@ -97,13 +99,6 @@ CREATE TABLE IF NOT EXISTS device_hourly (
 
 -- 小时粒度趋势按 hour 索引范围扫描
 CREATE INDEX IF NOT EXISTS idx_device_hourly_hour ON device_hourly (hour);
-
--- 关闭匿名统计开关的最终上报：每台曾关闭过的设备一行（用于知晓关闭行为，不含其他信息）
-CREATE TABLE IF NOT EXISTS device_off (
-  device_id TEXT PRIMARY KEY,
-  off_at INTEGER NOT NULL,
-  last_seq INTEGER NOT NULL DEFAULT 0
-);
 
 -- 设备表按最近活跃排序/清理时使用
 CREATE INDEX IF NOT EXISTS idx_device_last_seen ON device (last_seen);

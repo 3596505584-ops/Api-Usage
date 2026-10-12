@@ -82,8 +82,10 @@ export type TelemetryPayload = {
   env: TelemetryEnv;
   s: TelemetryCounters;
   daily: boolean;
-  /** 关闭匿名统计开关时的最后一次上报标记（仅该次为 true，服务端用于知晓关闭行为） */
+  /** 关闭匿名统计开关时的最后一次上报标记（仅该次为 true，用于记录设备最新开关状态） */
   off?: boolean;
+  /** 扩展内的历史记录总条数（热区 + 冷区，精确值） */
+  hc: number;
 };
 
 type TelemetryIdentity = {
@@ -229,6 +231,22 @@ function currentEndpoint(): string {
 /** 仅测试使用：覆盖上报端点（传 null 恢复常量端点） */
 export function __setEndpointForTest(endpoint: string | null): void {
   endpointOverride = endpoint;
+}
+
+/**
+ * 扩展内历史记录总条数（热区 state.history + 冷区 _coldCount）。
+ * 冷计数由 store/persistence 在各写入路径同步维护，因此这里可同步取到精确值。
+ */
+export function historyRecordCount(): number {
+  try {
+    const hot = Array.isArray(state?.history) ? state.history.length : 0;
+    const settings: any = getExtensionSettings() || {};
+    const cold = Number(settings?._coldCount);
+    const coldCount = Number.isFinite(cold) && cold > 0 ? Math.floor(cold) : 0;
+    return hot + coldCount;
+  } catch {
+    return 0;
+  }
 }
 
 /* ---------------------------------- 运行时状态 ---------------------------------- */
@@ -608,6 +626,7 @@ function buildPayload(
       render: merged.render,
     },
     daily: pending ? pending.daily === true : identity.day !== day,
+    hc: historyRecordCount(),
     ...(final ? { off: true } : {}),
   };
 }

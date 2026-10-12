@@ -16,7 +16,7 @@
 | `migrate-backfill-device-totals.sql` | 只做累计列回填与校验（可安全重复执行），用于「列已存在」或需要重新回填时 |
 | `migrate-hourly.sql` | 已有库升级到小时粒度趋势（新增 `device_hourly` 表与索引，不改动既有表，可安全重复执行） |
 | `migrate-st-version.sql` | 已有库补充 `device.st_version` 酒馆版本号列（不改动既有数据，重复执行会提示列已存在） |
-| `migrate-device-off.sql` | 已有库新增 `device_off` 表（`CREATE TABLE IF NOT EXISTS`，可安全重复执行；未执行时 Worker 自动降级，不影响上报） |
+| `migrate-device-metrics.sql` | 已有库补充 `device.history_count` 与 `device.telemetry_off` 两列（未执行时 Worker 自动回退旧列集合，不影响上报） |
 | `wrangler.toml` | Worker 配置模板（D1 绑定、Cron、文本模块规则）；`database_id` 保持占位符，真实值放本地 `wrangler.local.toml` |
 | `dashboard.html` | 看板页模板，作为文本模块打包进 Worker |
 
@@ -73,7 +73,7 @@ npx wrangler d1 execute api_usage_stat --remote --file cloudflare/migrate-hourly
 - **未执行迁移也不会影响上报**：新版 Worker 写入小时表失败时会自动降级为原有的 `device` + `device_daily` 两条写入，`/collect` 仍返回 `204`，旧版本扩展照常上报；只是看板的小时粒度视图会提示尚未迁移。
 - 小时数据只保留 180 天（日数据仍为 730 天），迁移只能从此刻开始积累，历史小时无法回溯。
 
-其他可选表结构的迁移脚本见目录内容一节（`migrate-device-off.sql` 等），可按需执行；未执行时 Worker 会走兼容降级，不影响 `/collect`。
+其他可选列的迁移脚本见目录内容一节（`migrate-device-metrics.sql` 等），可按需执行；未执行时 Worker 会走兼容降级，不影响 `/collect`。
 
 ### 已有库升级（新增酒馆版本号列）
 
@@ -206,7 +206,7 @@ Cloudflare 免费额度（2026 年 4 月官方文档）：Workers **10 万请求
 - `device_daily`：每台设备每天一行，保存当天分桶与计数，730 天后自动清理。
 - `device_hourly`：每台设备每（北京时间）小时一行，保存该小时分桶与计数与分钟级首末上报时间，180 天后自动清理。
 
-不采集、不存库的内容包括：IP 地址、User-Agent 原文、对话名称或内容、模型名、密钥信息、余额与费用、接口地址、历史条数、精确屏幕分辨率。Worker 只把校验后的白名单字段写入 D1，原始请求体不做持久化，也不开启访问日志。
+不采集、不存库的内容包括：IP 地址、User-Agent 原文、对话名称或内容、模型名、密钥信息、余额与费用、接口地址、精确屏幕分辨率。Worker 只把校验后的白名单字段写入 D1，原始请求体不做持久化，也不开启访问日志。
 
 ## 运维
 
@@ -232,7 +232,7 @@ npx wrangler d1 execute api_usage_stat --remote --command \
 
 # 用户要求删除其数据（需要对方提供设置页显示的匿名标识前 8 位）
 npx wrangler d1 execute api_usage_stat --remote --command \
-  "DELETE FROM device_daily WHERE device_id LIKE 'xxxxxxxx%'; DELETE FROM device_hourly WHERE device_id LIKE 'xxxxxxxx%'; DELETE FROM device_off WHERE device_id LIKE 'xxxxxxxx%'; DELETE FROM device WHERE device_id LIKE 'xxxxxxxx%'"
+  "DELETE FROM device_daily WHERE device_id LIKE 'xxxxxxxx%'; DELETE FROM device_hourly WHERE device_id LIKE 'xxxxxxxx%'; DELETE FROM device WHERE device_id LIKE 'xxxxxxxx%'"
 ```
 
 ## 常见问题

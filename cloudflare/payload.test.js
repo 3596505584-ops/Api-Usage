@@ -29,6 +29,7 @@ function goodPayload(overrides = {}) {
       render: [2, 1, 0, 0, 0],
     },
     daily: true,
+    hc: 123,
     ...overrides,
   };
 }
@@ -80,6 +81,7 @@ describe('上报体归一', () => {
       overview: 3, stats: 1, history: 0, forecast: 0, wallet: 1, settings: 0, help: 0, about: 0,
     });
     expect(result.value.counters.render).toEqual([2, 1, 0, 0, 0]);
+    expect(result.value.hc).toBe(123);
   });
 
   it('保留分钟精度的上报时间，旧客户端缺失时回退当前分钟', () => {
@@ -90,6 +92,13 @@ describe('上报体归一', () => {
     const legacy = normalizePayload(goodPayload(), NOW);
     expect(legacy.ok).toBe(true);
     expect(legacy.value.ts).toBe(NOW);
+  });
+
+  it('历史记录总条数钳制为合理范围', () => {
+    expect(normalizePayload(goodPayload({ hc: -5 }), NOW).value.hc).toBe(0);
+    expect(normalizePayload(goodPayload({ hc: 'abc' }), NOW).value.hc).toBe(0);
+    expect(normalizePayload(goodPayload({ hc: 999999999999 }), NOW).value.hc).toBe(100000000);
+    expect(normalizePayload(goodPayload({ hc: undefined }), NOW).value.hc).toBe(0);
   });
 
   it('关闭标记只接受布尔真值', () => {

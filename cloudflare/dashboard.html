@@ -199,7 +199,7 @@
   const HOUR_RANGE_HOURS = 24;
   const HOUR_MS = 60 * 60 * 1000;
   /** 看板构建标识：每次改动看板后更新，便于确认浏览器拿到的是否为最新页面 */
-  const BUILD_ID = '2026-10-12.4';
+  const BUILD_ID = '2026-10-12.5';
   /**
    * 图表库来源。第一组（同源自托管 + 最快的公共 CDN）**并发竞速**，先成功者胜出：
    * 不同网络的拦截策略不一样——有的网络挡第三方域名，有的网络大响应会被中断，
@@ -228,6 +228,7 @@
     { grid: 'grid-trend', id: 'daily-users', title: '每日不重复用户数', note: '当日产生遥测数据的去重设备数', kind: 'line', range: true },
     { grid: 'grid-trend', id: 'daily-pages', title: '每日面板打开占比', note: '各面板当日打开次数占当日面板打开总数的百分比', kind: 'line', range: true, tall: true },
     { grid: 'grid-usage', id: 'pages', title: '面板累计打开次数', note: '全部时间累计', kind: 'bar' },
+    { grid: 'grid-usage', id: 'history-count', title: '历史记录条数分布', note: '每台设备最近一次上报的记录条数占比', kind: 'pie' },
     { grid: 'grid-profile', id: 'versions', title: '扩展版本分布', note: '每台设备最近一次上报的版本', kind: 'bar' },
     { grid: 'grid-profile', id: 'env-st-version', title: '酒馆版本', note: '每台设备最近一次上报', kind: 'bar' },
     { grid: 'grid-profile', id: 'arch', title: 'CPU 架构占比', note: '每台设备最近一次上报', kind: 'pie' },
@@ -270,6 +271,12 @@
 
   function fmtInt(value) {
     return (Number(value) || 0).toLocaleString('zh-CN');
+  }
+
+  function fmtPercent(value) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return '—';
+    return (num * 100).toFixed(1).replace(/\.0$/, '') + '%';
   }
 
   function fmtDuration(ms) {
@@ -828,7 +835,7 @@
       card('累计打开面板', fmtInt(totals.opens), '全部时间累计次数'),
       card('累计使用时长', fmtDuration(totals.durMs), '设备会话时长之和'),
       card('人均使用时长', fmtDuration(totals.avgDurMsPerUser), '累计时长 ÷ 累计用户'),
-      card('曾关闭匿名统计', fmtInt(totals.disabledUsers), '历史上曾关闭过该开关的设备数'),
+      card('匿名统计关闭率', fmtPercent(totals.disabledRate), fmtInt(totals.disabledUsers) + ' / ' + fmtInt(totals.users) + ' 台设备最新状态为关闭'),
     ].join('');
     el('cards-today').innerHTML = [
       card('当日新增用户', fmtInt(totals.todayUsers), '首次出现在 ' + (data.today || '')),
@@ -846,6 +853,7 @@
       color: PAGE_COLORS[index % PAGE_COLORS.length],
     }));
     drawBar('pages', items, { perItem: true });
+    drawPie('history-count', data.historyCount || []);
   }
 
   function renderProfile(data) {

@@ -19,7 +19,7 @@ const summaryData = {
   totals: {
     users: 42, opens: 1234, durMs: 30 * 60 * 1000, avgDurMsPerUser: 44 * 1000,
     todayUsers: 3, todayActiveUsers: 28, todayOpens: 57, todayDurMs: 12 * 60 * 1000,
-    disabledUsers: 5,
+    disabledUsers: 5, disabledRate: 5 / 42,
   },
   userGrowth: [
     { day: '2026-10-09', added: 1, cumulative: 40 },
@@ -29,6 +29,14 @@ const summaryData = {
   pages: {
     overview: 12, stats: 9, history: 7, forecast: 5, wallet: 4, settings: 3, help: 2, about: 1, total: 43,
   },
+  historyCount: [
+    { label: '0 条', count: 2 },
+    { label: '1–10 条', count: 10 },
+    { label: '11–50 条', count: 18 },
+    { label: '51–200 条', count: 9 },
+    { label: '201–1000 条', count: 3 },
+    { label: '1001 条以上', count: 0 },
+  ],
   // 数量与版本高低故意逆序（低版本数量更高），用于验证展示层按版本号降序排列
   versions: [{ label: '3.1.1', count: 40 }, { label: '3.1.2', count: 2 }],
   env: {
@@ -242,8 +250,9 @@ describe('看板页渲染（图表库不可用）', () => {
     expect(harness.text('cards-life')).toContain('不重复累计用户');
     expect(harness.text('cards-life')).toContain('42');
     expect(harness.text('cards-life')).toContain('44 秒');
-    expect(harness.text('cards-life')).toContain('曾关闭匿名统计');
-    expect(harness.text('cards-life')).toContain('5');
+    expect(harness.text('cards-life')).toContain('匿名统计关闭率');
+    expect(harness.text('cards-life')).toContain('11.9%');
+    expect(harness.text('cards-life')).toContain('5 / 42');
     expect(harness.text('cards-today')).toContain('当日新增用户');
     expect(harness.text('cards-today')).toContain('57');
     expect(harness.text('cards-today')).toContain('当日不重复用户');
@@ -291,6 +300,11 @@ describe('看板页渲染（图表库可用）', () => {
     expect(dailyPages.series[0].connectNulls).toBe(false);
     const aboutSeries = dailyPages.series.find((item) => item.name === '关于');
     expect(aboutSeries.data).toEqual([3.3, 0, null]);
+
+    const historyCount = option('history-count');
+    expect(historyCount.series[0].type).toBe('pie');
+    expect(historyCount.series[0].data.map((item) => item.name)).toContain('1–10 条');
+    expect(historyCount.series[0].data.map((item) => item.value).reduce((sum, value) => sum + value, 0)).toBe(42);
 
     const os = option('os');
     expect(os.series[0].type).toBe('pie');

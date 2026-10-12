@@ -21,6 +21,7 @@ import {
   countersAreEmpty,
   flushTelemetry,
   flushTelemetryOnDisable,
+  historyRecordCount,
   isEndpointConfigured,
   isTelemetryEnabled,
   isTelemetryPageKey,
@@ -281,6 +282,7 @@ describe('累加与上报', () => {
     expect(payload.day).toBe(todayKey());
     expect(payload.tz).toBe(roundTz(-new Date().getTimezoneOffset() / 60));
     expect(payload.daily).toBe(true);
+    expect(payload.hc).toBe(0);
     expect(payload.s.opens).toBe(1);
     expect(payload.s.pages).toEqual({
       overview: 2, stats: 0, history: 0, forecast: 0, wallet: 1, settings: 0, help: 0, about: 0,
@@ -293,6 +295,16 @@ describe('累加与上报', () => {
     expect(countersAreEmpty(__peekCountersForTest())).toBe(true);
     expect(readIdentity().seq).toBe(1);
     expect(readIdentity().day).toBe(todayKey());
+  });
+
+  it('历史记录总条数为热区加冷区精确计数', () => {
+    mocks.state.history = [{}, {}, {}];
+    mocks.storage.settings = { _coldCount: 7 };
+    expect(historyRecordCount()).toBe(10);
+
+    mocks.state.history = [];
+    mocks.storage.settings = {};
+    expect(historyRecordCount()).toBe(0);
   });
 
   it('关闭开关时立刻发送带关闭标记的最后一次上报', async () => {

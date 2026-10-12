@@ -12,6 +12,7 @@ import {
   durationHistogram,
   envBreakdown,
   estimateRenderMs,
+  historyCountHistogram,
   isDayKey,
   isHourKey,
   mergeTail,
@@ -252,6 +253,12 @@ describe('环境画像聚合', () => {
       { label: 'UTC+5.5', count: 1 },
     ]);
     expect(env.stVersion).toEqual([{ label: '1.13.5', count: 3 }]);
+  });
+
+  it('历史记录条数按设备最新值分桶', () => {
+    const items = historyCountHistogram([0, 1, 10, 11, 50, 51, 200, 201, 1000, 1001, -3, 'bad']);
+    expect(items.map((item) => item.label)).toEqual(['0 条', '1–10 条', '11–50 条', '51–200 条', '201–1000 条', '1001 条以上']);
+    expect(items.map((item) => item.count)).toEqual([3, 2, 2, 2, 2, 1]);
   });
 
   it('标签格式化', () => {

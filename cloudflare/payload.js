@@ -19,6 +19,8 @@ const MAX_OPENS = 500;
 const MAX_DURATION_MS = 12 * 60 * 60 * 1000;
 const MAX_PAGE_COUNT = 2000;
 const MAX_SEQ = 100000000;
+/** 历史记录总条数上限（精确值，超出按上限钳制） */
+const MAX_HISTORY_COUNT = 100000000;
 const DAY_WINDOW_BEFORE = 2;
 const DAY_WINDOW_AFTER = 1;
 /** 上报时间戳允许的时钟偏差：向前 2 天（覆盖失败重发）、向后 10 分钟 */
@@ -142,6 +144,7 @@ export function normalizePayload(raw, now = Date.now()) {
       },
       daily: raw.daily === true ? 1 : 0,
       off: raw.off === true ? 1 : 0,
+      hc: toInt(raw.hc, 0, MAX_HISTORY_COUNT),
     },
   };
 }

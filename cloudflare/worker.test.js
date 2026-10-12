@@ -27,7 +27,6 @@ function createDb(fixtures, options) {
         },
         async all() {
           calls.push({ sql, params: stmt.params });
-          if (sql.includes('FROM device_off')) return { results: fixtures.deviceOff };
           if (sql.includes('strftime')) return { results: fixtures.growthHourly };
           if (sql.includes('first_seen <')) return { results: fixtures.growthBaseline };
           if (sql.includes('GROUP BY hour')) return { results: fixtures.hourly };
@@ -55,10 +54,6 @@ function createDb(fixtures, options) {
       if (opts.failStvColumn && stmts[0] && String(stmts[0].sql).includes('st_version')) {
         throw new Error('no such column: st_version');
       }
-      // 模拟既有库尚未执行 migrate-device-off.sql：含关闭标记表的语句整体失败
-      if (opts.failOffTable && stmts.some((stmt) => String(stmt.sql).includes('device_off'))) {
-        throw new Error('no such table: device_off');
-      }
       return stmts.map(() => ({ success: true }));
     },
   };
@@ -70,6 +65,7 @@ function deviceRow(overrides) {
     browser: 'Chrome', browser_major: '141', os: 'Windows', arch: 'x86_64',
     lang: 'zh-CN', width_bucket: 'gt1024', dark: 0, standalone: 0, touch: 0,
     tz_offset: 8, first_day: YESTERDAY, first_seen: 1000, st_version: '1.13.5',
+    history_count: 128, telemetry_off: 0,
     opens_total: 5, dur_ms_total: 8 * MIN,
   };
   for (const key of ['overview', 'stats', 'history', 'forecast', 'wallet', 'settings', 'help', 'about']) {
@@ -87,6 +83,7 @@ const DEVICES = [
     browser: 'Firefox', browser_major: '128', os: 'Android', arch: 'arm64',
     lang: 'ja-JP', width_bucket: 'le480', dark: 1, standalone: 1, touch: 1,
     tz_offset: 9, first_day: TODAY, first_seen: 2000,
+    history_count: 5, telemetry_off: 1,
     opens_total: 1, dur_ms_total: 1 * MIN,
     p_overview_total: 0, p_stats_total: 0, p_wallet_total: 4,
   }),
@@ -143,7 +140,6 @@ function makeEnv(fixtures = {}, options = {}) {
     hourly: HOURLY,
     growthHourly: GROWTH_HOURLY,
     growthBaseline: [{ total: 5 }],
-    deviceOff: [{ total: 3 }],
     ...fixtures,
   }, options);
   return { env: { DB: db, DASHBOARD_TOKEN: TOKEN }, db };
@@ -240,6 +236,8 @@ describe('/collect 写入契约保持不变', () => {
     expect(batch.sqls[2]).toContain('INSERT INTO device_hourly');
     // 酒馆版本号列在设备语句末位；小时桶为北京时间小时键；时间戳为分钟精度
     expect(batch.params[0][25]).toBe('1.13.5');
+    expect(batch.params[0][26]).toBe(0);
+    expect(batch.params[0][27]).toBe(0);
     expect(batch.params[2][0]).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}$/);
     expect(batch.params[2][19] % 60000).toBe(0);
   });
@@ -268,28 +266,18 @@ describe('/collect 写入契约保持不变', () => {
     expect(db.calls.filter((call) => call.batch).map((call) => call.batch)).toEqual([3, 2]);
   });
 
-  it('关闭开关的最终上报额外写入关闭标记', async () => {
+  it('关闭开关的最终上报把设备最新开关状态记为已关闭', async () => {
     const { env, db } = makeEnv();
     const res = await worker.fetch(new Request('https://stat.example.com/collect', {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-      body: legacyBody({ off: true }),
+      body: legacyBody({ off: true, hc: 7 }),
     }), env, { waitUntil() {} });
     expect(res.status).toBe(204);
     const batch = db.calls.find((call) => call.batch);
-    expect(batch.batch).toBe(4);
-    expect(batch.sqls[3]).toContain('INSERT INTO device_off');
-  });
-
-  it('关闭标记表尚未迁移时降级，关闭上报仍返回 204', async () => {
-    const { env, db } = makeEnv({}, { failOffTable: true });
-    const res = await worker.fetch(new Request('https://stat.example.com/collect', {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-      body: legacyBody({ off: true }),
-    }), env, { waitUntil() {} });
-    expect(res.status).toBe(204);
-    expect(db.calls.filter((call) => call.batch).map((call) => call.batch)).toEqual([4, 3, 2]);
+    expect(batch.batch).toBe(3);
+    expect(batch.params[0][26]).toBe(7);
+    expect(batch.params[0][27]).toBe(1);
   });
 
   it('酒馆版本列尚未迁移时回退旧列集合，上报仍返回 204', async () => {
@@ -333,7 +321,17 @@ describe('/api/summary 总计口径', () => {
     expect(data.totals.todayActiveUsers).toBe(2);
     expect(data.totals.todayOpens).toBe(3);
     expect(data.totals.todayDurMs).toBe(4 * MIN);
-    expect(data.totals.disabledUsers).toBe(3);
+    expect(data.totals.disabledUsers).toBe(1);
+    expect(data.totals.disabledRate).toBe(0.5);
+    const historyBuckets = data.historyCount.map((item) => [item.label, item.count]);
+    expect(historyBuckets).toEqual([
+      ['0 条', 0],
+      ['1–10 条', 1],
+      ['11–50 条', 0],
+      ['51–200 条', 1],
+      ['201–1000 条', 0],
+      ['1001 条以上', 0],
+    ]);
 
     expect(data.userGrowth).toEqual([
       { day: YESTERDAY, added: 1, cumulative: 1 },
@@ -357,15 +355,16 @@ describe('/api/summary 总计口径', () => {
   });
 
   it('空库时返回零值而不是报错', async () => {
-    const { env } = makeEnv({ devices: [], today: [], deviceOff: [{ total: 0 }] });
+    const { env } = makeEnv({ devices: [], today: [] });
     const res = await get('/api/summary', env);
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.totals).toEqual({
       users: 0, opens: 0, durMs: 0, avgDurMsPerUser: 0,
       todayUsers: 0, todayActiveUsers: 0, todayOpens: 0, todayDurMs: 0,
-      disabledUsers: 0,
+      disabledUsers: 0, disabledRate: 0,
     });
+    expect(data.historyCount.every((item) => item.count === 0)).toBe(true);
     expect(data.userGrowth).toEqual([]);
     expect(data.env.browser).toEqual([]);
   });

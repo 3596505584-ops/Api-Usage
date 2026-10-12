@@ -39,11 +39,11 @@ Api-Usage/
 │   ├── summary.js         # 看板聚合纯函数（北京时间日期基准、计数截断、时长分桶、渲染耗时估算、环境画像），cloudflare/summary.test.js 覆盖
 │   ├── payload.js         # 上报体白名单校验与数值钳制（纯函数，cloudflare/payload.test.js 覆盖）
 │   ├── worker.test.js     # Worker 接口测试（鉴权、/collect 契约、总计/趋势口径、定时清理）
-│   ├── schema.sql         # D1 建表：device 设备维度汇总（环境为每设备最新状态 + opens_total/dur_ms_total/p_*_total 累计列 + first_day/last_seq + app_version/st_version）+ device_daily 逐设备日数据 + device_hourly 逐设备小时数据 + device_off 关闭标记表（均 last_seq 幂等）
+│   ├── schema.sql         # D1 建表：device 设备维度汇总（环境为每设备最新状态 + opens_total/dur_ms_total/p_*_total 累计列 + first_day/last_seq + app_version/st_version）+ device_daily 逐设备日数据 + device_hourly 逐设备小时数据（均 last_seq 幂等）+ device 最新状态列（st_version/history_count/telemetry_off）
 │   ├── migrate-device-totals.sql # 已有库一次性迁移：新增累计列并用 device_daily 回填（必须「先回填、再部署」）
 │   ├── migrate-hourly.sql # 已有库新增 device_hourly 小时表与索引（不改旧表、可重复执行；未迁移时旧版上报自动降级不受影响）
 │   ├── migrate-st-version.sql # 已有库补充 device.st_version 酒馆版本号列（未迁移时 Worker 自动回退旧列集合，旧版上报不受影响）
-│   ├── migrate-device-off.sql # 已有库新增 device_off 表（CREATE TABLE IF NOT EXISTS 可重复执行；未迁移时 Worker 自动降级，不影响上报）
+│   ├── migrate-device-metrics.sql # 已有库补充 device.history_count/telemetry_off 列（未迁移时 Worker 自动回退旧列集合，不影响上报）
 │   ├── migrate-backfill-device-totals.sql # 只做累计列回填与校验，可安全重复执行（列已存在或需重算时使用）
 │   ├── wrangler.toml      # Worker 配置（D1 绑定、Cron、HTML 文本模块规则）
 │   ├── dashboard.html     # 口令保护的看板（总计/趋势/面板构成/画像/性能五分区，ECharts 6.1.0 自托管与 npmmirror 并发竞速 + jsdelivr/unpkg 兜底、页头显示来源徽标与 BUILD_ID，每个趋势图独立时间控件默认 30 天，手机竖屏单列）
@@ -169,7 +169,7 @@ npm run verify:ci   # 版本单源、清单路径、引用链与孤立产物
 - **改历史筛选/详情/占比**：`src/ui/panel.ts`（`renderHistory` 四维度筛选 + 筛选后分页 + 详情右侧/底部窗口与 4 类原始数据 + 三色条，费用按币种）
 - **改连接身份/隐私**：`src/services/connection-identity.ts`（地址规范、密钥条目映射）+ `src/services/interception.ts`（请求开始快照）+ `src/data/fingerprint.ts`（连接感知去重）；严格隐私模式禁止读取 `proxy_password` 与 `custom_include_headers`
 - **改匿名统计**：客户端 `src/services/telemetry.ts`（环境分桶与酒馆版本号探测、会话内累加、关闭面板/页面隐藏时批量上报、匿名标识与 `settings.telemetryEnabled` 开关、失败重试与待发合并）+ 埋点收敛点 `src/ui/panel.ts`（`openPanel`→`trackOpen`、`switchView`→`trackPage`、`closePanel`→`flushTelemetry`）+ `src/index.ts`（`initTelemetry`）+ 设置卡片 `src/ui/settings.ts`（开关、标识展示与重置）；服务端 `cloudflare/worker.js` + `cloudflare/payload.js` + `cloudflare/schema.sql`（新增采集字段必须同步：客户端 payload、`payload.js` 白名单、`schema.sql` 列/表与对应迁移脚本、`cloudflare/README.md`，并同步 `docs.html` 隐私声明第十节与第四节域名表；`ts` 等新字段必须可选，缺失时回退服务端时间，保证旧版本扩展仍能上报）
-- **改看板**：`cloudflare/dashboard.html`（分区布局、ECharts 配置、每个趋势图的独立时间控件、手机竖屏单列、CDN 失败时的文本兜底）+ `cloudflare/worker.js`（`/api/summary` 总计与画像、`/api/trend` 日趋势与按版本渲染耗时、Cache API 缓存与 `?force=1`）+ `cloudflare/summary.js`（聚合纯函数，改口径必须同步 `cloudflare/summary.test.js` 与 `cloudflare/worker.test.js`）；读者口径（设备维度累计列、环境取最近状态、北京时间「今日」）以 `cloudflare/README.md` 为准；新增或更换 `device`/`device_daily`/`device_hourly`/`device_off` 列或表时必须同步 `schema.sql` 与对应迁移脚本（`migrate-device-totals.sql`、`migrate-hourly.sql`、`migrate-st-version.sql`、`migrate-device-off.sql`），且小时表写入失败必须降级到核心两条写入，不能影响 `/collect`
+- **改看板**：`cloudflare/dashboard.html`（分区布局、ECharts 配置、每个趋势图的独立时间控件、手机竖屏单列、CDN 失败时的文本兜底）+ `cloudflare/worker.js`（`/api/summary` 总计与画像、`/api/trend` 日趋势与按版本渲染耗时、Cache API 缓存与 `?force=1`）+ `cloudflare/summary.js`（聚合纯函数，改口径必须同步 `cloudflare/summary.test.js` 与 `cloudflare/worker.test.js`）；读者口径（设备维度累计列、环境取最近状态、北京时间「今日」）以 `cloudflare/README.md` 为准；新增或更换 `device`/`device_daily`/`device_hourly` 列或表时必须同步 `schema.sql` 与对应迁移脚本（`migrate-device-totals.sql`、`migrate-hourly.sql`、`migrate-st-version.sql`、`migrate-device-metrics.sql`），且小时表写入失败必须降级到核心两条写入，不能影响 `/collect`
 - **改同步/导入**：`src/services/sync.ts` + `src/services/import-export.ts`（保持 `deepseek-stat-export v1` 兼容；钱包配置通过可选 `wallets/walletIgnored/walletFormat:2` 携带；WebDAV 包版本为 `2` 且兼容读取旧 `1`；历史按 `historyRecordKey` 的 timestamp/model/token/接入/钱包/密钥综合身份去重；导出经 `getAllHistory` 含冷库全量，导入超 `MAX_HISTORY` 自动回冷库，任何钱包校准密钥均不导出）+ `src/services/pricing-sync.ts`（models.dev 按钱包同步）
 - **改预测**：`src/ui/forecast-view.ts`（自选对话胶囊、能耗/预测/敏感度联动）+ `src/stats/forecast.ts`
 - **改自定义小块（概览 8 + 统计 4）**：在 `FOUR_OPTIONS`（`src/ui/overview.ts` 导出，概览与统计页共用的 18 项标签表）+ `OverviewFourKey/StatsFourKey`（`src/types/settings.ts`）+ `getFourDisplay`（渲染）+ `valid/validStats` 白名单（`src/data/repository.ts` 的 `normalizeSettings` 与 `hydrate`）四处同步新增 key；数值算在 `computeOverview`/`computeStatsFour`（`src/data/computed.ts`），**所有 `avg_*` 必须走 `averagePositive`**，让单轮 0/空值从分子分母同时剔除

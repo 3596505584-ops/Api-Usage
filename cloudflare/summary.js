@@ -189,6 +189,27 @@ export function durationHistogram(values) {
   return DURATION_BUCKETS.map((bucket, index) => ({ label: bucket.label, count: counts[index] }));
 }
 
+/** 历史记录条数分桶（每台设备最近一次上报的精确条数） */
+export const HISTORY_COUNT_BUCKETS = [
+  { label: '0 条', max: 0 },
+  { label: '1–10 条', max: 10 },
+  { label: '11–50 条', max: 50 },
+  { label: '51–200 条', max: 200 },
+  { label: '201–1000 条', max: 1000 },
+  { label: '1001 条以上', max: Infinity },
+];
+
+export function historyCountHistogram(values) {
+  const counts = HISTORY_COUNT_BUCKETS.map(() => 0);
+  for (const raw of Array.isArray(values) ? values : []) {
+    const value = Math.max(0, Math.floor(numberOrZero(raw)));
+    let index = HISTORY_COUNT_BUCKETS.findIndex((bucket) => value <= bucket.max);
+    if (index < 0) index = HISTORY_COUNT_BUCKETS.length - 1;
+    counts[index] += 1;
+  }
+  return HISTORY_COUNT_BUCKETS.map((bucket, index) => ({ label: bucket.label, count: counts[index] }));
+}
+
 /**
  * 客户端只上报 5 档渲染耗时，这里用档位代表值估算平均耗时。
  * 代表值取各档区间内的保守取值，末档 ≥2000ms 按 3000ms 计，因此估算结果偏保守（不会高估）。

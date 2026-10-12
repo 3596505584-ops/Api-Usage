@@ -28,6 +28,7 @@ import {
   durationHistogram,
   envBreakdown,
   estimateRenderMs,
+  historyCountHistogram,
   hourKeyToMs,
   normalizeHourWindow,
   normalizeWindow,
@@ -89,13 +90,15 @@ const DEVICE_BASE_VALUES = `?1, ?2, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?1
 const DEVICE_UPSERT_SQL = `
 INSERT INTO device (
   ${DEVICE_BASE_COLUMNS},
-  ${TOTAL_COLUMNS.join(', ')}, st_version
+  ${TOTAL_COLUMNS.join(', ')}, st_version, history_count, telemetry_off
 ) VALUES (
   ${DEVICE_BASE_VALUES},
-  ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26
+  ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28
 )
 ${DEVICE_UPSERT_SET},
-  st_version = COALESCE(NULLIF(excluded.st_version, ''), device.st_version)
+  st_version = COALESCE(NULLIF(excluded.st_version, ''), device.st_version),
+  history_count = excluded.history_count,
+  telemetry_off = excluded.telemetry_off
 WHERE excluded.last_seq > device.last_seq
 `;
 
@@ -178,29 +181,14 @@ ON CONFLICT(hour, device_id) DO UPDATE SET
 WHERE device_hourly.last_seq < excluded.last_seq
 `;
 
-/** 关闭匿名统计开关的最终上报：记录该设备曾关闭过开关（低频写入） */
-const DEVICE_OFF_UPSERT_SQL = `
-INSERT INTO device_off (device_id, off_at, last_seq)
-VALUES (?1, ?2, ?3)
-ON CONFLICT(device_id) DO UPDATE SET
-  off_at = excluded.off_at,
-  last_seq = excluded.last_seq
-WHERE device_off.last_seq < excluded.last_seq
-`;
-
 /** 设备维度汇总：一次全表读（行数 = 设备数）覆盖总计、环境画像、版本分布与时长分布 */
 const DEVICE_SELECT_SQL = `
-SELECT app_version, st_version, browser, browser_major, os, arch, lang, width_bucket,
+SELECT app_version, st_version, history_count, telemetry_off,
+       browser, browser_major, os, arch, lang, width_bucket,
        dark, standalone, touch, tz_offset, first_day, first_seen,
        opens_total, dur_ms_total,
        ${TOTAL_COLUMNS.join(', ')}
 FROM device
-`;
-
-/** 曾关闭匿名统计的设备数（表未迁移时由调用方兜底为空） */
-const DEVICE_OFF_SELECT_SQL = `
-SELECT COUNT(*) AS total
-FROM device_off
 `;
 
 /** 当日汇总：只扫当天行（行数 = 当日活跃设备数），同时给出当日去重设备数（日活） */
@@ -354,6 +342,9 @@ async function writeRow(db, payload, now) {
   // 上报时间精确到分钟：ts 由客户端给出并在 payload.js 归一，旧客户端回退服务端当前分钟
   const ts = Number.isFinite(Number(payload.ts)) ? Number(payload.ts) : now;
   const hour = beijingHourKey(ts);
+  // 设备最新状态：历史记录总条数（精确值）与匿名统计开关是否已关闭
+  const historyCount = Number.isFinite(Number(payload.hc)) ? Math.max(0, Math.floor(Number(payload.hc))) : 0;
+  const offFlag = Number(payload.off) === 1 ? 1 : 0;
 
   const deviceArgs = [
     payload.id, now, payload.app,
@@ -364,6 +355,7 @@ async function writeRow(db, payload, now) {
     counters.pages.overview, counters.pages.stats, counters.pages.history, counters.pages.forecast,
     counters.pages.wallet, counters.pages.settings, counters.pages.help, counters.pages.about,
   ];
+  const extendedDeviceArgs = [...deviceArgs, env.stv, historyCount, offFlag];
   const dailyArgs = [
     payload.day, payload.id,
     counters.opens, counters.dur_ms,
@@ -375,50 +367,25 @@ async function writeRow(db, payload, now) {
   const hourlyArgs = [hour, ...dailyArgs.slice(1)];
 
   // 每次重试重新 prepare：batch 事务失败会整体回滚，last_seq 判据保证重放不会重复累加
-  const buildDevice = (withStVersion) => db
-    .prepare(withStVersion ? DEVICE_UPSERT_SQL : DEVICE_UPSERT_LEGACY_SQL)
-    .bind(...(withStVersion ? [...deviceArgs, env.stv] : deviceArgs));
+  const buildDevice = (withExtras) => db
+    .prepare(withExtras ? DEVICE_UPSERT_SQL : DEVICE_UPSERT_LEGACY_SQL)
+    .bind(...(withExtras ? extendedDeviceArgs : deviceArgs));
   const buildDaily = () => db.prepare(DEVICE_DAILY_UPSERT_SQL).bind(...dailyArgs);
   const buildHourly = () => db.prepare(DEVICE_HOURLY_UPSERT_SQL).bind(...hourlyArgs);
-
-  const buildOff = () => db.prepare(DEVICE_OFF_UPSERT_SQL).bind(payload.id, ts, payload.seq);
-
-  if (Number(payload.off) === 1) {
-    // 关闭开关的最终上报：尽量同时写入关闭标记，任何一张可选表缺失都不阻断核心写入
-    try {
-      await db.batch([buildDevice(true), buildDaily(), buildHourly(), buildOff()]);
-      return;
-    } catch {}
-    try {
-      await db.batch([buildDevice(true), buildDaily(), buildOff()]);
-      return;
-    } catch {}
-    try {
-      await db.batch([buildDevice(true), buildDaily()]);
-      return;
-    } catch {}
-    try {
-      await db.batch([buildDevice(false), buildDaily(), buildOff()]);
-      return;
-    } catch {}
-    await db.batch([buildDevice(false), buildDaily()]);
-    return;
-  }
 
   try {
     await db.batch([buildDevice(true), buildDaily(), buildHourly()]);
     return;
   } catch {
-    // 继续走降级链：可能是 device_hourly 表缺失，也可能是 device.st_version 列缺失
+    // 继续走降级链：可能是 device_hourly 表缺失，也可能是 device 扩展列缺失
   }
   try {
     // 小时表尚未迁移（migrate-hourly.sql）：保留原有的设备 + 日两条写入
     await db.batch([buildDevice(true), buildDaily()]);
     return;
-  } catch {
-    // 设备表的 st_version 列也尚未迁移（migrate-st-version.sql）：回退旧列集合。
-    // 这一步保证未迁移的既有库与旧版本扩展照常上报，/collect 始终返回 204。
-  }
+  } catch {}
+  // 设备扩展列（st_version/history_count/telemetry_off）尚未迁移：回退旧列集合。
+  // 这一步保证未迁移的既有库与旧版本扩展照常上报，/collect 始终返回 204。
   await db.batch([buildDevice(false), buildDaily()]);
 }
 
@@ -455,16 +422,15 @@ function handleTrend(request, env) {
 async function buildSummary(env) {
   const now = Date.now();
   const today = beijingDayKey(now);
-  const [deviceRows, todayRows, disabledRows] = await Promise.all([
+  const [deviceRows, todayRows] = await Promise.all([
     queryAll(env, DEVICE_SELECT_SQL),
     queryAll(env, TODAY_SELECT_SQL, [today]),
-    // 关闭标记表可能尚未迁移：查询失败按 0 处理，不能影响整个看板
-    queryAll(env, DEVICE_OFF_SELECT_SQL).catch(() => []),
   ]);
 
   const users = deviceRows.length;
   const opens = sumBy(deviceRows, 'opens_total');
   const durMs = sumBy(deviceRows, 'dur_ms_total');
+  const disabledUsers = sumBy(deviceRows, 'telemetry_off');
 
   const pages = {};
   let pageTotal = 0;
@@ -501,10 +467,13 @@ async function buildSummary(env) {
       todayActiveUsers: numberOrZero(todayAgg.devices),
       todayOpens: numberOrZero(todayAgg.opens),
       todayDurMs: numberOrZero(todayAgg.dur_ms),
-      disabledUsers: numberOrZero(disabledRows?.[0]?.total),
+      // 关闭率取每台设备最新一次上报的开关状态
+      disabledUsers,
+      disabledRate: users > 0 ? disabledUsers / users : 0,
     },
     userGrowth,
     pages: { ...pages, total: pageTotal },
+    historyCount: historyCountHistogram(deviceRows.map((row) => row?.history_count)),
     versions: tally(deviceRows.map((row) => row?.app_version), { limit: 12 }),
     env: envBreakdown(deviceRows),
     durationHistogram: durationHistogram(deviceRows.map((row) => row?.dur_ms_total)),

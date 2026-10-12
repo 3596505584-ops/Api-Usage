@@ -897,6 +897,20 @@ var endpointOverride = null;
 function currentEndpoint() {
 	return endpointOverride ?? "https://stat.janmk.us.ci/collect";
 }
+/**
+* 扩展内历史记录总条数（热区 state.history + 冷区 _coldCount）。
+* 冷计数由 store/persistence 在各写入路径同步维护，因此这里可同步取到精确值。
+*/
+function historyRecordCount() {
+	try {
+		const hot = Array.isArray(state$2?.history) ? state$2.history.length : 0;
+		const settings = getExtensionSettings() || {};
+		const cold = Number(settings?._coldCount);
+		return hot + (Number.isFinite(cold) && cold > 0 ? Math.floor(cold) : 0);
+	} catch {
+		return 0;
+	}
+}
 var counters = emptyCounters();
 var sessionStart = null;
 var envCache = null;
@@ -1222,6 +1236,7 @@ function buildPayload(identity, incoming, pending, now, final = false) {
 			render: merged.render
 		},
 		daily: pending ? pending.daily === true : identity.day !== day,
+		hc: historyRecordCount(),
 		...final ? { off: true } : {}
 	};
 }
