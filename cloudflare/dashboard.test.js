@@ -1,6 +1,6 @@
 /**
  * 看板页渲染测试：用最小 DOM 桩在 Node 里执行 dashboard.html 的内联脚本，
- * 覆盖「图表库可用」与「图表库不可用（CDN 全部失败）」两条路径，
+ * 覆盖「图表库可用」与「图表库不可用（自托管来源失败）」两条路径，
  * 确保数据加载、卡片、图表 option 与文本兜底都不会回归。
  */
 import { readFileSync } from 'node:fs';
@@ -119,9 +119,8 @@ function makeEl(tag, id) {
 
 /**
  * 每个场景一套独立 DOM 桩。
- * mode：'no-lib'（全部来源失败）/ 'echarts-ready'（页面已存在 echarts）/
- *       'self-host-ok'（自托管成功）/ 'cdn-ok'（仅公共 CDN 成功）/
- *       'late-ok'（脚本超时判负后才真正执行成功）
+ * mode：'no-lib'（自托管来源失败）/ 'echarts-ready'（页面已存在 echarts）/
+ *       'self-host-ok'（自托管成功）/ 'late-ok'（脚本超时判负后才真正执行成功）
  */
 function createHarness(mode) {
   const elements = new Map();
@@ -147,18 +146,15 @@ function createHarness(mode) {
       appendChild(script) {
         const src = String(script.src || '');
         if (mode === 'late-ok') {
-          // 所有来源先报失败，但稍后 window.echarts 出现（模拟「脚本迟到」）
+          // 自托管来源先报失败，但稍后 window.echarts 出现（模拟「脚本迟到」）
           setTimeout(() => { if (typeof script.onerror === 'function') script.onerror(); }, 0);
           if (!windowStub.echarts) {
             setTimeout(() => { windowStub.echarts = mockEcharts; }, 300);
           }
           return;
         }
-        const success = mode === 'self-host-ok'
-          ? src.indexOf('/vendor/echarts.js') >= 0
-          : mode === 'cdn-ok'
-            ? src.indexOf('npmmirror') >= 0
-            : false;
+        // 看板只加载同源自托管来源，任何非 /vendor/echarts.js 的请求都视为失败
+        const success = mode === 'self-host-ok' && src.indexOf('/vendor/echarts.js') >= 0;
         setTimeout(() => {
           if (success) {
             windowStub.echarts = mockEcharts;
@@ -338,7 +334,14 @@ describe('看板页渲染（图表库可用）', () => {
   });
 });
 
-describe('图表库多源竞速', () => {
+describe('图表库仅自托管加载', () => {
+  it('看板页不再引用任何第三方图表库地址', () => {
+    expect(html).not.toContain('npmmirror');
+    expect(html).not.toContain('cdn.jsdelivr.net');
+    expect(html).not.toContain('unpkg.com');
+    expect(html).toContain("'/vendor/echarts.js?v=6.1.0-simple'");
+  });
+
   it('自托管可用时使用自托管并正常渲染', async () => {
     const harness = createHarness('self-host-ok');
     await harness.settle();
@@ -348,23 +351,12 @@ describe('图表库多源竞速', () => {
     expect(harness.options.get('chart-daily-pages').series).toHaveLength(8);
   });
 
-  it('自托管不可用时自动切到公共 CDN', async () => {
-    const harness = createHarness('cdn-ok');
-    await harness.settle();
-    expect(harness.localGetEl('lib-badge').textContent).toContain('npmmirror');
-    expect(harness.localGetEl('lib-banner').hidden).toBe(true);
-    expect(harness.options.get('chart-os')).toBeTruthy();
-  });
-
-  it('全部来源失败时把每个来源的结果显示出来', async () => {
+  it('自托管失败时展示失败原因并退回纯文本列表', async () => {
     const harness = createHarness('no-lib');
     await harness.settle();
     expect(harness.localGetEl('lib-banner').hidden).toBe(false);
     const text = harness.localGetEl('lib-banner-text').textContent;
     expect(text).toContain('自托管：失败');
-    expect(text).toContain('npmmirror：失败');
-    expect(text).toContain('jsdelivr：失败');
-    expect(text).toContain('unpkg：失败');
     expect(harness.localGetEl('lib-badge').hidden).toBe(true);
   });
 

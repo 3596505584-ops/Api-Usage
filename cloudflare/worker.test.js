@@ -174,9 +174,9 @@ describe('鉴权与健康检查', () => {
     // 四个趋势图可选按小时粒度，并提供最近 24 小时快捷选项
     expect(html).toContain('data-bucket="hour"');
     expect(html).toContain('最近 24 小时');
-    // 图表库首选同源自托管，公共 CDN 仅作兜底
+    // 图表库仅走同源自托管，不再引用任何第三方 CDN
     expect(html).toContain("'/vendor/echarts.js?v=6.1.0-simple'");
-    expect(html).toContain('echarts@6.1.0');
+    expect(html).not.toContain('echarts@6.1.0');
   });
 
   it('/vendor/echarts.js 自托管图表库无需口令且按 JS 返回', async () => {

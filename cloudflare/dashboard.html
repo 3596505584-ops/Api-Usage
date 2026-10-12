@@ -199,22 +199,16 @@
   const HOUR_RANGE_HOURS = 24;
   const HOUR_MS = 60 * 60 * 1000;
   /** 看板构建标识：每次改动看板后更新，便于确认浏览器拿到的是否为最新页面 */
-  const BUILD_ID = '2026-10-12.5';
+  const BUILD_ID = '2026-10-12.6';
   /**
-   * 图表库来源。第一组（同源自托管 + 最快的公共 CDN）**并发竞速**，先成功者胜出：
-   * 不同网络的拦截策略不一样——有的网络挡第三方域名，有的网络大响应会被中断，
-   * 竞速可以保证「只要有一条通就能画图」，同时总等待时间约等于最快的那个源。
+   * 图表库来源：**仅自托管**（Worker 同源的 `/vendor/echarts.js`），不使用任何第三方 CDN。
+   * 这样看板不会向外部站点发起请求，也就不会被广告拦截类扩展或网络策略误伤；
+   * 加载失败时页面的纯文本兜底列表照常工作。
    */
-  const ECHARTS_RACE = [
+  const ECHARTS_SOURCES = [
     { label: '自托管', url: '/vendor/echarts.js?v=6.1.0-simple' },
-    { label: 'npmmirror', url: 'https://registry.npmmirror.com/echarts/6.1.0/files/dist/echarts.min.js' },
   ];
-  /** 竞速全部失败后，再顺序尝试的兜底来源 */
-  const ECHARTS_FALLBACK = [
-    { label: 'jsdelivr', url: 'https://cdn.jsdelivr.net/npm/echarts@6.1.0/dist/echarts.min.js' },
-    { label: 'unpkg', url: 'https://unpkg.com/echarts@6.1.0/dist/echarts.min.js' },
-  ];
-  /** 单个来源的加载超时（毫秒）：被墙的域名往往长时间不响应，超时后换下一个来源 */
+  /** 单个来源的加载超时（毫秒） */
   const SCRIPT_TIMEOUT_MS = 10000;
   /** 「脚本迟到」观察：超时判负后脚本仍可能最终执行成功，按此间隔回看 window.echarts */
   const LATE_WATCH_INTERVAL_MS = 1500;
@@ -414,28 +408,15 @@
     });
   }
 
-  /** 多个来源并发加载，返回第一个成功者（都失败返回 null） */
-  function raceScripts(entries) {
-    return new Promise((resolve) => {
-      let pending = entries.length;
-      let settled = false;
-      entries.forEach((entry) => {
-        loadScript(entry).then((result) => {
-          echartsAttempts.push(result);
-          if (settled) return;
-          if (result.ok) {
-            settled = true;
-            resolve(entry);
-            return;
-          }
-          pending -= 1;
-          if (pending === 0) {
-            settled = true;
-            resolve(null);
-          }
-        });
-      });
-    });
+  /** 顺序尝试各来源，返回第一个成功的来源（全部失败返回 null） */
+  async function trySources(entries) {
+    for (const entry of entries) {
+      if (window.echarts) return entry;
+      const result = await loadScript(entry);
+      echartsAttempts.push(result);
+      if (result.ok) return entry;
+    }
+    return null;
   }
 
   async function loadEcharts() {
@@ -444,18 +425,10 @@
       echartsSource = '页面已有';
       return true;
     }
-    const winner = await raceScripts(ECHARTS_RACE);
+    const winner = await trySources(ECHARTS_SOURCES);
     if (winner) {
       echartsSource = winner.label;
       return true;
-    }
-    for (const entry of ECHARTS_FALLBACK) {
-      const result = await loadScript(entry);
-      echartsAttempts.push(result);
-      if (result.ok) {
-        echartsSource = entry.label;
-        return true;
-      }
     }
     return false;
   }
@@ -1219,7 +1192,7 @@
       const text = el('lib-banner-text');
       if (text) {
         text.textContent = '图表库加载失败（尝试结果：' + (attemptsText() || '无')
-          + '），当前改用纯文本数值列表展示。可点右侧按钮重试；若持续失败，多半是网络拦截或浏览器扩展屏蔽了脚本请求。';
+          + '），当前改用纯文本数值列表展示。可点右侧按钮重试；若持续失败，多半是自托管文件未部署、被浏览器扩展拦截，或网络中断。';
       }
     }
   }

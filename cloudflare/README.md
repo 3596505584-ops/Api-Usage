@@ -130,11 +130,11 @@ npx wrangler d1 execute api_usage_stat --remote --file cloudflare/migrate-st-ver
 
 - `/api/summary` 与 `/api/trend` 默认走 Cloudflare Cache API 缓存 **600 秒**，响应头 `X-Cache: HIT|MISS|BYPASS` 标明本次来源。
 - 看板右上角「刷新」按钮使用 `?force=1` 绕过缓存重新查询并回填缓存，页面顶部显示数据生成时间。
-- 图表库 ECharts（固定 `6.1.0`）分两级加载：① **并发竞速**——Worker 同源自托管的 `GET /vendor/echarts.js`（返回 `cloudflare/vendor/echarts.min.js`，浏览器 brotli 压缩后约 380 KiB、缓存 24 小时）与 `registry.npmmirror.com` 同时开始，**先成功者胜出**；② 竞速都失败后再顺序尝试 `cdn.jsdelivr.net` → `unpkg.com`（单个来源 10 秒超时）。之所以竞速而不是固定顺序：不同网络拦截策略不同（有的挡第三方域名，有的会中断大响应），竞速能保证「只要有一条通就能画图」，总等待时间约等于最快来源。
-- 看板页头会显示实际生效的来源徽标（`图表库：自托管 / npmmirror / jsdelivr / unpkg`）；若全部失败，顶部横幅会直接列出每个来源的尝试结果（成功/失败 + 耗时），可据此判断是网络拦截还是浏览器扩展屏蔽脚本。
-- 页头「数据生成于 … · 看板构建 `2026-10-11.2`」里的构建标识用于确认浏览器拿到的是否为最新页面；改动看板后请同步更新 `dashboard.html` 中的 `BUILD_ID`。
-- 若某个来源超时判负、但脚本随后仍下载并执行成功，看板会自动检测到（每 1.5 秒回看一次 `window.echarts`，最多 90 秒）并补画图表、收起失败提示，页头来源徽标显示「迟到加载」——不会出现「图表已经画出来、横幅还提示失败」的矛盾状态。
-- 自托管文件用的是 ECharts **simple 构建**（含折线/柱状/饼图与 tooltip/legend/grid，500 KiB，brotli 后约 170 KiB，比全量构建小一半多）。升级时把 `node_modules/echarts/dist/echarts.simple.min.js` 覆盖到 `cloudflare/vendor/echarts.min.js`，同步 `dashboard.html` 里的 `?v=` 查询串与 CDN 兜底版本号，再重新部署（当前 Worker 约 560 KiB / gzip 188 KiB，仍在免费额度内）。
+- 图表库 ECharts（固定 `6.1.0`）**仅自托管加载**：只请求 Worker 同源的 `GET /vendor/echarts.js`（返回 `cloudflare/vendor/echarts.min.js`，浏览器 brotli 压缩后约 380 KiB、缓存 24 小时），不再使用任何第三方 CDN（npmmirror / jsdelivr / unpkg 已全部移除）。这样看板页不会向外部站点发起请求，不会留下第三方访问痕迹，也不会被广告拦截类扩展或网络策略误伤。
+- 看板页头会显示实际生效的来源徽标（`图表库：自托管`）；若加载失败，顶部横幅会列出尝试结果（成功/失败 + 耗时）并提示可点「重试加载图表库」，此时纯文本数值列表照常可用。
+- 页头「数据生成于 … · 看板构建 `2026-10-12.6`」里的构建标识用于确认浏览器拿到的是否为最新页面；改动看板后请同步更新 `dashboard.html` 中的 `BUILD_ID`。
+- 若来源超时判负、但脚本随后仍下载并执行成功，看板会自动检测到（每 1.5 秒回看一次 `window.echarts`，最多 90 秒）并补画图表、收起失败提示，页头来源徽标显示「迟到加载」——不会出现「图表已经画出来、横幅还提示失败」的矛盾状态。
+- 自托管文件用的是 ECharts **simple 构建**（含折线/柱状/饼图与 tooltip/legend/grid，500 KiB，brotli 后约 170 KiB，比全量构建小一半多）。升级时把 `node_modules/echarts/dist/echarts.simple.min.js` 覆盖到 `cloudflare/vendor/echarts.min.js`，同步 `dashboard.html` 里的 `?v=` 查询串，再重新部署（当前 Worker 约 560 KiB / gzip 188 KiB，仍在免费额度内）。
 
 ## 接口
 
@@ -248,8 +248,8 @@ npx wrangler d1 execute api_usage_stat --remote --command \
   再执行 `npx wrangler deploy`，并把 `src/services/telemetry.ts` 的 `TELEMETRY_ENDPOINT` 换成 `https://stat.你的域名/collect` 后重新构建。
 - **看板 401**：未设置 `DASHBOARD_TOKEN`，或浏览器缓存了错误口令；重新 `npx wrangler secret put DASHBOARD_TOKEN` 后换浏览器隐私窗口访问。
 - **看板数字比预期略旧**：接口默认缓存 10 分钟，页面顶部显示数据生成时间；点「刷新」按钮会 `?force=1` 强制取最新数据。
-- **看板图表不显示，顶部出现提示**：ECharts CDN 被网络拦截，可点提示里的「重试加载图表库」；此时的数值列表同样完整可用。
-- **看板只有文本列表、没有图表**：先强制刷新一次（`Ctrl+Shift+R`），再看顶部横幅里列出的每个来源结果——它会直接告诉你哪个源失败、耗时多少。常见原因是浏览器扩展（广告拦截类）屏蔽了脚本请求，或本地网络对目标域名做了拦截；自托管源可用 `curl -I https://你的域名/vendor/echarts.js` 单独确认（应为 `200` 且 `Content-Type: text/javascript`）。
+- **看板图表不显示，顶部出现提示**：自托管图表库加载失败，可点提示里的「重试加载图表库」；此时的数值列表同样完整可用。
+- **看板只有文本列表、没有图表**：先强制刷新一次（`Ctrl+Shift+R`），再看顶部横幅里的加载结果与耗时。常见原因是 `cloudflare/vendor/echarts.min.js` 未随代码部署、浏览器扩展（广告拦截类）屏蔽了脚本请求，或网络中断；可用 `curl -I https://你的域名/vendor/echarts.js` 单独确认（应为 `200` 且 `Content-Type: text/javascript`）。
 - **更新看板后浏览器仍是旧版**：看页头「看板构建」标识是否变化；`/dashboard` 响应为 `no-store` 不会缓存，旧页面通常只是没有刷新。
 - **迁移脚本报 `duplicate column name`**：说明这些列此前已经加过，改跑 `cloudflare/migrate-backfill-device-totals.sql`（只做回填与校验、可重复执行）即可，不必再加列。
 - **想重新计算累计列**：同样跑 `cloudflare/migrate-backfill-device-totals.sql`；它会把累计列整体重算为 `device_daily` 的汇总值，因此请在部署新版 Worker 之前执行（否则会覆盖上线后累加进去的增量）。

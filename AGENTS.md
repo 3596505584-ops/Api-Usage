@@ -46,7 +46,7 @@ Api-Usage/
 │   ├── migrate-device-metrics.sql # 已有库补充 device.history_count/telemetry_off 列（未迁移时 Worker 自动回退旧列集合，不影响上报）
 │   ├── migrate-backfill-device-totals.sql # 只做累计列回填与校验，可安全重复执行（列已存在或需重算时使用）
 │   ├── wrangler.toml      # Worker 配置（D1 绑定、Cron、HTML 文本模块规则）
-│   ├── dashboard.html     # 口令保护的看板（总计/趋势/面板构成/画像/性能五分区，ECharts 6.1.0 自托管与 npmmirror 并发竞速 + jsdelivr/unpkg 兜底、页头显示来源徽标与 BUILD_ID，每个趋势图独立时间控件默认 30 天，手机竖屏单列）
+│   ├── dashboard.html     # 口令保护的看板（总计/趋势/面板构成/画像/性能五分区，ECharts 6.1.0 仅同源自托管加载（无任何第三方 CDN）、页头显示来源徽标与 BUILD_ID，每个趋势图独立时间控件默认 30 天，手机竖屏单列）
 │   └── README.md          # 部署、迁移回填、看板与接口说明、免费额度策略与运维 SQL
 ├── i18n/zh-cn.json
 ├── templates/panel.html   # 预留 Handlebars
