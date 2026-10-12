@@ -193,11 +193,11 @@ function renderHistoryFilterDropdown(
   if (!dropdown) return;
   const item = (id: string, label: string, title = label) => {
     const active = id === selected ? 'background:var(--ds-card);font-weight:600;' : '';
-    return `<div data-history-value="${esc(id)}" title="${esc(title)}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;${active}">${esc(label)}</div>`;
+    return `<div data-history-value="${esc(id)}" title="${esc(title)}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${active}">${esc(label)}</div>`;
   };
   let html = item(STATS_FILTER_ALL, '全部');
   for (const option of options) html += item(option.id, option.label, option.title || option.label);
-  if (!options.length) html += `<div style="padding:8px 10px;color:var(--ds-text-3);font-size:12px;">${esc(emptyText)}</div>`;
+  if (!options.length) html += `<div style="padding:8px 10px;color:var(--ds-text-3);font-size:var(--aus-fs-base);">${esc(emptyText)}</div>`;
   dropdown.innerHTML = html;
   dropdown.querySelectorAll('[data-history-value]').forEach((element: any) => {
     element.onclick = () => onSelect(element.getAttribute('data-history-value') || STATS_FILTER_ALL);
@@ -399,7 +399,7 @@ function renderHistoryInner(doc: Document, fullHist: any[]) {
   resetHistoryDetailState(doc, true);
   const total = fullHist.length;
   if (!total) {
-    host.innerHTML = `<div style="text-align:center;padding:24px;color:var(--ds-text-3);font-size:12px;line-height:1.8;">当前筛选无记录<br/><button id="aus-history-filter-reset" style="margin-top:8px;padding:6px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:11px;cursor:pointer;">清除筛选</button></div>`;
+    host.innerHTML = `<div style="text-align:center;padding:24px;color:var(--ds-text-3);font-size:var(--aus-fs-base);line-height:1.8;">当前筛选无记录<br/><button id="aus-history-filter-reset" style="margin-top:8px;padding:6px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;">清除筛选</button></div>`;
     const reset = doc.getElementById('aus-history-filter-reset') as HTMLButtonElement | null;
     if (reset) reset.onclick = () => {
       resetHistoryFilters();
@@ -413,17 +413,17 @@ function renderHistoryInner(doc: Document, fullHist: any[]) {
   if (historyPage < 1) historyPage = 1;
   const start = (historyPage - 1) * HISTORY_PAGE_SIZE;
   const pageHist = fullHist.slice(start, start + HISTORY_PAGE_SIZE);
-  const pagerTop = total > HISTORY_PAGE_SIZE ? `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:11px;color:var(--ds-text-2);">
+  const pagerTop = total > HISTORY_PAGE_SIZE ? `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:var(--aus-fs-sm);color:var(--ds-text-2);">
       <span>共 ${total} 条 · 第 ${historyPage}/${totalPages} 页</span>
       <span style="display:flex;gap:6px;">
-        <button id="aus-history-prev" ${historyPage<=1?'disabled':''} style="padding:4px 10px;border:1px solid var(--ds-border);border-radius:999px;background:${historyPage<=1?'var(--ds-card)':'var(--ds-card-inner)'};color:var(--ds-text);font-size:11px;cursor:${historyPage<=1?'not-allowed':'pointer'};opacity:${historyPage<=1?'0.5':'1'};">‹ 上一页</button>
-        <button id="aus-history-next" ${historyPage>=totalPages?'disabled':''} style="padding:4px 10px;border:1px solid var(--ds-border);border-radius:999px;background:${historyPage>=totalPages?'var(--ds-card)':'var(--ds-card-inner)'};color:var(--ds-text);font-size:11px;cursor:${historyPage>=totalPages?'not-allowed':'pointer'};opacity:${historyPage>=totalPages?'0.5':'1'};">下一页 ›</button>
+        <button id="aus-history-prev" ${historyPage<=1?'disabled':''} style="padding:4px 10px;border:1px solid var(--ds-border);border-radius:999px;background:${historyPage<=1?'var(--ds-card)':'var(--ds-card-inner)'};color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:${historyPage<=1?'not-allowed':'pointer'};opacity:${historyPage<=1?'0.5':'1'};display:inline-flex;align-items:center;gap:4px;">${icon('chevron-left', 14)} 上一页</button>
+        <button id="aus-history-next" ${historyPage>=totalPages?'disabled':''} style="padding:4px 10px;border:1px solid var(--ds-border);border-radius:999px;background:${historyPage>=totalPages?'var(--ds-card)':'var(--ds-card-inner)'};color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:${historyPage>=totalPages?'not-allowed':'pointer'};opacity:${historyPage>=totalPages?'0.5':'1'};display:inline-flex;align-items:center;gap:4px;">下一页 ${icon('chevron-right', 14)}</button>
       </span>
     </div>` : '';
-  const pagerBottom = total > HISTORY_PAGE_SIZE ? `<div style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:10px;font-size:11px;">
-      <button id="aus-history-prev-b" ${historyPage<=1?'disabled':''} style="padding:4px 12px;border:1px solid var(--ds-border);border-radius:999px;background:${historyPage<=1?'var(--ds-card)':'var(--ds-card-inner)'};color:var(--ds-text);font-size:11px;cursor:${historyPage<=1?'not-allowed':'pointer'};opacity:${historyPage<=1?'0.5':'1'};">‹ 上一页</button>
+  const pagerBottom = total > HISTORY_PAGE_SIZE ? `<div style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:10px;font-size:var(--aus-fs-sm);">
+      <button id="aus-history-prev-b" ${historyPage<=1?'disabled':''} style="padding:4px 12px;border:1px solid var(--ds-border);border-radius:999px;background:${historyPage<=1?'var(--ds-card)':'var(--ds-card-inner)'};color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:${historyPage<=1?'not-allowed':'pointer'};opacity:${historyPage<=1?'0.5':'1'};display:inline-flex;align-items:center;gap:4px;">${icon('chevron-left', 14)} 上一页</button>
       <span style="color:var(--ds-text-2);">第 ${historyPage}/${totalPages} 页</span>
-      <button id="aus-history-next-b" ${historyPage>=totalPages?'disabled':''} style="padding:4px 12px;border:1px solid var(--ds-border);border-radius:999px;background:${historyPage>=totalPages?'var(--ds-card)':'var(--ds-card-inner)'};color:var(--ds-text);font-size:11px;cursor:${historyPage>=totalPages?'not-allowed':'pointer'};opacity:${historyPage>=totalPages?'0.5':'1'};">下一页 ›</button>
+      <button id="aus-history-next-b" ${historyPage>=totalPages?'disabled':''} style="padding:4px 12px;border:1px solid var(--ds-border);border-radius:999px;background:${historyPage>=totalPages?'var(--ds-card)':'var(--ds-card-inner)'};color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:${historyPage>=totalPages?'not-allowed':'pointer'};opacity:${historyPage>=totalPages?'0.5':'1'};display:inline-flex;align-items:center;gap:4px;">下一页 ${icon('chevron-right', 14)}</button>
     </div>` : '';
   host.innerHTML = pagerTop + pageHist.map((h: any) => {
     const total = h.total_tokens || 1;
@@ -437,7 +437,7 @@ function renderHistoryInner(doc: Document, fullHist: any[]) {
     const recordDateText = recordDate.toLocaleDateString('zh-CN');
     const recordTimeText = recordDate.toLocaleTimeString('zh-CN', { hour12: false });
     return `
-    <div style="padding:10px 12px;background:var(--ds-card);border-radius:10px;margin-bottom:8px;font-size:12px;">
+    <div style="padding:10px 12px;background:var(--ds-card);border-radius:10px;margin-bottom:8px;font-size:var(--aus-fs-base);">
       <div class="aus-history-card-head" style="display:flex;justify-content:space-between;align-items:center;">
         <div class="aus-history-card-main" style="min-width:0;flex:1;">
           <div class="aus-history-card-title" style="font-weight:600;color:var(--ds-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(h.model)} · ${esc(localTimeHM(h.timestamp))}</div>
@@ -448,9 +448,9 @@ function renderHistoryInner(doc: Document, fullHist: any[]) {
             <div style="font-weight:700;color:var(--ds-text);">${c4}</div>
           </div>
           <div style="display:flex;gap:4px;">
-            <button class="aus-compare-old" data-ts="${h.timestamp}" style="padding:4px 6px;border:1px solid var(--ds-border);border-radius:6px;background:var(--ds-card-inner);color:var(--ds-text);font-size:10px;cursor:pointer;">旧</button>
-            <button class="aus-compare-new" data-ts="${h.timestamp}" style="padding:4px 6px;border:1px solid var(--ds-border);border-radius:6px;background:var(--ds-card-inner);color:var(--ds-text);font-size:10px;cursor:pointer;">新</button>
-            <button class="aus-detail-toggle" data-ts="${h.timestamp}" data-model="${esc(h.model || '')}" data-time="${esc(recordDateText + ' ' + recordTimeText)}" style="padding:4px 8px;border:1px solid var(--ds-black);border-radius:6px;background:var(--ds-black);color:var(--ds-black-text);font-size:10px;cursor:pointer;">详情</button>
+            <button class="aus-compare-old" data-ts="${h.timestamp}" style="padding:4px 6px;border:1px solid var(--ds-border);border-radius:6px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;">旧</button>
+            <button class="aus-compare-new" data-ts="${h.timestamp}" style="padding:4px 6px;border:1px solid var(--ds-border);border-radius:6px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;">新</button>
+            <button class="aus-detail-toggle" data-ts="${h.timestamp}" data-model="${esc(h.model || '')}" data-time="${esc(recordDateText + ' ' + recordTimeText)}" style="padding:4px 8px;border:1px solid var(--ds-black);border-radius:6px;background:var(--ds-black);color:var(--ds-black-text);font-size:var(--aus-fs-sm);cursor:pointer;">详情</button>
           </div>
         </div>
       </div>
@@ -459,7 +459,7 @@ function renderHistoryInner(doc: Document, fullHist: any[]) {
         <div style="background:var(--ds-red-border);width:${mp}%;height:100%;"></div>
         <div style="background:var(--ds-purple-bg);width:${op}%;height:100%;"></div>
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:10px;margin-top:4px;">
+      <div style="display:flex;justify-content:space-between;font-size:var(--aus-fs-sm);margin-top:4px;">
         <div style="display:flex;gap:8px;"><span style="color:var(--ds-green);font-weight:500;">${hps}% 命中</span><span style="color:var(--ds-red);font-weight:500;">${mps}% 未命中</span><span style="color:var(--ds-purple);font-weight:500;">${ops}% 输出</span></div>
         <span style="color:var(--ds-text-2);">${total.toLocaleString()}t</span>
       </div>
@@ -587,8 +587,8 @@ function renderHistory(doc: Document, s: any) {
     historyFullCache = null;
     historyCacheScope = '';
     const tip = scope === 'current'
-      ? '<div style="text-align:center;padding:16px;color:var(--ds-text-3);font-size:12px;line-height:1.8;">当前对话暂无记录<br/><span style="font-size:11px;">已按“当前对话”过滤，旧记录（未关联对话）仅在“全部历史”中可见</span><br/><button id="aus-history-scope-switch" style="margin-top:8px;padding:6px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:11px;cursor:pointer;">切换为全部历史</button></div>'
-      : '<div style="text-align:center;padding:16px;color:var(--ds-text-3);font-size:12px;">暂无历史记录</div>';
+      ? '<div style="text-align:center;padding:16px;color:var(--ds-text-3);font-size:var(--aus-fs-base);line-height:1.8;">当前对话暂无记录<br/><span style="font-size:var(--aus-fs-sm);">已按“当前对话”过滤，旧记录（未关联对话）仅在“全部历史”中可见</span><br/><button id="aus-history-scope-switch" style="margin-top:8px;padding:6px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:var(--aus-fs-sm);cursor:pointer;">切换为全部历史</button></div>'
+      : '<div style="text-align:center;padding:16px;color:var(--ds-text-3);font-size:var(--aus-fs-base);">暂无历史记录</div>';
     host.innerHTML = tip;
     const btn = doc.getElementById('aus-history-scope-switch') as HTMLButtonElement | null;
     if (btn) btn.onclick = () => {
@@ -878,23 +878,23 @@ export function createPanel() {
           <div data-view="history" style="display:none;">
             <div id="aus-history-filter-host" style="display:flex;align-items:center;gap:8px;margin-bottom:12px;position:relative;flex-wrap:wrap;">
               <div class="aus-stats-filter">
-                <div id="aus-history-model-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:12px;cursor:pointer;"><span style="color:var(--ds-text-2);">模型</span><span id="aus-history-model-label" style="font-weight:600;color:var(--ds-text);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">全部</span><span style="font-size:10px;">▼</span></div>
+                <div id="aus-history-model-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-base);cursor:pointer;"><span style="color:var(--ds-text-2);">模型</span><span id="aus-history-model-label" style="font-weight:600;color:var(--ds-text);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">全部</span>${icon('chevron-down', 14)}</div>
                 <div id="aus-history-model-dropdown" style="display:none;position:absolute;top:40px;left:0;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:180px;max-height:260px;overflow:auto;padding:8px;"></div>
               </div>
               <div class="aus-stats-filter">
-                <div id="aus-history-chat-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:12px;cursor:pointer;"><span style="color:var(--ds-text-2);">对话</span><span id="aus-history-chat-label" style="font-weight:600;color:var(--ds-text);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">全部</span><span style="font-size:10px;">▼</span></div>
+                <div id="aus-history-chat-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-base);cursor:pointer;"><span style="color:var(--ds-text-2);">对话</span><span id="aus-history-chat-label" style="font-weight:600;color:var(--ds-text);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">全部</span>${icon('chevron-down', 14)}</div>
                 <div id="aus-history-chat-dropdown" style="display:none;position:absolute;top:40px;left:0;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:200px;max-height:260px;overflow:auto;padding:8px;"></div>
               </div>
               <div class="aus-stats-filter">
-                <div id="aus-history-endpoint-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:12px;cursor:pointer;"><span style="color:var(--ds-text-2);">接入类型</span><span id="aus-history-endpoint-label" style="font-weight:600;color:var(--ds-text);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">全部</span><span style="font-size:10px;">▼</span></div>
+                <div id="aus-history-endpoint-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-base);cursor:pointer;"><span style="color:var(--ds-text-2);">接入类型</span><span id="aus-history-endpoint-label" style="font-weight:600;color:var(--ds-text);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">全部</span>${icon('chevron-down', 14)}</div>
                 <div id="aus-history-endpoint-dropdown" style="display:none;position:absolute;top:40px;left:0;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:200px;max-width:320px;max-height:260px;overflow:auto;padding:8px;"></div>
               </div>
               <div class="aus-stats-filter">
-                <div id="aus-history-credential-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:12px;cursor:pointer;"><span style="color:var(--ds-text-2);">API 密钥</span><span id="aus-history-credential-label" style="font-weight:600;color:var(--ds-text);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">全部</span><span style="font-size:10px;">▼</span></div>
+                <div id="aus-history-credential-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-base);cursor:pointer;"><span style="color:var(--ds-text-2);">API 密钥</span><span id="aus-history-credential-label" style="font-weight:600;color:var(--ds-text);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">全部</span>${icon('chevron-down', 14)}</div>
                 <div id="aus-history-credential-dropdown" style="display:none;position:absolute;top:40px;left:0;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:200px;max-width:320px;max-height:260px;overflow:auto;padding:8px;"></div>
               </div>
             </div>
-            <div id="aus-diff" class="ds-card" style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><span style="font-size:12px;font-weight:600;color:var(--ds-text);">缓存断点</span><button id="aus-diff-fullscreen" style="padding:4px 8px;border:1px solid var(--ds-border);border-radius:6px;background:var(--ds-card-inner);color:var(--ds-text);font-size:11px;cursor:pointer;">全屏</button></div><div style="font-size:11px;color:var(--ds-text-3);">在历史中各选一条 旧/新 对比，橙/绿高亮即发散点</div></div>
+            <div id="aus-diff" class="ds-card" style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><span style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);">缓存断点</span><button id="aus-diff-fullscreen" style="padding:4px 8px;border:1px solid var(--ds-border);border-radius:6px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;">全屏</button></div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);">在历史中各选一条 旧/新 对比，橙/绿高亮即发散点</div></div>
             <div id="aus-history"></div>
           </div>
           <div data-view="settings" style="display:none;">
@@ -945,7 +945,7 @@ export function createPanel() {
       <aside id="aus-history-detail" style="display:none;flex-direction:column;width:25%;min-width:300px;max-width:480px;flex-shrink:0;border-left:1px solid var(--ds-border);background:var(--ds-card-inner);overflow:hidden;">
         <div style="flex-shrink:0;height:48px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 12px;border-bottom:1px solid var(--ds-border);">
           <span id="aus-history-detail-title" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);">记录详情</span>
-          <button id="aus-history-detail-close" title="关闭" style="width:28px;height:28px;flex-shrink:0;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card);color:var(--ds-text-2);cursor:pointer;font-size:var(--aus-fs-base);line-height:1;">✕</button>
+          <button id="aus-history-detail-close" title="关闭" style="width:28px;height:28px;flex-shrink:0;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card);color:var(--ds-text-2);cursor:pointer;line-height:1;display:inline-flex;align-items:center;justify-content:center;">${icon('close', 16)}</button>
         </div>
         <div id="aus-history-detail-body" style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:12px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;"></div>
       </aside>
