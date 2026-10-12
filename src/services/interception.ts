@@ -149,7 +149,9 @@ function installFetchCapture() {
         }).then((res: Response) => {
           try {
             const clone = res.clone();
-            const parseAndProcess = (text: string, ttftVal: number, thinkTimeVal: number) => {
+            // 请求体未声明流式 → 明确非流式，全程不测速
+            const requestedStream = reqBody?.stream === true;
+            const parseAndProcess = (text: string, ttftVal: number, thinkTimeVal: number, streamed: boolean | null = null) => {
             let data: any = null;
             let finishReason: string | null = null;
             try {
@@ -187,11 +189,11 @@ function installFetchCapture() {
               try { if (finishReason) (usage as any).__finish_reason = finishReason; } catch {}
               try { estimateThinkTokens(text, usage); } catch {}
               // 完整响应文本（非流式为完整 JSON，流式为 SSE 原文）供历史详情展示
-              lastFetchUsage = { usage, model, msgs, startTime, fullReq, fullResponse: text, ttft: ttftVal, thinkTime: thinkTimeVal, finishReason, connection: requestConnection, requestId };
+              lastFetchUsage = { usage, model, msgs, startTime, fullReq, fullResponse: text, ttft: ttftVal, thinkTime: thinkTimeVal, finishReason, streamed, connection: requestConnection, requestId };
               lastFetchModel = typeof model === 'string' ? model : null;
               lastFetchTime = Date.now();
-              log.debug('fetch 捕获 usage', { model, hasUsage: !!usage, finishReason });
-              try { processUsage(usage, model, msgs, startTime, fullReq, text, ttftVal, thinkTimeVal, finishReason, requestConnection, requestId); } catch (e) { log.error('fetch 用量记录失败 ' + ((e as any)?.message || e)); }
+              log.debug('fetch 捕获 usage', { model, hasUsage: !!usage, finishReason, streamed });
+              try { processUsage(usage, model, msgs, startTime, fullReq, text, ttftVal, thinkTimeVal, finishReason, requestConnection, requestId, streamed); } catch (e) { log.error('fetch 用量记录失败 ' + ((e as any)?.message || e)); }
             }
           };
           // 流式测量 TTFT 与思维链耗时：后台消费 clone 的 body 流，不阻塞原始响应透传
@@ -201,7 +203,17 @@ function installFetchCapture() {
             let ttft = 0;
             let thinkStart = 0, thinkEnd = 0;
             let fullText = '';
-            const finish = () => { try { parseAndProcess(fullText, ttft, thinkEnd && thinkStart ? thinkEnd - thinkStart : 0); } catch {} };
+            // 假流式检测：统计承载正文的增量帧数
+            let contentFrames = 0;
+            const judgeStreamed = (): boolean | null => {
+              // 请求未声明流式：明确非流式
+              if (!requestedStream) return false;
+              // 未观测到正文帧（可能是纯 usage 帧或异常响应）：未知，交给数值兜底
+              if (!contentFrames) return null;
+              // 真正的流式会持续吐出多帧正文；只有一帧说明上游一次性返回全文
+              return contentFrames > 1;
+            };
+            const finish = () => { try { parseAndProcess(fullText, ttft, thinkEnd && thinkStart ? thinkEnd - thinkStart : 0, judgeStreamed()); } catch {} };
             const scanThink = (chunk: string) => {
               for (const line of chunk.split('\n')) {
                 if (!line.startsWith('data:')) continue;
@@ -209,6 +221,7 @@ function installFetchCapture() {
                 if (!payload || payload === '[DONE]') continue;
                 if (!thinkStart && line.indexOf('"reasoning_content"') !== -1) thinkStart = nowMs() - t0;
                 if (thinkStart && !thinkEnd && line.indexOf('"content"') !== -1) thinkEnd = nowMs() - t0;
+                if (line.indexOf('"content"') !== -1 || line.indexOf('"reasoning_content"') !== -1) contentFrames++;
               }
             };
             const readStream = async (body: ReadableStream<Uint8Array>) => {
@@ -236,11 +249,12 @@ function installFetchCapture() {
             if (streamBody && typeof (streamBody as any).getReader === 'function') {
               readStream(streamBody).catch(() => { try { finish(); } catch {} });
             } else {
-              clone.text().then((t) => { ttft = Date.now() - startTime; parseAndProcess(t, ttft, 0); }).catch(()=>{});
+              // 无流式 body：整段文本一次性读取，明确非流式
+              clone.text().then((t) => { ttft = Date.now() - startTime; parseAndProcess(t, ttft, 0, false); }).catch(()=>{});
             }
           } catch (innerErr) {
             log.debug('fetch 流式读取异常，不影响原请求', (innerErr as any)?.message || innerErr);
-            try { clone.text().then((t) => { parseAndProcess(t, 0, 0); }).catch(()=>{}); } catch {}
+            try { clone.text().then((t) => { parseAndProcess(t, 0, 0, requestedStream ? null : false); }).catch(()=>{}); } catch {}
           }
           } catch (e) {
             log.debug('fetch 克隆解析异常，不影响原请求', (e as any)?.message || e);
@@ -353,13 +367,14 @@ function onGenerationEnded(...args: any[]) {
     if (usage && isValidUsage(usage)) {
       log.debug('命中主路径 extra usage');
       // 主路径也尝试携带最近 fetch 的 TTFT/思维链/截断信息（fetch 已在后台流式测量）
-      let ttft = 0, think = 0, fr: string | null = (usage as any)?.__finish_reason ?? (usage as any)?.finish_reason ?? null;
+      let ttft = 0, think = 0, streamed: boolean | null = null, fr: string | null = (usage as any)?.__finish_reason ?? (usage as any)?.finish_reason ?? null;
       try {
         const fp: any = lastFetchUsage;
         if (fp && Date.now() - lastFetchTime < 5000) {
           if (!ttft) ttft = fp.ttft || 0;
           if (!think) think = fp.thinkTime || 0;
           if (!fr) fr = fp.finishReason ?? null;
+          if (fp.streamed != null) streamed = fp.streamed;
           // 尝试从 tail SSE 最后一个 chunk 补 finish_reason（若 usage 未带）
           if (!fr) {
             try {
@@ -369,7 +384,7 @@ function onGenerationEnded(...args: any[]) {
           }
         }
       } catch {}
-      processUsage(usage, model, lastMessages, lastStart, null, null, ttft, think, fr, recentConnection(5000), recentRequestId());
+      processUsage(usage, model, lastMessages, lastStart, null, null, ttft, think, fr, recentConnection(5000), recentRequestId(), streamed);
       lastFetchUsage = null;
       return;
     }
@@ -381,9 +396,9 @@ function onGenerationEnded(...args: any[]) {
           usage = cand;
           model = (v as any)?.extra?.model || model;
           log.debug('swipe_info 命中', { model });
-          let ttft = 0, think = 0, fr: string | null = (cand as any)?.__finish_reason ?? null;
-          try { const fp:any=lastFetchUsage; if (fp && Date.now()-lastFetchTime<5000){ ttft=fp.ttft||0; think=fp.thinkTime||0; if(!fr) fr=fp.finishReason??null; } } catch {}
-          processUsage(usage, model, lastMessages, lastStart, null, null, ttft, think, fr, recentConnection(5000), recentRequestId());
+          let ttft = 0, think = 0, streamed: boolean | null = null, fr: string | null = (cand as any)?.__finish_reason ?? null;
+          try { const fp:any=lastFetchUsage; if (fp && Date.now()-lastFetchTime<5000){ ttft=fp.ttft||0; think=fp.thinkTime||0; if(!fr) fr=fp.finishReason??null; if (fp.streamed != null) streamed = fp.streamed; } } catch {}
+          processUsage(usage, model, lastMessages, lastStart, null, null, ttft, think, fr, recentConnection(5000), recentRequestId(), streamed);
           lastFetchUsage = null;
           return;
         }
@@ -395,9 +410,9 @@ function onGenerationEnded(...args: any[]) {
     if (isValidUsage(maybeUsage)) {
       const m = args[0]?.model || model;
       log.debug('args 命中', { model: m });
-      let ttft = 0, think = 0, fr: string | null = (maybeUsage as any)?.__finish_reason ?? null;
-      try { const fp:any=lastFetchUsage; if (fp && Date.now()-lastFetchTime<5000){ ttft=fp.ttft||0; think=fp.thinkTime||0; if(!fr) fr=fp.finishReason??null; } } catch {}
-      processUsage(maybeUsage, m, lastMessages, lastStart, null, null, ttft, think, fr, recentConnection(5000), recentRequestId());
+      let ttft = 0, think = 0, streamed: boolean | null = null, fr: string | null = (maybeUsage as any)?.__finish_reason ?? null;
+      try { const fp:any=lastFetchUsage; if (fp && Date.now()-lastFetchTime<5000){ ttft=fp.ttft||0; think=fp.thinkTime||0; if(!fr) fr=fp.finishReason??null; if (fp.streamed != null) streamed = fp.streamed; } } catch {}
+      processUsage(maybeUsage, m, lastMessages, lastStart, null, null, ttft, think, fr, recentConnection(5000), recentRequestId(), streamed);
       lastFetchUsage = null;
       return;
     }
@@ -413,9 +428,10 @@ function onGenerationEnded(...args: any[]) {
         const fTtft = (fetchPack && fetchPack.ttft) || 0;
         const fThink = (fetchPack && fetchPack.thinkTime) || 0;
         const fFr = (fetchPack && fetchPack.finishReason) || (fetchUsage as any)?.__finish_reason || null;
+        const fStreamed: boolean | null = fetchPack && fetchPack.streamed != null ? fetchPack.streamed : null;
         log.debug('fetch 兜底命中', { model: fetchedModel });
         lastFetchUsage = null;
-        processUsage(fetchUsage, fetchedModel, fetchedMsgs, fetchedStart, fetchedReq, fetchedRes, fTtft, fThink, fFr, fetchPack?.connection || recentConnection(), fetchPack?.requestId || recentRequestId(120000));
+        processUsage(fetchUsage, fetchedModel, fetchedMsgs, fetchedStart, fetchedReq, fetchedRes, fTtft, fThink, fFr, fetchPack?.connection || recentConnection(), fetchPack?.requestId || recentRequestId(120000), fStreamed);
         return;
       } else if (lastFetchUsage) {
         const fu = fetchPack && fetchPack.usage ? fetchPack.usage : fetchPack;
@@ -436,7 +452,7 @@ function refresh() {
   try { (globalThis as any).ApiUsageStat?.refreshUI?.(); } catch {}
 }
 
-export function processUsage(usage: any, model: string, messages: any[], startTime: number, fullRequest: any = null, fullResponse: any = null, ttft = 0, thinkTime = 0, finishReason: string | null = null, connection: HistoryConnection | null = null, requestId: string | null = null) {
+export function processUsage(usage: any, model: string, messages: any[], startTime: number, fullRequest: any = null, fullResponse: any = null, ttft = 0, thinkTime = 0, finishReason: string | null = null, connection: HistoryConnection | null = null, requestId: string | null = null, streamed: boolean | null = null) {
   // 主路径 usage 多来自 ST，可能缺 reasoning_tokens；从最近 fetch 的估算值补上
   try {
     const fp: any = lastFetchUsage;
@@ -446,7 +462,7 @@ export function processUsage(usage: any, model: string, messages: any[], startTi
       if (est && !hasReal && !(usage as any)?.__think_tokens_est) (usage as any).__think_tokens_est = est;
     }
   } catch {}
-  repository.addEntry(usage, model, messages, startTime, fullRequest, fullResponse, ttft, thinkTime, finishReason, connection, requestId);
+  repository.addEntry(usage, model, messages, startTime, fullRequest, fullResponse, ttft, thinkTime, finishReason, connection, requestId, streamed);
   refresh();
 }
 

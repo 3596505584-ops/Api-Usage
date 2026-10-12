@@ -242,7 +242,8 @@ git push origin main --tags
 ## 其他经验
 
 - **动态分包 404 坑**：`import('../services/update')` 等动态 `import()` 会使 `Vite lib` 输出额外 `index-*.js`，`index.js` 仅为 re-export 存根；若漏提交新 hash 文件，扩展激活时 `GET .../index-*.js 404` → `Could not activate extension [object Event]` 并阻断后续扩展加载，属全站故障
-- **TTFT/思维链为 0 坑**：`GENERATION_ENDED` 主路径不带 `ttft`，需在 `onGenerationEnded` 中合并最近 `lastFetchUsage.ttft/thinkTime/finishReason`（5s 内有效），否则 `tokenRate` 失真且详情为 0
+- **TTFT/思维链为 0 坑**：`GENERATION_ENDED` 主路径不带 `ttft`，需在 `onGenerationEnded` 中合并最近 `lastFetchUsage.ttft/thinkTime/finishReason/streamed`（5s 内有效），否则 `tokenRate` 失真且详情为 0
+- **非流式/假流式速率爆炸坑**：速率口径单一来源在 `src/data/token-rate.ts`（`computeTokenRate`）。非流式走 `clone.text()` 分支、假流式首帧即携带全文，两者都让 `duration - ttft` 塌缩到几百毫秒，算出上千 t/s 的假速率。拦截层按 `reqBody.stream === true` 与正文增量帧数（`contentFrames > 1`）判定 `streamed`，沿 `parseAndProcess → processUsage → addEntry` 透传并落到 `HistoryEntry.streamed`；`streamed === false` 时 `tokenRate` 与 `ttft` 一并归零。数值兜底：生成阶段窗口 < 200ms 或结果 > 1000 t/s 一律归 0。历史脏值由 `hydrate` 与导入清洗（`sanitizeHistoryTiming`）修复；`extra-charts` 速率均值分母只计有效样本，`overview.ts` / `panel.ts` / `compare.ts` 在无有效值时显示 `—`
 - **截断率/思维链占比**：`finish_reason === 'length'` 判截断，`thinkTokens/completion_tokens` 算占比，统计块与详情均基于此；`isTruncated` 持久化于 `HistoryEntry`
 - **详情双占比去重**：性能块与 Token 消耗块曾各显示一次“思维链占比”，后收敛为仅性能块保留，Token 块改为单列占满的“思维链 Token”
 - **密钥身份与隐私**：普通官方接口的密钥由酒馆后端注入，扩展只读活动密钥条目编号、标签和掩码末三位；反向代理的 `proxy_password` 与 `custom_include_headers` 不读取、不比较、不持久化，因此同一中转地址下的反向代理密码无法细分

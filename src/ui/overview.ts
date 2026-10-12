@@ -82,7 +82,10 @@ export function getFourDisplay(key: OverviewFourKey, v: any): { title:string; ht
       const has = (v.avgTtft||0) > 0;
       return { title, html: has ? `${(v.avgTtft).toFixed(1)} <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);font-weight:400;">s</span>` : `<span style="color:var(--ds-text-3);">—</span>` };
     }
-    case 'avg_rate': return { title: '输出速率', html: `${Math.round(v.avgRate||0)} <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);font-weight:400;">t/s</span>` };
+    case 'avg_rate': {
+      const has = (v.avgRate||0) > 0;
+      return { title, html: has ? `${Math.round(v.avgRate)} <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);font-weight:400;">t/s</span>` : `<span style="color:var(--ds-text-3);">—</span>` };
+    }
     case 'avg_input_cost': return { title, html: moneyHtml(v.avgInputCost||0, 4) };
     case 'avg_input_tokens': return { title, html: `${Math.round(v.avgInputTokens||0).toLocaleString('zh-CN')}` };
     case 'avg_output_cost': return { title, html: moneyHtml(v.avgOutputCost||0, 4) };

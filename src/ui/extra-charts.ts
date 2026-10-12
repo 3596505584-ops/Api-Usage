@@ -155,7 +155,10 @@ async function renderOne(id:ChartId, filtered:any[]){
     } else if (k==='rate'){
       data = sortedKeys.map(key=>{
         const arr=buckets.get(key)!;
-        const avg = arr.reduce((a:any,c:any)=>a+(c.tokenRate||0),0)/arr.length;
+        // 只统计有效速率样本：非流式/未测速的 0 不参与分母，避免拉低均值
+        const valid = arr.map((c:any)=>c.tokenRate||0).filter((v:number)=>v>0);
+        if (!valid.length) return 0;
+        const avg = valid.reduce((a:number,c:number)=>a+c,0)/valid.length;
         return Math.round(avg);
       });
     } else if (k==='req_count'){

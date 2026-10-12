@@ -22,6 +22,8 @@ export type HistoryEntry = {
   duration?: number;
   tokenRate?: number;
   ttft?: number;
+  /** 本轮是否为真实流式；false 表示非流式或上游一次性返回，速率与 TTFT 均不可信 */
+  streamed?: boolean | null;
   thinkTime?: number;
   thinkTokens?: number;
   /** SSE 最后一个非 null 的 choices[0].finish_reason；非正常结束（length / content_filter / sensitive 等）视为截断 */

@@ -3,6 +3,7 @@ import { EXPORT_FORMAT_VERSION } from '../constants/pricing';
 import { repository } from '../data/repository';
 import { normalizeModel } from './pricing';
 import { mergeWalletCollections } from '../data/wallets';
+import { sanitizeHistoryTiming } from '../data/token-rate';
 import { historyRecordKey } from '../utils/history-key';
 
 declare const __APP_VERSION__: string;
@@ -137,6 +138,8 @@ export function normalizeImportData(raw: any): { data?: any; error?: string; ski
     for (const field of ['cost', 'input_cost', 'output_cost']) {
       if (nh[field] !== undefined) nh[field] = finiteNonNegative(nh[field]);
     }
+    // 清洗异常速率与失真 TTFT，避免污染平均速率与平均首字延迟
+    sanitizeHistoryTiming(nh);
     cleaned.push(nh);
   }
   cleaned.sort((a, b) => b.timestamp - a.timestamp);

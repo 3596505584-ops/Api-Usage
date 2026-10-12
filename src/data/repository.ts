@@ -14,6 +14,7 @@ import { isUnsafeKey, isValidDayKey, localDay } from '../utils/date';
 import { isTruncatedFinish } from '../utils/finish';
 import { log, toast } from '../utils/logger';
 import { usageFingerprint } from './fingerprint';
+import { computeTokenRate, sanitizeHistoryTiming } from './token-rate';
 import { normalizeConnectionEndpoint, type HistoryConnection } from '../services/connection-identity';
 import {
   createDeepSeekWallet,
@@ -827,6 +828,7 @@ export const repository = {
     finishReason: string | null = null,
     connection: HistoryConnection | null = null,
     requestId: string | null = null,
+    streamed: boolean | null = null,
   ) {
     messages = messages || [];
     if (!model) try { model = (globalThis as any).SillyTavern?.getContext?.().model || 'deepseek-v4-flash'; } catch { model = 'deepseek-v4-flash'; }
@@ -913,9 +915,22 @@ export const repository = {
             const estThink = usage?.completion_tokens_details?.reasoning_tokens || (usage as any)?.__think_tokens_est || 0;
             if (estThink && !head.thinkTokens) { head.thinkTokens = estThink; changed = true; }
             if (ttft && !head.ttft) {
-              head.ttft = ttft;
-              const dur = head.duration || 0;
-              head.tokenRate = dur - ttft > 50 && (head.completion_tokens || 0) > 0 ? Math.round((head.completion_tokens / (dur - ttft)) * 1000) : 0;
+              // 非流式/假流式：TTFT 与速率均不可信，一并归零
+              if (streamed === false) {
+                head.ttft = 0;
+                head.tokenRate = 0;
+                head.streamed = false;
+              } else {
+                head.ttft = ttft;
+                const dur = head.duration || 0;
+                head.tokenRate = computeTokenRate({ duration: dur, ttft, completionTokens: head.completion_tokens || 0, streamed });
+                if (streamed != null) head.streamed = streamed;
+              }
+              changed = true;
+            } else if (streamed === false && !head.streamed) {
+              head.ttft = 0;
+              head.tokenRate = 0;
+              head.streamed = false;
               changed = true;
             }
             if (thinkTime && !head.thinkTime) { head.thinkTime = thinkTime; changed = true; }
@@ -957,8 +972,11 @@ export const repository = {
     const duration = startTime ? Date.now() - startTime : 0;
     const thinkTokens = usage.completion_tokens_details?.reasoning_tokens || (usage as any)?.__think_tokens_est || 0;
     lu.duration = duration;
-    lu.tokenRate = duration - (ttft || 0) > 50 && comp > 0 ? Math.round((comp / (duration - (ttft || 0))) * 1000) : 0;
-    lu.ttft = ttft || 0; lu.thinkTime = thinkTime || 0; lu.thinkTokens = thinkTokens;
+    // 非流式/假流式：TTFT 不可信（等于总耗时），速率分母塌缩会算出假速率，两者一并归零
+    const nonStreamed = streamed === false;
+    lu.streamed = streamed;
+    lu.tokenRate = nonStreamed ? 0 : computeTokenRate({ duration, ttft: ttft || 0, completionTokens: comp, streamed });
+    lu.ttft = nonStreamed ? 0 : (ttft || 0); lu.thinkTime = thinkTime || 0; lu.thinkTokens = thinkTokens;
     // 截断检测：非正常 finish_reason（length / content_filter / sensitive 等）
     lu.finishReason = fr; (lu as any).isTruncated = isTruncatedFinish(fr);
     lu.messages = (messages || []).map(clampMessage);
@@ -988,8 +1006,9 @@ export const repository = {
       requestId,
       completion_tokens: comp, total_tokens: total, input_cost: lu.input_cost, output_cost: lu.output_cost,
       cost: lu.cost, cache_hit_rate: (hit + miss) > 0 ? (hit / (hit + miss) * 100) : 0, priceType: lu.priceType,
-      raw_usage: usage, messages: (messages || []).map(clampMessage), duration, ttft, thinkTime, thinkTokens, tokenRate: lu.tokenRate, fullRequest, fullResponse: safeResponse,
+      raw_usage: usage, messages: (messages || []).map(clampMessage), duration, ttft: lu.ttft, thinkTime, thinkTokens, tokenRate: lu.tokenRate, fullRequest, fullResponse: safeResponse,
       finishReason: fr2, isTruncated: isTruncatedFinish(fr2),
+      streamed,
       chatId, chatName,
       sourceType: connection?.sourceType ?? null,
       endpointId: connection?.endpointId ?? null,
@@ -1351,6 +1370,19 @@ export const repository = {
     if (needPersistChatId) try { saveHot({ history: state.history }); } catch {}
     let coldForWalletMigration: any[] = [];
     try { coldForWalletMigration = await loadHistoryCold(); } catch {}
+    // 迁移：清洗非流式/假流式造成的异常速率与失真 TTFT（>1000 t/s，或 TTFT≈总耗时）
+    try {
+      let hotFixed = false;
+      for (const h of state.history || []) {
+        if (sanitizeHistoryTiming(h)) hotFixed = true;
+      }
+      let coldFixed = false;
+      for (const h of coldForWalletMigration || []) {
+        if (sanitizeHistoryTiming(h)) coldFixed = true;
+      }
+      if (hotFixed) try { saveHot({ history: state.history }); } catch {}
+      if (coldFixed) try { await saveHistoryCold(coldForWalletMigration); } catch {}
+    } catch {}
     if (migrateWallets(hot, coldForWalletMigration)) {
       try { saveHot({ wallets: state.wallets, walletIgnored: state.walletIgnored }); } catch {}
       if (coldForWalletMigration.length) {
