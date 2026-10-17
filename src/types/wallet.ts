@@ -34,6 +34,8 @@ export type WalletModel = {
   aliases: string[];
   /** 模型上下文上限；未配置时由内置能力表推断 */
   contextLimit?: number | null;
+  /** 上下文上限是否为用户手动设置；false/缺省表示自动推断 */
+  contextLimitManual?: boolean;
   price: WalletPriceRule;
   source: WalletModelSource;
   locked: boolean;

@@ -7,6 +7,7 @@ import {
   findExactPricedModelMatch,
   findWalletModel,
   mergeWalletCollections,
+  normalizeWalletModel,
   normalizeWallets,
   observeCredential,
   observeModel,
@@ -158,5 +159,33 @@ describe('钱包数据', () => {
     const merged = mergeWalletCollections([local], [remote]);
     expect(merged[0].updatedAt).toBe(3000);
     expect(merged[0].credentials.map((item) => item.id).sort()).toEqual(['a', 'b']);
+  });
+
+  it('DeepSeek 上下文上限自动兜底为 1M，并迁移旧 128k 自动值', () => {
+    const fresh = normalizeWalletModel({
+      sourceModel: 'deepseek-flash',
+      model: 'deepseek-flash',
+      source: 'builtin',
+    }, 1000);
+    expect(fresh?.contextLimit).toBe(1_000_000);
+    expect(fresh?.contextLimitManual).toBe(false);
+
+    const legacy = normalizeWalletModel({
+      sourceModel: 'deepseek-flash',
+      model: 'deepseek-flash',
+      source: 'builtin',
+      contextLimit: 128_000,
+    }, 1000);
+    expect(legacy?.contextLimit).toBe(1_000_000);
+
+    const manual = normalizeWalletModel({
+      sourceModel: 'deepseek-flash',
+      model: 'deepseek-flash',
+      source: 'builtin',
+      contextLimit: 128_000,
+      contextLimitManual: true,
+    }, 1000);
+    expect(manual?.contextLimit).toBe(128_000);
+    expect(manual?.contextLimitManual).toBe(true);
   });
 });

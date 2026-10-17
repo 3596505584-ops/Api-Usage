@@ -748,3 +748,663 @@
     white-space: nowrap;
   }
 }
+
+/* ===== 趋势预测 ===== */
+#aus-forecast-root {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.aus-forecast-toolbar {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.aus-forecast-toolbar-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.aus-forecast-picker {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+.aus-forecast-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 6px 11px;
+  border: 1px solid var(--ds-border);
+  border-radius: 999px;
+  background: var(--ds-card-inner);
+  color: var(--ds-text);
+  font-size: var(--aus-fs-base);
+  cursor: pointer;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.aus-forecast-pill:hover {
+  border-color: var(--ds-text-3);
+}
+.aus-forecast-pill-label {
+  color: var(--ds-text-2);
+  flex-shrink: 0;
+}
+.aus-forecast-pill-value {
+  font-weight: 600;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.aus-forecast-dropdown {
+  display: none;
+  position: absolute;
+  top: 36px;
+  left: 0;
+  z-index: 120;
+  background: var(--ds-card-inner);
+  border: 1px solid var(--ds-border);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  min-width: 200px;
+  max-width: min(320px, calc(100vw - 40px));
+  max-height: 280px;
+  overflow: auto;
+  padding: 6px;
+  box-sizing: border-box;
+}
+.aus-forecast-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  border-radius: 8px;
+  font-size: var(--aus-fs-base);
+  color: var(--ds-text);
+  cursor: pointer;
+}
+.aus-forecast-dropdown-item:hover {
+  background: var(--ds-card);
+}
+.aus-forecast-dropdown-item.is-active {
+  background: var(--ds-card);
+  font-weight: 600;
+}
+.aus-forecast-dropdown-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.aus-forecast-dropdown-meta {
+  color: var(--ds-text-3);
+  font-size: var(--aus-fs-sm);
+  flex-shrink: 0;
+}
+.aus-forecast-dropdown-empty {
+  padding: 7px 9px;
+  color: var(--ds-text-3);
+  font-size: var(--aus-fs-sm);
+}
+.aus-forecast-sub {
+  font-size: var(--aus-fs-sm);
+  color: var(--ds-text-3);
+  line-height: 1.5;
+}
+.aus-forecast-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--aus-fs-sm);
+  color: var(--ds-text-2);
+  cursor: pointer;
+  white-space: nowrap;
+}
+/* 原生复选框只作为可访问与点击代理，视觉完全由 .aus-forecast-checkbox 绘制 */
+.aus-forecast-toggle input[type="checkbox"] {
+  position: absolute;
+  width: 1px !important;
+  height: 1px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  opacity: 0;
+  pointer-events: none;
+}
+.aus-forecast-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 1px solid var(--ds-border);
+  border-radius: 4px;
+  background: var(--ds-card-inner);
+}
+.aus-forecast-checkbox::after {
+  content: '';
+  width: 4px;
+  height: 8px;
+  border: solid var(--ds-card-inner);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) translate(-1px, -1px);
+  opacity: 0;
+}
+.aus-forecast-toggle:hover .aus-forecast-checkbox {
+  border-color: var(--ds-text-3);
+}
+.aus-forecast-toggle input:checked + .aus-forecast-checkbox {
+  border-color: var(--ds-text);
+  background: var(--ds-text);
+}
+.aus-forecast-toggle input:checked + .aus-forecast-checkbox::after {
+  opacity: 1;
+}
+.aus-forecast-toggle input:focus-visible + .aus-forecast-checkbox {
+  outline: 2px solid var(--ds-text-3);
+  outline-offset: 2px;
+}
+.aus-forecast-hit-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.aus-forecast-hit-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--aus-fs-sm);
+  color: var(--ds-text-2);
+}
+.aus-forecast-hit-range input {
+  width: 120px;
+}
+.aus-forecast-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--ds-green-bg);
+  color: var(--ds-green);
+  font-size: var(--aus-fs-sm);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.aus-forecast-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  min-width: 0;
+}
+.aus-forecast-kpi {
+  padding: 12px 14px;
+  min-width: 0;
+}
+.aus-forecast-kpi-label {
+  font-size: var(--aus-fs-sm);
+  color: var(--ds-text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.aus-forecast-kpi-value {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--ds-text);
+  margin-top: 5px;
+  word-break: break-all;
+  line-height: 1.3;
+}
+.aus-forecast-kpi-sub {
+  font-size: var(--aus-fs-xs);
+  color: var(--ds-text-3);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+.aus-forecast-kpi-green .aus-forecast-kpi-value {
+  color: var(--ds-green);
+}
+.aus-forecast-kpi-orange .aus-forecast-kpi-value {
+  color: var(--ds-orange);
+}
+.aus-forecast-kpi-red .aus-forecast-kpi-value {
+  color: #DC2626;
+}
+.aus-forecast-chart-card {
+  position: relative;
+  overflow: hidden !important;
+  min-width: 0;
+}
+.aus-forecast-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.aus-forecast-card-title {
+  font-size: var(--aus-fs-base);
+  font-weight: 600;
+  color: var(--ds-text);
+}
+.aus-forecast-card-sub {
+  font-size: var(--aus-fs-sm);
+  color: var(--ds-text-3);
+  margin-top: 3px;
+  line-height: 1.4;
+}
+.aus-forecast-chart {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.aus-forecast-chart-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 180px;
+  color: var(--ds-text-3);
+  font-size: var(--aus-fs-sm);
+  text-align: center;
+  padding: 12px;
+  box-sizing: border-box;
+}
+.aus-forecast-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  min-width: 0;
+}
+.aus-forecast-two-col {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  min-width: 0;
+}
+.aus-forecast-empty {
+  padding: 12px 4px;
+  color: var(--ds-text-3);
+  font-size: var(--aus-fs-sm);
+  line-height: 1.6;
+}
+.aus-forecast-notice {
+  padding: 14px;
+  color: var(--ds-text-2);
+  font-size: var(--aus-fs-sm);
+  line-height: 1.6;
+}
+.aus-forecast-kpis > .aus-forecast-notice {
+  grid-column: 1 / -1;
+}
+.aus-forecast-health-grades {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.aus-forecast-grade {
+  width: 28px;
+  height: 24px;
+  border-radius: 5px;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: var(--aus-fs-sm);
+  opacity: 0.55;
+}
+.aus-forecast-grade.is-current {
+  opacity: 1;
+  outline: 2px solid var(--ds-text);
+  outline-offset: 1px;
+}
+.aus-forecast-grade-sm {
+  width: 20px;
+  height: 20px;
+  font-size: var(--aus-fs-xs);
+  border-radius: 4px;
+  opacity: 1;
+}
+.aus-forecast-health-score {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 8px;
+}
+.aus-forecast-health-score-value {
+  font-size: 22px;
+  font-weight: 700;
+}
+.aus-forecast-health-score-label {
+  font-size: var(--aus-fs-sm);
+  color: var(--ds-text-2);
+}
+.aus-forecast-health-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px 12px;
+  margin-top: 10px;
+  font-size: var(--aus-fs-sm);
+}
+.aus-forecast-health-metrics > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--ds-text-2);
+  min-width: 0;
+}
+.aus-forecast-health-metrics b {
+  color: var(--ds-text);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.aus-forecast-health-foot {
+  margin-top: 10px;
+  font-size: var(--aus-fs-xs);
+  color: var(--ds-text-3);
+}
+.aus-forecast-compaction-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px 12px;
+  font-size: var(--aus-fs-sm);
+}
+.aus-forecast-compaction-grid > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--ds-text-2);
+  min-width: 0;
+}
+.aus-forecast-compaction-grid b {
+  color: var(--ds-text);
+  white-space: nowrap;
+}
+.aus-forecast-compaction-note {
+  margin-top: 10px;
+  font-size: var(--aus-fs-sm);
+  color: var(--ds-text-2);
+  line-height: 1.6;
+}
+.aus-forecast-compaction-list {
+  margin-top: 8px;
+  border-top: 1px solid var(--ds-border);
+}
+.aus-forecast-compaction-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--ds-card);
+  font-size: var(--aus-fs-sm);
+  color: var(--ds-text-2);
+}
+.aus-forecast-compaction-round {
+  min-width: 62px;
+  font-weight: 600;
+  color: var(--ds-text);
+}
+.aus-forecast-compaction-change {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.aus-forecast-compaction-drop {
+  color: #DC2626;
+}
+.aus-forecast-compaction-gap {
+  color: var(--ds-text-3);
+  font-size: var(--aus-fs-xs);
+}
+.aus-forecast-compaction-foot {
+  margin-top: 8px;
+  font-size: var(--aus-fs-xs);
+  color: var(--ds-text-3);
+  line-height: 1.5;
+}
+#aus-forecast-efficiency-card {
+  position: relative;
+  z-index: 4;
+  overflow: visible !important;
+}
+.aus-forecast-eff-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+.aus-forecast-eff-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--aus-fs-sm);
+  white-space: nowrap;
+  min-width: 640px;
+}
+.aus-forecast-eff-table th {
+  text-align: right;
+  padding: 7px 8px;
+  color: var(--ds-text-2);
+  font-weight: 600;
+  border-bottom: 1px solid var(--ds-border);
+}
+.aus-forecast-eff-table th:first-child {
+  text-align: left;
+}
+.aus-forecast-eff-th {
+  cursor: pointer;
+  user-select: none;
+}
+.aus-forecast-eff-th:hover {
+  color: var(--ds-text);
+}
+.aus-forecast-sort-arrow {
+  margin-left: 4px;
+  color: var(--ds-text-3);
+  font-size: 10px;
+}
+.aus-forecast-sort-arrow.is-active {
+  color: var(--ds-orange);
+}
+.aus-forecast-eff-row {
+  border-bottom: 1px solid var(--ds-card);
+  cursor: pointer;
+}
+.aus-forecast-eff-row:hover,
+.aus-forecast-eff-row.is-selected {
+  background: var(--ds-card);
+}
+.aus-forecast-eff-row td {
+  padding: 7px 8px;
+  text-align: right;
+  color: var(--ds-text);
+}
+.aus-forecast-eff-row td:first-child {
+  text-align: left;
+}
+.aus-forecast-eff-model {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 200px;
+}
+.aus-forecast-eff-model > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.aus-forecast-eff-best {
+  flex-shrink: 0;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: var(--ds-green-bg);
+  color: var(--ds-green);
+  font-size: 10px;
+  font-weight: 600;
+}
+.aus-forecast-eff-cost {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: flex-end;
+}
+.aus-forecast-eff-bar {
+  display: block;
+  width: 80px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--ds-card);
+  overflow: hidden;
+}
+.aus-forecast-eff-bar i {
+  display: block;
+  height: 100%;
+  background: var(--ds-orange);
+  border-radius: 999px;
+}
+.aus-forecast-top-toggle {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--ds-text);
+  font-size: var(--aus-fs-base);
+  font-weight: 600;
+  cursor: pointer;
+}
+.aus-forecast-top-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--ds-border);
+  font-size: var(--aus-fs-sm);
+}
+.aus-forecast-top-name {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ds-text);
+}
+.aus-forecast-top-bar {
+  width: 110px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--ds-card);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.aus-forecast-top-bar span {
+  display: block;
+  height: 100%;
+  background: var(--ds-purple-bg);
+  border-radius: 999px;
+}
+.aus-forecast-top-delta {
+  min-width: 88px;
+  text-align: right;
+  color: var(--ds-text-2);
+  white-space: nowrap;
+}
+.aus-forecast-top-cost {
+  min-width: 76px;
+  text-align: right;
+  color: var(--ds-text-3);
+  white-space: nowrap;
+}
+#aus-forecast-chat-dropdown,
+#aus-forecast-model-dropdown,
+#aus-forecast-horizon-dropdown,
+#aus-forecast-hit-dropdown,
+#aus-forecast-scope-dropdown {
+  z-index: 120 !important;
+}
+
+@media (max-width: 760px) {
+  .aus-forecast-kpis {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .aus-forecast-kpi {
+    padding: 10px 11px !important;
+  }
+  .aus-forecast-kpi-value {
+    font-size: 17px;
+  }
+  .aus-forecast-chart-grid,
+  .aus-forecast-two-col {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .aus-forecast-toolbar-main {
+    gap: 6px;
+  }
+  .aus-forecast-pill {
+    padding: 6px 10px;
+    font-size: var(--aus-fs-sm);
+    min-height: 30px;
+  }
+  .aus-forecast-pill-value {
+    max-width: 110px;
+  }
+  .aus-forecast-dropdown {
+    max-width: calc(100vw - 32px);
+  }
+  #aus-forecast-main-chart {
+    height: 240px !important;
+  }
+  #aus-forecast-hit-chart,
+  #aus-forecast-cost-chart {
+    height: 200px !important;
+  }
+  .aus-forecast-top-bar {
+    width: 70px;
+  }
+  .aus-forecast-top-cost {
+    display: none;
+  }
+  .aus-forecast-health-metrics,
+  .aus-forecast-compaction-grid {
+    gap: 5px 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .aus-forecast-kpi-value {
+    font-size: 16px;
+  }
+  .aus-forecast-kpi-sub {
+    font-size: 10px;
+  }
+  .aus-forecast-compaction-row {
+    flex-wrap: wrap;
+  }
+  .aus-forecast-compaction-change {
+    flex-basis: 100%;
+  }
+  .aus-forecast-eff-table {
+    min-width: 600px;
+  }
+}

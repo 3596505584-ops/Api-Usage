@@ -12,7 +12,9 @@ import {
   durationHistogram,
   envBreakdown,
   estimateRenderMs,
-  historyCountHistogram,
+  historyCountCurve,
+  HISTORY_COUNT_CURVE_MAX,
+  HISTORY_COUNT_CURVE_STEP,
   isDayKey,
   isHourKey,
   mergeTail,
@@ -255,10 +257,39 @@ describe('环境画像聚合', () => {
     expect(env.stVersion).toEqual([{ label: '1.13.5', count: 3 }]);
   });
 
-  it('历史记录条数按设备最新值分桶', () => {
-    const items = historyCountHistogram([0, 1, 10, 11, 50, 51, 200, 201, 1000, 1001, -3, 'bad']);
-    expect(items.map((item) => item.label)).toEqual(['0 条', '1–10 条', '11–50 条', '51–200 条', '201–1000 条', '1001 条以上']);
-    expect(items.map((item) => item.count)).toEqual([3, 2, 2, 2, 2, 1]);
+  it('历史记录条数按设备最新值分段分组（1–499 每 10 条，500–999 每 50 条）', () => {
+    const items = historyCountCurve([1, 9, 10, 19, 20, 499, 500, 549, 550, 999, 1000, 1638]);
+    expect(items.length).toBe(61);
+    expect(items[0]).toEqual({ from: 1, to: 9, label: '1–9 条', count: 2 });
+    expect(items[1]).toEqual({ from: 10, to: 19, label: '10–19 条', count: 2 });
+    expect(items[2]).toEqual({ from: 20, to: 29, label: '20–29 条', count: 1 });
+    // 1–499 段末组
+    expect(items[49]).toEqual({ from: 490, to: 499, label: '490–499 条', count: 1 });
+    // 500–999 段改为每 50 条一组
+    expect(items[50]).toEqual({ from: 500, to: 549, label: '500–549 条', count: 2 });
+    expect(items[51]).toEqual({ from: 550, to: 599, label: '550–599 条', count: 1 });
+    expect(items[59]).toEqual({ from: 950, to: 999, label: '950–999 条', count: 1 });
+    // 1000 条以上并入末组
+    const last = items[60];
+    expect(last).toEqual({ from: 1000, to: null, label: '1000 条以上', count: 2 });
+    expect(items.reduce((sum, item) => sum + item.count, 0)).toBe(12);
+  });
+
+  it('历史记录条数为 0 的设备不计入曲线（0 条与少量记录是两种状态）', () => {
+    const items = historyCountCurve([0, 0, -3, 'bad', 7]);
+    expect(items.reduce((sum, item) => sum + item.count, 0)).toBe(1);
+    expect(items[0]).toEqual({ from: 1, to: 9, label: '1–9 条', count: 1 });
+    // 0 条绝不进任何一组，首组起点必须是 1
+    expect(items[0].from).toBe(1);
+    expect(items.some((item) => item.from === 0)).toBe(false);
+  });
+
+  it('历史记录条数分桶固定返回完整分组序列（空组为 0）', () => {
+    const items = historyCountCurve([]);
+    expect(items).toHaveLength(61);
+    expect(items.every((item) => item.count === 0)).toBe(true);
+    expect(items[0].label).toBe('1–9 条');
+    expect(items[items.length - 1].label).toBe('1000 条以上');
   });
 
   it('标签格式化', () => {

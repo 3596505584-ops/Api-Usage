@@ -659,7 +659,7 @@ function switchView(view: typeof currentView) {
     if (v === view) el.classList.add('active');
     else el.classList.remove('active');
   });
-  const titles: any = { overview: '用量概览', stats: '用量统计', history: '历史记录', forecast: '趋势预测（Beta）', wallet: '钱包', settings: '设置', help: '使用说明', about: '关于' };
+  const titles: any = { overview: '用量概览', stats: '用量统计', history: '历史记录', forecast: '趋势预测', wallet: '钱包', settings: '设置', help: '使用说明', about: '关于' };
   const titleText = titles[view] || '';
   const titleEl = doc.getElementById('aus-page-title');
   const mobileTitleEl = doc.getElementById('aus-mobile-page-title');
@@ -678,7 +678,7 @@ function switchView(view: typeof currentView) {
   if (view === 'stats' || view === 'forecast') {
     requestAnimationFrame(() => {
       try {
-        const chartEl = doc.getElementById(view === 'stats' ? 'aus-stats-chart' : 'aus-forecast-chart');
+        const chartEl = doc.getElementById(view === 'stats' ? 'aus-stats-chart' : 'aus-forecast-main-chart');
         if (chartEl && (chartEl.clientWidth === 0 || chartEl.clientHeight === 0)) {
           if (view === 'stats') renderStatsView();
           else Promise.resolve(renderForecastView()).catch(() => {});
@@ -694,7 +694,7 @@ function positionPanel() {
     const doc = getDoc();
     const charts: any[] = [];
     // 触发图表自适应（解决 resize 不重算）
-    for (const id of ['aus-stats-chart','aus-chart-token','aus-chart-cost','aus-chart-hit','aus-chart-req','aus-chart-dur','aus-chart-pie','aus-chart-model-token','aus-chart-model-req']) {
+    for (const id of ['aus-stats-chart','aus-chart-token','aus-chart-cost','aus-chart-hit','aus-chart-req','aus-chart-dur','aus-chart-pie','aus-chart-model-token','aus-chart-model-req','aus-forecast-main-chart','aus-forecast-hit-chart','aus-forecast-cost-chart']) {
       const el = doc.getElementById(id) as any;
       if (el && (el as any).__echarts_instance) try { (el as any).__echarts_instance.resize(); } catch {}
     }
@@ -742,7 +742,7 @@ export function createPanel() {
           <div class="aus-nav-item active" data-nav="overview" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:var(--aus-fs-base);line-height:1.5;"><span class="aus-nav-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;">${icon('overview')}</span><span class="aus-nav-label">用量概览</span></div>
           <div class="aus-nav-item" data-nav="stats" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:var(--aus-fs-base);line-height:1.5;"><span class="aus-nav-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;">${icon('stats')}</span><span class="aus-nav-label">用量统计</span></div>
           <div class="aus-nav-item" data-nav="history" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:var(--aus-fs-base);line-height:1.5;"><span class="aus-nav-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;">${icon('history')}</span><span class="aus-nav-label">历史记录</span></div>
-          <div class="aus-nav-item" data-nav="forecast" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:var(--aus-fs-base);line-height:1.5;"><span class="aus-nav-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;">${icon('forecast')}</span><span class="aus-nav-label">趋势预测（Beta）</span></div>
+          <div class="aus-nav-item" data-nav="forecast" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:var(--aus-fs-base);line-height:1.5;"><span class="aus-nav-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;">${icon('forecast')}</span><span class="aus-nav-label">趋势预测</span></div>
           <div class="aus-nav-item" data-nav="wallet" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:var(--aus-fs-base);line-height:1.5;"><span class="aus-nav-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;line-height:1;">${icon('wallet')}</span><span class="aus-nav-label">钱包</span></div>
         </div>
         <div style="flex:1;"></div>
@@ -859,17 +859,85 @@ export function createPanel() {
             </div>
           </div>
           <div data-view="forecast" style="display:none;">
-            <div style="display:grid;gap:12px;">
-              <div style="display:flex;align-items:center;gap:8px;position:relative;flex-wrap:wrap;">
-                <div id="aus-forecast-chat-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-base);cursor:pointer;"><span style="color:var(--ds-text-2);">对话</span><span id="aus-forecast-chat-label" style="font-weight:600;color:var(--ds-text);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">当前对话</span>${icon('chevron-down', 14)}</div>
-                <div id="aus-forecast-chat-dropdown" style="display:none;position:absolute;top:40px;left:0;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:220px;max-height:260px;overflow:auto;padding:8px;"></div>
-                <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);">切换对话以查看对应预测，能耗/趋势均随之更新</span>
+            <div id="aus-forecast-root" class="aus-forecast-root">
+              <div class="aus-forecast-toolbar">
+                <div class="aus-forecast-toolbar-main">
+                  <div class="aus-forecast-picker">
+                    <div id="aus-forecast-chat-btn" class="aus-forecast-pill" title="选择要预测的对话">
+                      <span class="aus-forecast-pill-label">对话</span><span id="aus-forecast-chat-label" class="aus-forecast-pill-value">当前对话</span>${icon('chevron-down', 14)}
+                    </div>
+                    <div id="aus-forecast-chat-dropdown" class="aus-forecast-dropdown"></div>
+                  </div>
+                  <div id="aus-forecast-model-wrap" class="aus-forecast-picker" style="display:none;">
+                    <div id="aus-forecast-model-btn" class="aus-forecast-pill" title="选择计价模型">
+                      <span class="aus-forecast-pill-label">计价模型</span><span id="aus-forecast-model-label" class="aus-forecast-pill-value">—</span>${icon('chevron-down', 14)}
+                    </div>
+                    <div id="aus-forecast-model-dropdown" class="aus-forecast-dropdown"></div>
+                  </div>
+                  <div class="aus-forecast-picker">
+                    <div id="aus-forecast-horizon-btn" class="aus-forecast-pill" title="选择未来预测轮数">
+                      <span class="aus-forecast-pill-label">视界</span><span id="aus-forecast-horizon-label" class="aus-forecast-pill-value">10 轮</span>${icon('chevron-down', 14)}
+                    </div>
+                    <div id="aus-forecast-horizon-dropdown" class="aus-forecast-dropdown"></div>
+                  </div>
+                  <div id="aus-forecast-hit-control" class="aus-forecast-hit-control"></div>
+                  <label class="aus-forecast-toggle">
+                    <input id="aus-forecast-compaction-toggle" type="checkbox" checked>
+                    <span class="aus-forecast-checkbox" aria-hidden="true"></span>
+                    <span id="aus-forecast-compaction-label">压缩情景</span>
+                  </label>
+                </div>
+                <div id="aus-forecast-sub" class="aus-forecast-sub"></div>
               </div>
-              <div id="aus-forecast-card" class="ds-card"></div>
-              <div class="ds-card"><div style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);margin-bottom:8px;">能耗标识（RP 能耗效率）</div><div id="aus-energy-badge"></div></div>
-              <div class="ds-card"><div style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);margin-bottom:8px;">预测趋势（输入 token 按轮次 + 拟合/置信带/上限）</div><div id="aus-forecast-chart" style="height:260px;"></div></div>
-              <div class="ds-card"><div style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);margin-bottom:8px;">敏感度 · 假设命中率</div><div id="aus-forecast-sensitivity"></div></div>
-              <div class="ds-card"><div style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);margin-bottom:8px;">对比 · 最耗对话 Top</div><div id="aus-forecast-compare"></div></div>
+              <div id="aus-forecast-kpis" class="aus-forecast-kpis"></div>
+              <div class="ds-card aus-forecast-chart-card">
+                <div class="aus-forecast-card-head">
+                  <div>
+                    <div class="aus-forecast-card-title">轮次趋势与预测</div>
+                    <div id="aus-forecast-main-sub" class="aus-forecast-card-sub"></div>
+                  </div>
+                </div>
+                <div id="aus-forecast-main-chart" class="aus-forecast-chart" style="height:300px;"></div>
+              </div>
+              <div class="aus-forecast-chart-grid">
+                <div class="ds-card aus-forecast-chart-card">
+                  <div class="aus-forecast-card-title">缓存命中率趋势</div>
+                  <div id="aus-forecast-hit-chart" class="aus-forecast-chart" style="height:220px;"></div>
+                </div>
+                <div class="ds-card aus-forecast-chart-card">
+                  <div class="aus-forecast-card-title">累计成本趋势</div>
+                  <div id="aus-forecast-cost-chart" class="aus-forecast-chart" style="height:220px;"></div>
+                </div>
+              </div>
+              <div class="aus-forecast-two-col">
+                <div class="ds-card">
+                  <div class="aus-forecast-card-title">对话健康</div>
+                  <div id="aus-forecast-health"></div>
+                </div>
+                <div class="ds-card">
+                  <div class="aus-forecast-card-title">上下文压缩</div>
+                  <div id="aus-forecast-compaction"></div>
+                </div>
+              </div>
+              <div class="ds-card" id="aus-forecast-efficiency-card">
+                <div class="aus-forecast-card-head">
+                  <div>
+                    <div class="aus-forecast-card-title">模型效率对比</div>
+                    <div id="aus-forecast-efficiency-sub" class="aus-forecast-card-sub"></div>
+                  </div>
+                  <div class="aus-forecast-picker">
+                    <div id="aus-forecast-scope-btn" class="aus-forecast-pill">
+                      <span class="aus-forecast-pill-label">范围</span><span class="aus-forecast-pill-value">全部历史</span>${icon('chevron-down', 14)}
+                    </div>
+                    <div id="aus-forecast-scope-dropdown" class="aus-forecast-dropdown"></div>
+                  </div>
+                </div>
+                <div id="aus-forecast-efficiency"></div>
+              </div>
+              <div class="ds-card">
+                <button id="aus-forecast-top-toggle" class="aus-forecast-top-toggle" type="button">▸ 最耗对话 Top</button>
+                <div id="aus-forecast-top" style="display:none;"></div>
+              </div>
             </div>
           </div>
           <div data-view="wallet" style="display:none;">

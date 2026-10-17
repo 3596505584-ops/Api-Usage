@@ -1,5 +1,4 @@
-import { Ct as each, It as isGradientObject, Kt as merge, Lt as isImagePatternObject, Qt as retrieve2, St as disableUserSelect, Tt as extend, V as BoundingRect, Wt as logError, an as platformApi, f as devicePixelRatio, p as Eventful, pt as env, sn as __extends, yt as createHashMap, zt as isObject } from "./Image-B5UjBJH1.js";
-import { a as getCanvasGradient, i as createCanvasPattern, n as brushLoopFinalize, o as getSize, r as brushSingle, s as requestAnimationFrame, t as brush } from "./graphic-2nrt6OCp.js";
+import { At as extend, Dt as disableUserSelect, Ht as isImagePatternObject, Ot as each, Vt as isGradientObject, Wt as isObject, Y as BoundingRect, Yt as logError, Zt as merge, a as getCanvasGradient, fn as __extends, i as createCanvasPattern, n as brushLoopFinalize, o as getSize, r as brushSingle, rn as retrieve2, s as requestAnimationFrame, t as brush, un as platformApi, v as devicePixelRatio, wt as createHashMap, y as Eventful, yt as env } from "./graphic-BAx7jeh4.js";
 //#region node_modules/zrender/lib/canvas/Layer.js
 function createDom(id, painter, dpr) {
 	var newDom = platformApi.createCanvas();

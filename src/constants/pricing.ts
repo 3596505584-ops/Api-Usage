@@ -19,6 +19,11 @@ export const V41_FLASH_PRICING = {
   peak: { hit: 0.04, miss: 2, output: 8 },
 } as const;
 
+/** 未配置或无法识别模型时的上下文参考兜底（1M token） */
+export const DEFAULT_CONTEXT_LIMIT = 1_000_000;
+/** 旧版 DeepSeek 自动推断的上下文上限，仅用于一次性迁移到 1M */
+export const LEGACY_DEEPSEEK_CONTEXT_LIMIT = 128_000;
+
 // 多段价格历史：按模型 + 生效时间戳命中段，支持过去/现在/未来任意多段
 // 命中规则：timestamp >= since 的最后一段；since 为 0 表示该模型最早可追溯段
 export type PriceSegment = {

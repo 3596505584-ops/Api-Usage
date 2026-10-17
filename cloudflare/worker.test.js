@@ -174,9 +174,9 @@ describe('鉴权与健康检查', () => {
     // 四个趋势图可选按小时粒度，并提供最近 24 小时快捷选项
     expect(html).toContain('data-bucket="hour"');
     expect(html).toContain('最近 24 小时');
-    // 图表库首选同源自托管，公共 CDN 仅作兜底
-    expect(html).toContain("'/vendor/echarts.js?v=6.1.0-simple'");
-    expect(html).toContain('echarts@6.1.0');
+    // 图表库仅走同源自托管，不再引用任何第三方 CDN
+    expect(html).toContain("'/vendor/echarts.js?v=6.1.0-full'");
+    expect(html).not.toContain('echarts@6.1.0');
   });
 
   it('/vendor/echarts.js 自托管图表库无需口令且按 JS 返回', async () => {
@@ -187,6 +187,8 @@ describe('鉴权与健康检查', () => {
     const body = await res.text();
     expect(body.length).toBeGreaterThan(100000);
     expect(body).toContain('echarts');
+    // 必须是 full 构建：simple 构建不含 Tooltip 组件，数值提示会整个失效
+    expect(body).toContain('showTip');
   });
 });
 
@@ -323,15 +325,15 @@ describe('/api/summary 总计口径', () => {
     expect(data.totals.todayDurMs).toBe(4 * MIN);
     expect(data.totals.disabledUsers).toBe(1);
     expect(data.totals.disabledRate).toBe(0.5);
-    const historyBuckets = data.historyCount.map((item) => [item.label, item.count]);
-    expect(historyBuckets).toEqual([
-      ['0 条', 0],
-      ['1–10 条', 1],
-      ['11–50 条', 0],
-      ['51–200 条', 1],
-      ['201–1000 条', 0],
-      ['1001 条以上', 0],
-    ]);
+    // 历史记录条数：X 轴分段分组（0 条不计），Y 轴为该组设备数
+    expect(data.historyCount).toHaveLength(61);
+    const at = (from) => data.historyCount.find((item) => item.from === from);
+    expect(at(1)).toEqual({ from: 1, to: 9, label: '1–9 条', count: 1 });
+    expect(at(120)).toEqual({ from: 120, to: 129, label: '120–129 条', count: 1 });
+    // 500 起改为每 50 条一组
+    expect(at(500)).toEqual({ from: 500, to: 549, label: '500–549 条', count: 0 });
+    expect(at(1000)).toEqual({ from: 1000, to: null, label: '1000 条以上', count: 0 });
+    expect(data.historyCount.some((item) => item.from === 0)).toBe(false);
 
     expect(data.userGrowth).toEqual([
       { day: YESTERDAY, added: 1, cumulative: 1 },

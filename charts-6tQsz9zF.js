@@ -1,7 +1,7 @@
-import { $t as retrieve3, B as parsePercent, Bt as isString, Ct as each, Ft as isFunction, Gt as map, Mt as isArray, Qt as retrieve2, R as calculateTextPosition, Rt as isNumber, S as cubicAt, Tt as extend, U as Point, V as BoundingRect, Y as lerp$1, _t as clone, a as PathProxy, bt as curry, g as lerp, gt as bind, kt as hasOwn, o as normalizeArcAngles, q as dist, r as Path, sn as __extends, t as ZRImage, w as cubicRootAt, xt as defaults, yt as createHashMap, zt as isObject } from "./Image-B5UjBJH1.js";
-import { $ as createSymbol, $i as parsePercent$1, Ai as MAX_SAFE_INTEGER, Bi as isNullableNumberFinite, Br as setStatesFlag, Di as unionExtentFromNumber, Dr as enterEmphasis, Fi as getPercentSeats, Gn as traverseElements, Hr as toggleHoverEmphasis, Ji as mathMin$2, K as isOrdinalScale, Lr as leaveEmphasis, Mi as asc, Q as createRenderPlanner, Qn as updateProps, Si as queryDataIndex, St as convertToColorString, Ui as linearMap, Vr as setStatesStylesFromModel, Vt as inheritDefaultOption, Wi as mathAbs, Wt as isDimensionStacked, Xn as removeElementWithFadeOut, Yn as removeElement, Z as ChartView, Zn as saveOldStyle, Zr as getECData, _ as requireAxisStatistics, _n as getLabelStatesModels, a as throttle, bn as setLabelValueAnimation, c as registerAxisContainShapeHandler, ca as ZRText, d as calcBandWidth, et as normalizeSymbolOffset, g as registerMetricImpl, gt as getCircleLayout, h as eachSeriesOnAxisOnKey, hi as makeInner, ii as defaultEmphasis, in as retrieveRawValue, k as getTickValueOutermost, la as Rect, li as initExtentForUnion, m as eachSeriesDealForAxisStat, mi as makeCallOnlyOnce, mr as DISPLAY_STATES, ni as createSimpleOverallStageHandler, nn as passesSanitizationFilter, nr as LinearGradient, nt as SeriesModel, oa as round, p as eachAxisOnKey, pr as Group, qi as mathMax$2, qn as initProps, qt as registerLayOutOnCoordSysUsage, si as getIncrementalId, sr as Polyline, st as tokens, t as createLegacyDataSelectAction, tn as parseSanitizationFilter, tt as normalizeSymbolSize, ui as interpolateRawValues, un as makeSeriesEncodeForNameBased, ur as Sector, vn as labelInner, xi as preparePipelineContext, yn as setLabelStyle, yr as SPECIAL_STATES } from "./dataSelectAction-DEGlLCfR.js";
-import { i as SeriesData, r as prepareSeriesDataSchema, t as createSeriesData } from "./createSeriesData-BD0fF0K3.js";
-import { _ as shiftLayoutOnXY, g as computeLabelGeometry, s as isCartesian2DInjectedAsDataCoordSys, t as COORD_SYS_TYPE_CARTESIAN_2D } from "./GridModel-BhFBa_uo.js";
+import { At as extend, Bt as isFunction, C as lerp, Et as defaults, Gt as isString, J as parsePercent, K as calculateTextPosition, Lt as isArray, Ot as each, Pt as hasOwn, St as clone, Tt as curry, Ut as isNumber, Xt as map, Y as BoundingRect, Z as Point, f as PathProxy, fn as __extends, in as retrieve3, j as cubicRootAt, k as cubicAt, p as normalizeArcAngles, rn as retrieve2, rt as lerp$1, tt as dist, u as Path, wt as createHashMap, xt as bind } from "./graphic-BAx7jeh4.js";
+import { $ as eachSeriesOnAxisOnKey, $r as createSimpleOverallStageHandler, Ai as linearMap, Ar as Polyline, B as createLegacyDataSelectAction, Bi as parsePercent$1, Bn as getLabelStatesModels, Di as isNullableNumberFinite, Dn as passesSanitizationFilter, Dt as createRenderPlanner, En as parseSanitizationFilter, Et as ChartView, Fi as mathMin$2, G as registerAxisContainShapeHandler, Gr as setStatesStylesFromModel, Gt as getCircleLayout, Hn as setLabelStyle, In as makeSeriesEncodeForNameBased, Ir as Group, It as tokens, Kr as toggleHoverEmphasis, Lr as DISPLAY_STATES, Nr as Sector, Ot as createSymbol, Pi as mathMax$2, Q as eachSeriesDealForAxisStat, Qt as convertToColorString, Rr as SPECIAL_STATES, Si as getPercentSeats, St as isOrdinalScale, Tr as LinearGradient, U as throttle, Un as setLabelValueAnimation, Vn as labelInner, Wr as setStatesFlag, Xi as Rect, Xr as getECData, Y as calcBandWidth, Yi as ZRText, Z as eachAxisOnKey, _i as unionExtentFromNumber, _r as initProps, ai as initExtentForUnion, bi as asc, br as saveOldStyle, ci as makeCallOnlyOnce, ct as getTickValueOutermost, et as registerMetricImpl, fn as inheritDefaultOption, hn as isDimensionStacked, i as use, ji as mathAbs, jt as SeriesModel, li as makeInner, mi as queryDataIndex, mr as traverseElements, oi as interpolateRawValues, pi as preparePipelineContext, qi as round, ri as getIncrementalId, ti as defaultEmphasis, tt as requireAxisStatistics, vn as registerLayOutOnCoordSysUsage, xr as updateProps, yi as MAX_SAFE_INTEGER, yn as SeriesData, yr as removeElementWithFadeOut } from "./axisNiceTicks-C_GC5fUj.js";
+import { r as prepareSeriesDataSchema, t as createSeriesData } from "./createSeriesData-BbGgr7QR.js";
+import { d as shiftLayoutOnXY, f as isCoordinateSystemType, g as getDefaultLabel, h as getDefaultInterpolatedLabel, m as Symbol, o as COORD_SYS_TYPE_CARTESIAN_2D, p as SymbolDraw, s as isCartesian2DInjectedAsDataCoordSys, t as install$4, u as computeLabelGeometry } from "./installSimple-D03HZlVo.js";
 //#region node_modules/echarts/lib/chart/line/LineSeries.js
 /**
 * AUTO-GENERATED FILE. DO NOT MODIFY.
@@ -78,435 +78,6 @@ var LineSeriesModel = function(_super) {
 	};
 	return LineSeriesModel;
 }(SeriesModel);
-//#endregion
-//#region node_modules/echarts/lib/chart/helper/labelHelper.js
-/**
-* AUTO-GENERATED FILE. DO NOT MODIFY.
-*/
-/**
-* @return label string. Not null/undefined
-*/
-function getDefaultLabel(data, dataIndex) {
-	var labelDims = data.mapDimensionsAll("defaultedLabel");
-	var len = labelDims.length;
-	if (len === 1) {
-		var rawVal = retrieveRawValue(data, dataIndex, labelDims[0]);
-		return rawVal != null ? rawVal + "" : null;
-	} else if (len) {
-		var vals = [];
-		for (var i = 0; i < labelDims.length; i++) vals.push(retrieveRawValue(data, dataIndex, labelDims[i]));
-		return vals.join(" ");
-	}
-}
-function getDefaultInterpolatedLabel(data, interpolatedValue) {
-	var labelDims = data.mapDimensionsAll("defaultedLabel");
-	if (!isArray(interpolatedValue)) return interpolatedValue + "";
-	var vals = [];
-	for (var i = 0; i < labelDims.length; i++) {
-		var dimIndex = data.getDimensionIndex(labelDims[i]);
-		if (dimIndex >= 0) vals.push(interpolatedValue[dimIndex]);
-	}
-	return vals.join(" ");
-}
-//#endregion
-//#region node_modules/echarts/lib/chart/helper/Symbol.js
-/**
-* AUTO-GENERATED FILE. DO NOT MODIFY.
-*/
-var Symbol = function(_super) {
-	__extends(Symbol, _super);
-	function Symbol(data, idx, seriesScope, opts) {
-		var _this = _super.call(this) || this;
-		_this.updateData(data, idx, seriesScope, opts);
-		return _this;
-	}
-	Symbol.prototype._createSymbol = function(symbolType, data, idx, symbolSize, z2, keepAspect) {
-		this.removeAll();
-		var symbolPath = createSymbol(symbolType, -1, -1, 2, 2, null, keepAspect);
-		symbolPath.attr({
-			z2: retrieve2(z2, 100),
-			culling: true,
-			scaleX: symbolSize[0] / 2,
-			scaleY: symbolSize[1] / 2
-		});
-		symbolPath.drift = driftSymbol;
-		this._symbolType = symbolType;
-		this.add(symbolPath);
-	};
-	/**
-	* Stop animation
-	* @param {boolean} toLastFrame
-	*/
-	Symbol.prototype.stopSymbolAnimation = function(toLastFrame) {
-		this.childAt(0).stopAnimation(null, toLastFrame);
-	};
-	Symbol.prototype.getSymbolType = function() {
-		return this._symbolType;
-	};
-	/**
-	* FIXME:
-	* Caution: This method breaks the encapsulation of this module,
-	* but it indeed brings convenience. So do not use the method
-	* unless you detailedly know all the implements of `Symbol`,
-	* especially animation.
-	*
-	* Get symbol path element.
-	*/
-	Symbol.prototype.getSymbolPath = function() {
-		return this.childAt(0);
-	};
-	/**
-	* Highlight symbol
-	*/
-	Symbol.prototype.highlight = function() {
-		enterEmphasis(this.childAt(0));
-	};
-	/**
-	* Downplay symbol
-	*/
-	Symbol.prototype.downplay = function() {
-		leaveEmphasis(this.childAt(0));
-	};
-	/**
-	* @param {number} zlevel
-	* @param {number} z
-	*/
-	Symbol.prototype.setZ = function(zlevel, z) {
-		var symbolPath = this.childAt(0);
-		symbolPath.zlevel = zlevel;
-		symbolPath.z = z;
-	};
-	Symbol.prototype.setDraggable = function(draggable, hasCursorOption) {
-		var symbolPath = this.childAt(0);
-		symbolPath.draggable = draggable;
-		symbolPath.cursor = !hasCursorOption && draggable ? "move" : symbolPath.cursor;
-	};
-	/**
-	* Update symbol properties
-	*/
-	Symbol.prototype.updateData = function(data, idx, seriesScope, opts) {
-		this.silent = false;
-		var symbolType = data.getItemVisual(idx, "symbol") || "circle";
-		var seriesModel = data.hostModel;
-		var symbolSize = Symbol.getSymbolSize(data, idx);
-		var z2 = Symbol.getSymbolZ2(data, idx);
-		var isInit = symbolType !== this._symbolType;
-		var disableAnimation = opts && opts.disableAnimation;
-		if (isInit) {
-			var keepAspect = data.getItemVisual(idx, "symbolKeepAspect");
-			this._createSymbol(symbolType, data, idx, symbolSize, z2, keepAspect);
-		} else {
-			var symbolPath = this.childAt(0);
-			symbolPath.silent = false;
-			var target = {
-				scaleX: symbolSize[0] / 2,
-				scaleY: symbolSize[1] / 2
-			};
-			disableAnimation ? symbolPath.attr(target) : updateProps(symbolPath, target, seriesModel, idx);
-			saveOldStyle(symbolPath);
-		}
-		this._updateCommon(data, idx, symbolSize, seriesScope, opts);
-		if (isInit) {
-			var symbolPath = this.childAt(0);
-			if (!disableAnimation) {
-				var target = {
-					scaleX: this._sizeX,
-					scaleY: this._sizeY,
-					style: { opacity: symbolPath.style.opacity }
-				};
-				symbolPath.scaleX = symbolPath.scaleY = 0;
-				symbolPath.style.opacity = 0;
-				initProps(symbolPath, target, seriesModel, idx);
-			}
-		}
-		if (disableAnimation) this.childAt(0).stopAnimation("leave");
-	};
-	Symbol.prototype._updateCommon = function(data, idx, symbolSize, seriesScope, opts) {
-		var symbolPath = this.childAt(0);
-		var seriesModel = data.hostModel;
-		var emphasisItemStyle;
-		var blurItemStyle;
-		var selectItemStyle;
-		var focus;
-		var blurScope;
-		var emphasisDisabled;
-		var labelStatesModels;
-		var hoverScale;
-		var cursorStyle;
-		if (seriesScope) {
-			emphasisItemStyle = seriesScope.emphasisItemStyle;
-			blurItemStyle = seriesScope.blurItemStyle;
-			selectItemStyle = seriesScope.selectItemStyle;
-			focus = seriesScope.focus;
-			blurScope = seriesScope.blurScope;
-			labelStatesModels = seriesScope.labelStatesModels;
-			hoverScale = seriesScope.hoverScale;
-			cursorStyle = seriesScope.cursorStyle;
-			emphasisDisabled = seriesScope.emphasisDisabled;
-		}
-		if (!seriesScope || data.hasItemOption) {
-			var itemModel = seriesScope && seriesScope.itemModel ? seriesScope.itemModel : data.getItemModel(idx);
-			var emphasisModel = itemModel.getModel("emphasis");
-			emphasisItemStyle = emphasisModel.getModel("itemStyle").getItemStyle();
-			selectItemStyle = itemModel.getModel(["select", "itemStyle"]).getItemStyle();
-			blurItemStyle = itemModel.getModel(["blur", "itemStyle"]).getItemStyle();
-			focus = emphasisModel.get("focus");
-			blurScope = emphasisModel.get("blurScope");
-			emphasisDisabled = emphasisModel.get("disabled");
-			labelStatesModels = getLabelStatesModels(itemModel);
-			hoverScale = emphasisModel.getShallow("scale");
-			cursorStyle = itemModel.getShallow("cursor");
-		}
-		var symbolRotate = data.getItemVisual(idx, "symbolRotate");
-		symbolPath.attr("rotation", (symbolRotate || 0) * Math.PI / 180 || 0);
-		var symbolOffset = normalizeSymbolOffset(data.getItemVisual(idx, "symbolOffset"), symbolSize);
-		if (symbolOffset) {
-			symbolPath.x = symbolOffset[0];
-			symbolPath.y = symbolOffset[1];
-		}
-		cursorStyle && symbolPath.attr("cursor", cursorStyle);
-		var symbolStyle = data.getItemVisual(idx, "style");
-		var visualColor = symbolStyle.fill;
-		if (symbolPath instanceof ZRImage) {
-			var pathStyle = symbolPath.style;
-			symbolPath.useStyle(extend({
-				image: pathStyle.image,
-				x: pathStyle.x,
-				y: pathStyle.y,
-				width: pathStyle.width,
-				height: pathStyle.height
-			}, symbolStyle));
-		} else {
-			if (symbolPath.__isEmptyBrush) symbolPath.useStyle(extend({}, symbolStyle));
-			else symbolPath.useStyle(symbolStyle);
-			symbolPath.style.decal = null;
-			symbolPath.setColor(visualColor, opts && opts.symbolInnerColor);
-			symbolPath.style.strokeNoScale = true;
-		}
-		var liftZ = data.getItemVisual(idx, "liftZ");
-		var z2Origin = this._z2;
-		if (liftZ != null) {
-			if (z2Origin == null) {
-				this._z2 = symbolPath.z2;
-				symbolPath.z2 += liftZ;
-			}
-		} else if (z2Origin != null) {
-			symbolPath.z2 = z2Origin;
-			this._z2 = null;
-		}
-		var useNameLabel = opts && opts.useNameLabel;
-		setLabelStyle(symbolPath, labelStatesModels, {
-			labelFetcher: seriesModel,
-			labelDataIndex: idx,
-			defaultText: getLabelDefaultText,
-			inheritColor: visualColor,
-			defaultOpacity: symbolStyle.opacity
-		});
-		function getLabelDefaultText(idx) {
-			return useNameLabel ? data.getName(idx) : getDefaultLabel(data, idx);
-		}
-		this._sizeX = symbolSize[0] / 2;
-		this._sizeY = symbolSize[1] / 2;
-		var emphasisState = symbolPath.ensureState("emphasis");
-		emphasisState.style = emphasisItemStyle;
-		symbolPath.ensureState("select").style = selectItemStyle;
-		symbolPath.ensureState("blur").style = blurItemStyle;
-		var scaleRatio = hoverScale == null || hoverScale === true ? Math.max(1.1, 3 / this._sizeY) : isFinite(hoverScale) && hoverScale > 0 ? +hoverScale : 1;
-		emphasisState.scaleX = this._sizeX * scaleRatio;
-		emphasisState.scaleY = this._sizeY * scaleRatio;
-		this.setSymbolScale(1);
-		toggleHoverEmphasis(this, focus, blurScope, emphasisDisabled);
-	};
-	Symbol.prototype.setSymbolScale = function(scale) {
-		this.scaleX = this.scaleY = scale;
-	};
-	Symbol.prototype.fadeOut = function(cb, seriesModel, opt) {
-		var symbolPath = this.childAt(0);
-		var dataIndex = getECData(this).dataIndex;
-		var animationOpt = opt && opt.animation;
-		this.silent = symbolPath.silent = true;
-		if (opt && opt.fadeLabel) {
-			var textContent = symbolPath.getTextContent();
-			if (textContent) removeElement(textContent, { style: { opacity: 0 } }, seriesModel, {
-				dataIndex,
-				removeOpt: animationOpt,
-				cb: function() {
-					symbolPath.removeTextContent();
-				}
-			});
-		} else symbolPath.removeTextContent();
-		removeElement(symbolPath, {
-			style: { opacity: 0 },
-			scaleX: 0,
-			scaleY: 0
-		}, seriesModel, {
-			dataIndex,
-			cb,
-			removeOpt: animationOpt
-		});
-	};
-	Symbol.getSymbolSize = function(data, idx) {
-		return normalizeSymbolSize(data.getItemVisual(idx, "symbolSize"));
-	};
-	Symbol.getSymbolZ2 = function(data, idx) {
-		return data.getItemVisual(idx, "z2");
-	};
-	return Symbol;
-}(Group);
-function driftSymbol(dx, dy) {
-	this.parent.drift(dx, dy);
-}
-//#endregion
-//#region node_modules/echarts/lib/chart/helper/SymbolDraw.js
-/**
-* AUTO-GENERATED FILE. DO NOT MODIFY.
-*/
-function symbolNeedsDraw(data, point, idx, opt) {
-	return point && !isNaN(point[0]) && !isNaN(point[1]) && !(opt && opt.isIgnore && opt.isIgnore(idx)) && !(opt && opt.clipShape && !opt.clipShape.contain(point[0], point[1])) && data.getItemVisual(idx, "symbol") !== "none";
-}
-function normalizeUpdateOpt(opt) {
-	if (opt != null && !isObject(opt)) opt = { isIgnore: opt };
-	return opt || {};
-}
-function makeSeriesScope(data) {
-	var seriesModel = data.hostModel;
-	var emphasisModel = seriesModel.getModel("emphasis");
-	return {
-		emphasisItemStyle: emphasisModel.getModel("itemStyle").getItemStyle(),
-		blurItemStyle: seriesModel.getModel(["blur", "itemStyle"]).getItemStyle(),
-		selectItemStyle: seriesModel.getModel(["select", "itemStyle"]).getItemStyle(),
-		focus: emphasisModel.get("focus"),
-		blurScope: emphasisModel.get("blurScope"),
-		emphasisDisabled: emphasisModel.get("disabled"),
-		hoverScale: emphasisModel.get("scale"),
-		labelStatesModels: getLabelStatesModels(seriesModel),
-		cursorStyle: seriesModel.get("cursor")
-	};
-}
-function createEl(SymbolCtor, data, newIdx, seriesScope, symbolUpdateOpt, point, group) {
-	var symbolEl = new SymbolCtor(data, newIdx, seriesScope, symbolUpdateOpt);
-	symbolEl.setPosition(point);
-	data.setItemGraphicEl(newIdx, symbolEl);
-	group.add(symbolEl);
-	return symbolEl;
-}
-var SymbolDraw = function() {
-	function SymbolDraw(SymbolCtor) {
-		this.group = new Group();
-		this._SymbolCtor = SymbolCtor || Symbol;
-	}
-	/**
-	* Update symbols draw by new data
-	*/
-	SymbolDraw.prototype.updateData = function(data, opt) {
-		this._progressiveEls = null;
-		opt = normalizeUpdateOpt(opt);
-		var group = this.group;
-		var seriesModel = data.hostModel;
-		var oldData = this._data;
-		var SymbolCtor = this._SymbolCtor;
-		var disableAnimation = opt.disableAnimation;
-		var seriesScope = this._seriesScope = makeSeriesScope(data);
-		var symbolUpdateOpt = { disableAnimation };
-		var getSymbolPoint = opt.getSymbolPoint || function(idx) {
-			return data.getItemLayout(idx);
-		};
-		if (!oldData) group.removeAll();
-		data.diff(oldData).add(function(newIdx) {
-			var point = getSymbolPoint(newIdx);
-			if (symbolNeedsDraw(data, point, newIdx, opt)) createEl(SymbolCtor, data, newIdx, seriesScope, symbolUpdateOpt, point, group);
-		}).update(function(newIdx, oldIdx) {
-			var symbolEl = oldData.getItemGraphicEl(oldIdx);
-			var point = getSymbolPoint(newIdx);
-			if (!symbolNeedsDraw(data, point, newIdx, opt)) {
-				group.remove(symbolEl);
-				return;
-			}
-			var newSymbolType = data.getItemVisual(newIdx, "symbol") || "circle";
-			var oldSymbolType = symbolEl && symbolEl.getSymbolType && symbolEl.getSymbolType();
-			if (!symbolEl || oldSymbolType && oldSymbolType !== newSymbolType) {
-				group.remove(symbolEl);
-				symbolEl = new SymbolCtor(data, newIdx, seriesScope, symbolUpdateOpt);
-				symbolEl.setPosition(point);
-			} else {
-				symbolEl.updateData(data, newIdx, seriesScope, symbolUpdateOpt);
-				var target = {
-					x: point[0],
-					y: point[1]
-				};
-				disableAnimation ? symbolEl.attr(target) : updateProps(symbolEl, target, seriesModel);
-			}
-			group.add(symbolEl);
-			data.setItemGraphicEl(newIdx, symbolEl);
-		}).remove(function(oldIdx) {
-			var el = oldData.getItemGraphicEl(oldIdx);
-			el && el.fadeOut(function() {
-				group.remove(el);
-			}, seriesModel);
-		}).execute();
-		this._getSymbolPoint = getSymbolPoint;
-		this._data = data;
-	};
-	SymbolDraw.prototype.updateLayout = function(opt) {
-		var data = this._data;
-		if (!data) return;
-		var symbolDraw = this;
-		var store = data.getStore();
-		for (var idx = 0, len = store.count(); idx < len; idx++) {
-			var el = data.getItemGraphicEl(idx);
-			var point = symbolDraw._getSymbolPoint(idx);
-			if (symbolNeedsDraw(data, point, idx, opt)) {
-				el = el || createEl(symbolDraw._SymbolCtor, data, idx, symbolDraw._seriesScope, { disableAnimation: true }, point, symbolDraw.group);
-				el.stopAnimation();
-				el.setPosition(point);
-				el.markRedraw();
-			} else if (el) {
-				symbolDraw.group.remove(el);
-				data.setItemGraphicEl(idx, null);
-			}
-		}
-	};
-	SymbolDraw.prototype.incrementalPrepareUpdate = function(data) {
-		this._seriesScope = makeSeriesScope(data);
-		this._data = null;
-		this.group.removeAll();
-	};
-	SymbolDraw.prototype.incrementalUpdate = function(taskParams, data, incrementalId, opt) {
-		this._progressiveEls = [];
-		opt = normalizeUpdateOpt(opt);
-		function updateIncrementalAndHover(el) {
-			if (!el.isGroup) {
-				el.incremental = incrementalId;
-				el.ensureState("emphasis").hoverLayer = 2;
-			}
-		}
-		for (var idx = taskParams.start; idx < taskParams.end; idx++) {
-			var point = data.getItemLayout(idx);
-			if (symbolNeedsDraw(data, point, idx, opt)) {
-				var el = new this._SymbolCtor(data, idx, this._seriesScope);
-				el.traverse(updateIncrementalAndHover);
-				el.setPosition(point);
-				this.group.add(el);
-				data.setItemGraphicEl(idx, el);
-				this._progressiveEls.push(el);
-			}
-		}
-	};
-	SymbolDraw.prototype.eachRendered = function(cb) {
-		traverseElements(this._progressiveEls || this.group, cb);
-	};
-	SymbolDraw.prototype.remove = function(enableAnimation) {
-		var group = this.group;
-		var data = this._data;
-		if (data && enableAnimation) data.eachItemGraphicEl(function(el) {
-			el.fadeOut(function() {
-				group.remove(el);
-			}, data.hostModel);
-		});
-		else group.removeAll();
-	};
-	return SymbolDraw;
-}();
 //#endregion
 //#region node_modules/echarts/lib/chart/line/helper.js
 /**
@@ -1048,13 +619,9 @@ function createClipPath(coordSys, hasAnimation, seriesModel, done, during) {
 	else if (coordSys.type === "cartesian2d") return createGridClipPath(coordSys, hasAnimation, seriesModel, done, during);
 	return null;
 }
-//#endregion
-//#region node_modules/echarts/lib/coord/CoordinateSystem.js
-/**
-* AUTO-GENERATED FILE. DO NOT MODIFY.
-*/
-function isCoordinateSystemType(coordSys, type) {
-	return coordSys.type === type;
+function createCoordSysClipAreaSimply(seriesModel) {
+	var coordSys = seriesModel.coordinateSystem;
+	if (seriesModel.get("clip", true) && coordSys && (!coordSys.shouldClip || coordSys.shouldClip())) return coordSys.getArea && coordSys.getArea(.1);
 }
 //#endregion
 //#region node_modules/echarts/lib/chart/line/LineView.js
@@ -4537,4 +4104,364 @@ function install$2(registers) {
 	registers.registerProcessor(negativeDataFilter("pie"));
 }
 //#endregion
-export { install as BarChart, install$1 as LineChart, install$2 as PieChart };
+//#region node_modules/echarts/lib/chart/scatter/ScatterSeries.js
+/**
+* AUTO-GENERATED FILE. DO NOT MODIFY.
+*/
+var ScatterSeriesModel = function(_super) {
+	__extends(ScatterSeriesModel, _super);
+	function ScatterSeriesModel() {
+		var _this = _super !== null && _super.apply(this, arguments) || this;
+		_this.type = ScatterSeriesModel.type;
+		_this.hasSymbolVisual = true;
+		return _this;
+	}
+	ScatterSeriesModel.prototype.getInitialData = function(option, ecModel) {
+		return createSeriesData(null, this, { useEncodeDefaulter: true });
+	};
+	ScatterSeriesModel.prototype.getProgressive = function() {
+		var progressive = this.option.progressive;
+		if (progressive == null) return this.option.large ? 5e3 : this.get("progressive");
+		return progressive;
+	};
+	ScatterSeriesModel.prototype.getProgressiveThreshold = function() {
+		var progressiveThreshold = this.option.progressiveThreshold;
+		if (progressiveThreshold == null) return this.option.large ? 1e4 : this.get("progressiveThreshold");
+		return progressiveThreshold;
+	};
+	ScatterSeriesModel.prototype.brushSelector = function(dataIndex, data, selectors) {
+		return selectors.point(data.getItemLayout(dataIndex));
+	};
+	ScatterSeriesModel.prototype.getZLevelKey = function() {
+		return this.getData().count() > this.getProgressiveThreshold() ? this.id : "";
+	};
+	ScatterSeriesModel.type = "series.scatter";
+	ScatterSeriesModel.dependencies = [
+		"grid",
+		"polar",
+		"geo",
+		"singleAxis",
+		"calendar",
+		"matrix"
+	];
+	ScatterSeriesModel.defaultOption = {
+		coordinateSystem: "cartesian2d",
+		z: 2,
+		legendHoverLink: true,
+		symbolSize: 10,
+		large: false,
+		largeThreshold: 2e3,
+		itemStyle: { opacity: .8 },
+		emphasis: { scale: true },
+		clip: true,
+		select: { itemStyle: { borderColor: tokens.color.primary } },
+		universalTransition: { divideShape: "clone" }
+	};
+	return ScatterSeriesModel;
+}(SeriesModel);
+//#endregion
+//#region node_modules/echarts/lib/chart/helper/LargeSymbolDraw.js
+/**
+* AUTO-GENERATED FILE. DO NOT MODIFY.
+*/
+var BOOST_SIZE_THRESHOLD = 4;
+var LargeSymbolPathShape = function() {
+	function LargeSymbolPathShape() {}
+	return LargeSymbolPathShape;
+}();
+var LargeSymbolPath = function(_super) {
+	__extends(LargeSymbolPath, _super);
+	function LargeSymbolPath(opts) {
+		var _this = _super.call(this, opts) || this;
+		_this._off = 0;
+		_this.hoverDataIdx = -1;
+		return _this;
+	}
+	LargeSymbolPath.prototype.getDefaultShape = function() {
+		return new LargeSymbolPathShape();
+	};
+	LargeSymbolPath.prototype.reset = function() {
+		this.notClear = false;
+		this._off = 0;
+	};
+	LargeSymbolPath.prototype.beforeBrush = function(param) {
+		if (param && !param.contentRetained) this.reset();
+	};
+	LargeSymbolPath.prototype.buildPath = function(path, shape) {
+		var points = shape.points;
+		var size = shape.size;
+		var symbolProxy = this.symbolProxy;
+		var symbolProxyShape = symbolProxy.shape;
+		var ctx = path.getContext ? path.getContext() : path;
+		var canBoost = ctx && size[0] < BOOST_SIZE_THRESHOLD;
+		var softClipShape = this.softClipShape;
+		var i;
+		if (canBoost) {
+			this._ctx = ctx;
+			return;
+		}
+		this._ctx = null;
+		for (i = this._off; i < points.length;) {
+			var x = points[i++];
+			var y = points[i++];
+			if (isNaN(x) || isNaN(y)) continue;
+			if (softClipShape && !softClipShape.contain(x, y)) continue;
+			symbolProxyShape.x = x - size[0] / 2;
+			symbolProxyShape.y = y - size[1] / 2;
+			symbolProxyShape.width = size[0];
+			symbolProxyShape.height = size[1];
+			symbolProxy.buildPath(path, symbolProxyShape, true);
+		}
+		if (this.incremental) {
+			this._off = i;
+			this.notClear = true;
+		}
+	};
+	LargeSymbolPath.prototype.afterBrush = function() {
+		var shape = this.shape;
+		var points = shape.points;
+		var size = shape.size;
+		var ctx = this._ctx;
+		var softClipShape = this.softClipShape;
+		var i;
+		if (!ctx) return;
+		for (i = this._off; i < points.length;) {
+			var x = points[i++];
+			var y = points[i++];
+			if (isNaN(x) || isNaN(y)) continue;
+			if (softClipShape && !softClipShape.contain(x, y)) continue;
+			ctx.fillRect(x - size[0] / 2, y - size[1] / 2, size[0], size[1]);
+		}
+		if (this.incremental) {
+			this._off = i;
+			this.notClear = true;
+		}
+	};
+	LargeSymbolPath.prototype.findDataIndex = function(x, y) {
+		var shape = this.shape;
+		var points = shape.points;
+		var size = shape.size;
+		var w = Math.max(size[0], 4);
+		var h = Math.max(size[1], 4);
+		for (var idx = points.length / 2 - 1; idx >= 0; idx--) {
+			var i = idx * 2;
+			var x0 = points[i] - w / 2;
+			var y0 = points[i + 1] - h / 2;
+			if (x >= x0 && y >= y0 && x <= x0 + w && y <= y0 + h) return idx;
+		}
+		return -1;
+	};
+	LargeSymbolPath.prototype.contain = function(x, y) {
+		var localPos = this.transformCoordToLocal(x, y);
+		var rect = this.getBoundingRect();
+		x = localPos[0];
+		y = localPos[1];
+		if (rect.contain(x, y)) return (this.hoverDataIdx = this.findDataIndex(x, y)) >= 0;
+		this.hoverDataIdx = -1;
+		return false;
+	};
+	LargeSymbolPath.prototype.getBoundingRect = function() {
+		var rect = this._rect;
+		if (!rect) {
+			var shape = this.shape;
+			var points = shape.points;
+			var size = shape.size;
+			var w = size[0];
+			var h = size[1];
+			var minX = Infinity;
+			var minY = Infinity;
+			var maxX = -Infinity;
+			var maxY = -Infinity;
+			for (var i = 0; i < points.length;) {
+				var x = points[i++];
+				var y = points[i++];
+				minX = Math.min(x, minX);
+				maxX = Math.max(x, maxX);
+				minY = Math.min(y, minY);
+				maxY = Math.max(y, maxY);
+			}
+			rect = this._rect = new BoundingRect(minX - w / 2, minY - h / 2, maxX - minX + w, maxY - minY + h);
+		}
+		return rect;
+	};
+	return LargeSymbolPath;
+}(Path);
+var LargeSymbolDraw = function() {
+	function LargeSymbolDraw() {
+		this.group = new Group();
+	}
+	/**
+	* Update symbols draw by new data
+	*/
+	LargeSymbolDraw.prototype.updateData = function(data, opt) {
+		this._clear();
+		this._data = data;
+		var symbolEl = this._create();
+		symbolEl.setShape({ points: data.getLayout("points") });
+		this._setCommon(symbolEl, data, opt);
+	};
+	LargeSymbolDraw.prototype.updateLayout = function(opt) {
+		var data = this._data;
+		if (!data) return;
+		var points = data.getLayout("points");
+		this.group.eachChild(function(child) {
+			if (child.startIndex != null) {
+				var len = (child.endIndex - child.startIndex) * 2;
+				var byteOffset = child.startIndex * 4 * 2;
+				points = new Float32Array(points.buffer, byteOffset, len);
+			}
+			child.setShape("points", points);
+			child.reset();
+			child.stopAnimation();
+		});
+	};
+	LargeSymbolDraw.prototype.incrementalPrepareUpdate = function(data) {
+		this._clear();
+	};
+	LargeSymbolDraw.prototype.incrementalUpdate = function(taskParams, data, incrementalId, opt) {
+		var lastAdded = this._newAdded[0];
+		var points = data.getLayout("points");
+		var oldPoints = lastAdded && lastAdded.shape.points;
+		if (oldPoints && oldPoints.length < 2e4) {
+			var oldLen = oldPoints.length;
+			var newPoints = new Float32Array(oldLen + points.length);
+			newPoints.set(oldPoints);
+			newPoints.set(points, oldLen);
+			lastAdded.endIndex = taskParams.end;
+			lastAdded.setShape({ points: newPoints });
+		} else {
+			this._newAdded = [];
+			var symbolEl = this._create();
+			symbolEl.startIndex = taskParams.start;
+			symbolEl.endIndex = taskParams.end;
+			symbolEl.incremental = incrementalId;
+			symbolEl.setShape({ points });
+			this._setCommon(symbolEl, data, opt);
+		}
+	};
+	LargeSymbolDraw.prototype.eachRendered = function(cb) {
+		this._newAdded[0] && cb(this._newAdded[0]);
+	};
+	LargeSymbolDraw.prototype._create = function() {
+		var symbolEl = new LargeSymbolPath({ cursor: "default" });
+		symbolEl.ignoreCoarsePointer = true;
+		this.group.add(symbolEl);
+		this._newAdded.push(symbolEl);
+		return symbolEl;
+	};
+	LargeSymbolDraw.prototype._setCommon = function(symbolEl, data, opt) {
+		var hostModel = data.hostModel;
+		opt = opt || {};
+		var size = data.getVisual("symbolSize");
+		symbolEl.setShape("size", size instanceof Array ? size : [size, size]);
+		symbolEl.softClipShape = opt.clipShape || null;
+		symbolEl.symbolProxy = createSymbol(data.getVisual("symbol"), 0, 0, 0, 0);
+		symbolEl.setColor = symbolEl.symbolProxy.setColor;
+		var extrudeShadow = symbolEl.shape.size[0] < BOOST_SIZE_THRESHOLD;
+		symbolEl.useStyle(hostModel.getModel("itemStyle").getItemStyle(extrudeShadow ? [
+			"color",
+			"shadowBlur",
+			"shadowColor"
+		] : ["color"]));
+		var globalStyle = data.getVisual("style");
+		var visualColor = globalStyle && globalStyle.fill;
+		if (visualColor) symbolEl.setColor(visualColor);
+		var ecData = getECData(symbolEl);
+		ecData.seriesIndex = hostModel.seriesIndex;
+		symbolEl.on("mousemove", function(e) {
+			ecData.dataIndex = null;
+			var dataIndex = symbolEl.hoverDataIdx;
+			if (dataIndex >= 0) ecData.dataIndex = dataIndex + (symbolEl.startIndex || 0);
+		});
+	};
+	LargeSymbolDraw.prototype.remove = function() {
+		this._clear();
+	};
+	LargeSymbolDraw.prototype._clear = function() {
+		this._newAdded = [];
+		this.group.removeAll();
+	};
+	return LargeSymbolDraw;
+}();
+//#endregion
+//#region node_modules/echarts/lib/chart/scatter/ScatterView.js
+/**
+* AUTO-GENERATED FILE. DO NOT MODIFY.
+*/
+var ScatterView = function(_super) {
+	__extends(ScatterView, _super);
+	function ScatterView() {
+		var _this = _super !== null && _super.apply(this, arguments) || this;
+		_this.type = ScatterView.type;
+		return _this;
+	}
+	ScatterView.prototype.render = function(seriesModel, ecModel, api) {
+		var data = seriesModel.getData();
+		this._updateSymbolDraw(data, seriesModel).updateData(data, createSymbolDrawOpt(seriesModel));
+		this._finished = true;
+	};
+	ScatterView.prototype.incrementalPrepareRender = function(seriesModel, ecModel, api) {
+		var data = seriesModel.getData();
+		this._updateSymbolDraw(data, seriesModel).incrementalPrepareUpdate(data);
+		this._finished = false;
+	};
+	ScatterView.prototype.incrementalRender = function(taskParams, seriesModel, ecModel) {
+		this._symbolDraw.incrementalUpdate(taskParams, seriesModel.getData(), getIncrementalId(seriesModel), createSymbolDrawOpt(seriesModel));
+		this._finished = taskParams.end === seriesModel.getData().count();
+	};
+	/**
+	* See also VIEW_COORD_SYS_ANIMATION
+	*/
+	ScatterView.prototype.updateTransform = function(seriesModel, ecModel, api) {
+		var data = seriesModel.getData();
+		this.group.dirty();
+		if (!this._finished) return { update: true };
+		else {
+			var res = pointsLayout("").reset(seriesModel, ecModel, api);
+			if (res.progress) res.progress({
+				start: 0,
+				end: data.count(),
+				count: data.count()
+			}, data);
+			this._symbolDraw.updateLayout(createSymbolDrawOpt(seriesModel));
+		}
+	};
+	ScatterView.prototype.eachRendered = function(cb) {
+		this._symbolDraw && this._symbolDraw.eachRendered(cb);
+	};
+	ScatterView.prototype._updateSymbolDraw = function(data, seriesModel) {
+		var symbolDraw = this._symbolDraw;
+		var isLargeDraw = seriesModel.pipelineContext.large;
+		if (!symbolDraw || isLargeDraw !== this._isLargeDraw) {
+			symbolDraw && symbolDraw.remove();
+			symbolDraw = this._symbolDraw = isLargeDraw ? new LargeSymbolDraw() : new SymbolDraw();
+			this._isLargeDraw = isLargeDraw;
+			this.group.removeAll();
+		}
+		this.group.add(symbolDraw.group);
+		return symbolDraw;
+	};
+	ScatterView.prototype.remove = function(ecModel, api) {
+		this._symbolDraw && this._symbolDraw.remove(true);
+		this._symbolDraw = null;
+	};
+	ScatterView.prototype.dispose = function() {};
+	ScatterView.type = "scatter";
+	return ScatterView;
+}(ChartView);
+function createSymbolDrawOpt(seriesModel) {
+	return { clipShape: createCoordSysClipAreaSimply(seriesModel) };
+}
+//#endregion
+//#region node_modules/echarts/lib/chart/scatter/install.js
+/**
+* AUTO-GENERATED FILE. DO NOT MODIFY.
+*/
+function install$3(registers) {
+	use(install$4);
+	registers.registerSeriesModel(ScatterSeriesModel);
+	registers.registerChartView(ScatterView);
+	registers.registerLayout(pointsLayout("scatter"));
+}
+//#endregion
+export { install as BarChart, install$1 as LineChart, install$2 as PieChart, install$3 as ScatterChart };

@@ -171,7 +171,7 @@ function isOfficialPricingWallet(wallet: WalletConfig): boolean {
 
 // 官方钱包遵循 DeepSeek 规则：周末与中国法定节假日全天空闲；
 // 额外空闲日期对所有钱包生效（用户显式补充的日期按空闲计费）
-function isWalletPeakHour(timestamp: number, wallet: WalletConfig, settings?: Settings | null): boolean {
+export function isWalletPeakHour(timestamp: number, wallet: WalletConfig, settings?: Settings | null): boolean {
   if (wallet.weekendOffpeak !== false && isWeekendDay(timestamp)) return false;
   if (isOfficialPricingWallet(wallet) && isChinaHoliday(timestamp)) return false;
   if (isExtraOffDay(timestamp, (settings as any)?.extraOffDays)) return false;

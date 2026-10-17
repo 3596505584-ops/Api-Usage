@@ -9,6 +9,16 @@ import { isTruncatedFinish } from '../utils/finish';
 import type { OverviewView, StatsView, TimeRange } from './types';
 import { formatMoney, getDisplayCurrency, getWalletExchangeRate } from '../services/currency';
 import { findWalletForHistory, walletBalanceToCny } from './wallets';
+import {
+  computeGlobalHitRate as globalHitRate,
+  computeModelHitRate as modelHitRate,
+  type ForecastInputEntry,
+} from '../stats/forecast-series';
+import {
+  aggregateModelEfficiency,
+  type ModelEfficiencyOptions,
+  type ModelEfficiencyRow,
+} from '../stats/model-efficiency';
 
 export const STATS_FILTER_ALL = '__all__';
 export const STATS_FILTER_UNKNOWN = '__unknown__';
@@ -441,4 +451,22 @@ export function computeWalletStats(walletId: string, history?: any[]): WalletSta
     cost += entry.cost || 0;
   }
   return { requests, tokens, cost };
+}
+
+/** 全量历史有效缓存命中率；无样本时返回 null */
+export function computeGlobalHitRate(history: any[]): number | null {
+  return globalHitRate((history || []) as ForecastInputEntry[]);
+}
+
+/** 指定模型的有效缓存命中率；无样本时返回 null */
+export function computeModelHitRate(history: any[], model: string): number | null {
+  return modelHitRate((history || []) as ForecastInputEntry[], model);
+}
+
+/** 模型效率对比（按每 1k 输出成本升序，无价排最后） */
+export function computeModelEfficiency(
+  history: any[],
+  options: ModelEfficiencyOptions = {},
+): ModelEfficiencyRow[] {
+  return aggregateModelEfficiency((history || []) as ForecastInputEntry[], options);
 }

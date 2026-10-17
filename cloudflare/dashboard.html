@@ -199,22 +199,20 @@
   const HOUR_RANGE_HOURS = 24;
   const HOUR_MS = 60 * 60 * 1000;
   /** 看板构建标识：每次改动看板后更新，便于确认浏览器拿到的是否为最新页面 */
-  const BUILD_ID = '2026-10-12.5';
+  const BUILD_ID = '2026-10-12.11';
   /**
-   * 图表库来源。第一组（同源自托管 + 最快的公共 CDN）**并发竞速**，先成功者胜出：
-   * 不同网络的拦截策略不一样——有的网络挡第三方域名，有的网络大响应会被中断，
-   * 竞速可以保证「只要有一条通就能画图」，同时总等待时间约等于最快的那个源。
+   * 图表库来源：**仅自托管**（Worker 同源的 `/vendor/echarts.js`），不使用任何第三方 CDN。
+   * 这样看板不会向外部站点发起请求，也就不会被广告拦截类扩展或网络策略误伤；
+   * 加载失败时页面的纯文本兜底列表照常工作。
+   *
+   * 注意：这里必须用 **full 构建**（echarts.min.js）。
+   * 曾用 simple 构建（echarts.simple.min.js）时它**不含 Tooltip 组件**，
+   * option 里的 tooltip / axisPointer 被静默忽略 —— 图表能画出来却永远没有数值提示。
    */
-  const ECHARTS_RACE = [
-    { label: '自托管', url: '/vendor/echarts.js?v=6.1.0-simple' },
-    { label: 'npmmirror', url: 'https://registry.npmmirror.com/echarts/6.1.0/files/dist/echarts.min.js' },
+  const ECHARTS_SOURCES = [
+    { label: '自托管', url: '/vendor/echarts.js?v=6.1.0-full' },
   ];
-  /** 竞速全部失败后，再顺序尝试的兜底来源 */
-  const ECHARTS_FALLBACK = [
-    { label: 'jsdelivr', url: 'https://cdn.jsdelivr.net/npm/echarts@6.1.0/dist/echarts.min.js' },
-    { label: 'unpkg', url: 'https://unpkg.com/echarts@6.1.0/dist/echarts.min.js' },
-  ];
-  /** 单个来源的加载超时（毫秒）：被墙的域名往往长时间不响应，超时后换下一个来源 */
+  /** 单个来源的加载超时（毫秒） */
   const SCRIPT_TIMEOUT_MS = 10000;
   /** 「脚本迟到」观察：超时判负后脚本仍可能最终执行成功，按此间隔回看 window.echarts */
   const LATE_WATCH_INTERVAL_MS = 1500;
@@ -228,7 +226,7 @@
     { grid: 'grid-trend', id: 'daily-users', title: '每日不重复用户数', note: '当日产生遥测数据的去重设备数', kind: 'line', range: true },
     { grid: 'grid-trend', id: 'daily-pages', title: '每日面板打开占比', note: '各面板当日打开次数占当日面板打开总数的百分比', kind: 'line', range: true, tall: true },
     { grid: 'grid-usage', id: 'pages', title: '面板累计打开次数', note: '全部时间累计', kind: 'bar' },
-    { grid: 'grid-usage', id: 'history-count', title: '历史记录条数分布', note: '每台设备最近一次上报的记录条数占比', kind: 'pie' },
+    { grid: 'grid-usage', id: 'history-count', title: '历史记录条数分布', note: 'X 轴分段分组（1–499 每 10 条、500–999 每 50 条，不含 0 条），Y 轴为该组设备数，取每台设备最新上报值', kind: 'line' },
     { grid: 'grid-profile', id: 'versions', title: '扩展版本分布', note: '每台设备最近一次上报的版本', kind: 'bar' },
     { grid: 'grid-profile', id: 'env-st-version', title: '酒馆版本', note: '每台设备最近一次上报', kind: 'bar' },
     { grid: 'grid-profile', id: 'arch', title: 'CPU 架构占比', note: '每台设备最近一次上报', kind: 'pie' },
@@ -414,28 +412,15 @@
     });
   }
 
-  /** 多个来源并发加载，返回第一个成功者（都失败返回 null） */
-  function raceScripts(entries) {
-    return new Promise((resolve) => {
-      let pending = entries.length;
-      let settled = false;
-      entries.forEach((entry) => {
-        loadScript(entry).then((result) => {
-          echartsAttempts.push(result);
-          if (settled) return;
-          if (result.ok) {
-            settled = true;
-            resolve(entry);
-            return;
-          }
-          pending -= 1;
-          if (pending === 0) {
-            settled = true;
-            resolve(null);
-          }
-        });
-      });
-    });
+  /** 顺序尝试各来源，返回第一个成功的来源（全部失败返回 null） */
+  async function trySources(entries) {
+    for (const entry of entries) {
+      if (window.echarts) return entry;
+      const result = await loadScript(entry);
+      echartsAttempts.push(result);
+      if (result.ok) return entry;
+    }
+    return null;
   }
 
   async function loadEcharts() {
@@ -444,18 +429,10 @@
       echartsSource = '页面已有';
       return true;
     }
-    const winner = await raceScripts(ECHARTS_RACE);
+    const winner = await trySources(ECHARTS_SOURCES);
     if (winner) {
       echartsSource = winner.label;
       return true;
-    }
-    for (const entry of ECHARTS_FALLBACK) {
-      const result = await loadScript(entry);
-      echartsAttempts.push(result);
-      if (result.ok) {
-        echartsSource = entry.label;
-        return true;
-      }
     }
     return false;
   }
@@ -527,9 +504,128 @@
     if (!instance) {
       instance = window.echarts.init(host, null, { renderer: 'canvas' });
       charts.set(id, instance);
+      bindTouchTip(instance);
     }
     return instance;
   }
+
+  /* ---------------------------------- 触屏提示 ---------------------------------- */
+
+  /**
+   * 触屏设备没有「悬浮」：ECharts 的 tooltip 依赖 hover，指尖一抬就立刻收起，
+   * 触屏上几乎等于「没有指示标」。这里改成「点一下图表即固定数值提示（含指示标）」：
+   * touchstart 时把触点像素换算成最近的数据点并 dispatchAction showTip，
+   * 抬手后再补钉一次（ECharts 默认会在 touchend 收起），点页面空白处或 6 秒后自动收起。
+   */
+
+  /** 已绑定触屏提示的实例，每个实例只绑一次 */
+  const touchTipBound = new WeakSet();
+  /** 最近一次固定住的 showTip 动作，抬手后据此重新钉住 */
+  let touchTipAction = null;
+  let touchTipTimer = null;
+
+  function clearTouchTipTimer() {
+    if (touchTipTimer) { clearTimeout(touchTipTimer); touchTipTimer = null; }
+  }
+
+  function hideTouchTips() {
+    clearTouchTipTimer();
+    touchTipAction = null;
+    charts.forEach((instance) => {
+      try { instance.dispatchAction({ type: 'hideTip' }); } catch (e) {}
+    });
+  }
+
+  /** 收起除当前图表外的所有固定提示（避免多个图表同时挂着提示） */
+  function hideOtherTips(instance) {
+    charts.forEach((other) => {
+      if (other === instance) return;
+      try { other.dispatchAction({ type: 'hideTip' }); } catch (e) {}
+    });
+  }
+
+  /** 按像素位置找最近的数据点并显示 tooltip（找不到就不动） */
+  function showTouchTip(instance, x, y) {
+    let action = null;
+    // ① 先用 zrender 命中检测，覆盖饼图这类没有笛卡尔坐标系的系列
+    try {
+      const zr = instance.getZr();
+      const hover = zr && zr.handler && typeof zr.handler.findHover === 'function'
+        ? zr.handler.findHover(x, y) : null;
+      const target = hover && (hover.topTarget || hover.target);
+      if (target && target.dataIndex !== undefined && target.seriesIndex !== undefined) {
+        action = { type: 'showTip', seriesIndex: target.seriesIndex, dataIndex: target.dataIndex };
+      }
+    } catch (e) {}
+    // ② 折线/柱状等笛卡尔图：即便点在空白处，也退化为「取最近的 X 点」，手指落在哪都能读到数值
+    if (!action) {
+      try {
+        const point = instance.convertFromPixel({ gridIndex: 0 }, [x, y]);
+        const dataIndex = Array.isArray(point) ? Math.round(Number(point[0])) : NaN;
+        if (isFinite(dataIndex) && dataIndex >= 0) {
+          action = { type: 'showTip', seriesIndex: 0, dataIndex };
+        }
+      } catch (e) {}
+    }
+    if (!action) return;
+    hideOtherTips(instance);
+    touchTipAction = action;
+    clearTouchTipTimer();
+    touchTipTimer = setTimeout(() => { touchTipTimer = null; hideTouchTips(); }, 6000);
+    try { instance.dispatchAction(action); } catch (e) {}
+  }
+
+  function bindTouchTip(instance) {
+    if (!instance || touchTipBound.has(instance)) return;
+    const zr = typeof instance.getZr === 'function' ? instance.getZr() : null;
+    const dom = zr && typeof zr.getDom === 'function' ? zr.getDom() : null;
+    const host = dom || (echartsHostOf(instance));
+    if (!host || typeof host.addEventListener !== 'function') return;
+    touchTipBound.add(instance);
+    const onTouch = (event) => {
+      const touch = event.touches && event.touches[0];
+      if (!touch) return;
+      const rect = typeof host.getBoundingClientRect === 'function' ? host.getBoundingClientRect() : null;
+      if (!rect || !rect.width || !rect.height) return;
+      showTouchTip(instance, touch.clientX - rect.left, touch.clientY - rect.top);
+    };
+    // 点按固定提示；只有手指确实按在本图上时，滑动才逐点跟读（避免页面滚动时提示乱跳）
+    let pressing = false;
+    host.addEventListener('touchstart', (event) => {
+      pressing = true;
+      onTouch(event);
+    }, { passive: true });
+    host.addEventListener('touchmove', (event) => {
+      if (pressing) onTouch(event);
+    }, { passive: true });
+    const onRelease = () => {
+      pressing = false;
+      if (!touchTipAction) return;
+      // 抬手瞬间 ECharts 会把 tooltip 收走，这里再钉一次让它留在屏幕上
+      setTimeout(() => {
+        if (touchTipAction) {
+          try { instance.dispatchAction(touchTipAction); } catch (e) {}
+        }
+      }, 80);
+    };
+    host.addEventListener('touchend', onRelease, { passive: true });
+    host.addEventListener('touchcancel', () => { pressing = false; }, { passive: true });
+  }
+
+  /** 从实例反查图表容器（测试桩等拿不到 getZr 时兜底） */
+  function echartsHostOf(instance) {
+    for (const [id, item] of charts) {
+      if (item === instance) return el('chart-' + id);
+    }
+    return null;
+  }
+
+  // 点到图表以外的任何位置都收起固定住的提示
+  document.addEventListener('touchstart', (event) => {
+    const node = event && event.target;
+    if (node && typeof node.closest === 'function' && node.closest('.chart')) return;
+    hideTouchTips();
+  }, true);
 
   function resizeCharts() {
     charts.forEach((instance) => { try { instance.resize(); } catch (e) {} });
@@ -604,10 +700,15 @@
   }
 
   function drawLine(id, categories, series, options) {
-    const instance = getChart(id);
-    if (!instance) return;
-    const t = themeColors();
     const opts = options || {};
+    const instance = getChart(id);
+    if (!instance) {
+      // 图表库不可用：走纯文本兜底列表（与横条图、直方图一致）
+      if (opts.fallback) renderFallbackBars(id, opts.fallback);
+      return;
+    }
+    const t = themeColors();
+    hideFallback(id);
     instance.setOption({
       backgroundColor: 'transparent',
       grid: { left: 52, right: 16, top: series.length > 1 ? 46 : 18, bottom: 30, containLabel: false },
@@ -616,6 +717,7 @@
         confine: true,
         axisPointer: { type: 'line', lineStyle: { color: t.text3 } },
         textStyle: { fontSize: 11 },
+        formatter: opts.tooltipFormatter,
       },
       legend: series.length > 1
         ? {
@@ -623,7 +725,12 @@
           textStyle: { color: t.text2, fontSize: 11 },
         }
         : { show: false },
-      xAxis: Object.assign({ type: 'category', boundaryGap: false, data: categories }, baseAxis(), { splitLine: { show: false } }),
+      xAxis: Object.assign({
+        type: 'category',
+        boundaryGap: false,
+        data: categories,
+        axisLabel: { color: t.text2, fontSize: 11, hideOverlap: true },
+      }, baseAxis(), { splitLine: { show: false } }),
       yAxis: Object.assign({
         type: 'value',
         name: opts.yName || '',
@@ -853,7 +960,44 @@
       color: PAGE_COLORS[index % PAGE_COLORS.length],
     }));
     drawBar('pages', items, { perItem: true });
-    drawPie('history-count', data.historyCount || []);
+    paintHistoryCount(data.historyCount || []);
+  }
+
+  /**
+   * 历史记录条数分布：X 轴为条数分组（1–499 每 10 条、500–999 每 50 条、1000 以上合并），
+   * Y 轴为该组的设备数。分组由服务端按固定步长生成，因此这里直接按顺序画折线，
+   * 空组为 0 也要保留（曲线才能看出分布形状），不用断点。
+   */
+  function paintHistoryCount(rows) {
+    const list = rows.filter((item) => item && item.label !== undefined);
+    const nonEmpty = list.filter((item) => Number(item.count) > 0);
+    if (!nonEmpty.length) {
+      const host = el('chart-history-count');
+      const fallback = el('fallback-history-count');
+      if (host) host.style.display = 'none';
+      if (fallback) {
+        fallback.innerHTML = '<div class="note">暂无数据</div>';
+        fallback.hidden = false;
+      }
+      return;
+    }
+    drawLine('history-count',
+      list.map((item) => item.from),
+      [{
+        name: '设备数',
+        color: themeColors().orange,
+        area: true,
+        data: list.map((item) => Number(item.count) || 0),
+      }],
+      {
+        yName: '设备数',
+        tooltipFormatter: (params) => {
+          const point = list[params[0].dataIndex];
+          if (!point) return '';
+          return escapeHtml(point.label) + '<br/>设备数：' + fmtInt(params[0].value);
+        },
+        fallback: list.filter((item) => Number(item.count) > 0),
+      });
   }
 
   function renderProfile(data) {
@@ -1219,7 +1363,7 @@
       const text = el('lib-banner-text');
       if (text) {
         text.textContent = '图表库加载失败（尝试结果：' + (attemptsText() || '无')
-          + '），当前改用纯文本数值列表展示。可点右侧按钮重试；若持续失败，多半是网络拦截或浏览器扩展屏蔽了脚本请求。';
+          + '），当前改用纯文本数值列表展示。可点右侧按钮重试；若持续失败，多半是自托管文件未部署、被浏览器扩展拦截，或网络中断。';
       }
     }
   }

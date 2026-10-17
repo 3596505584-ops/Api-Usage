@@ -1,3 +1,5 @@
+import { DEFAULT_CONTEXT_LIMIT } from '../constants/pricing';
+
 /**
  * Q3 预测核心 — 纯函数实现，<130 行
  * 依赖：单 chatId 的 prompt 序列，命中率/输出 EWMA，价格表
@@ -171,9 +173,8 @@ export function nextPromptWithBand(fit: FitResult): { prompt: number; low: numbe
 export function ctxLimitForModel(model: string, configuredLimit?: number | null): number | null {
   if (configuredLimit != null && Number.isFinite(configuredLimit) && configuredLimit > 0) return Math.round(configuredLimit);
   const m = (model || '').toLowerCase();
-  if (m.includes('deepseek')) return 128000;
   if (m.includes('128k')) return 128000;
   if (m.includes('64k')) return 64000;
   if (m.includes('32k')) return 32000;
-  return null;
+  return DEFAULT_CONTEXT_LIMIT;
 }

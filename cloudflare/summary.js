@@ -189,25 +189,59 @@ export function durationHistogram(values) {
   return DURATION_BUCKETS.map((bucket, index) => ({ label: bucket.label, count: counts[index] }));
 }
 
-/** 历史记录条数分桶（每台设备最近一次上报的精确条数） */
-export const HISTORY_COUNT_BUCKETS = [
-  { label: '0 条', max: 0 },
-  { label: '1–10 条', max: 10 },
-  { label: '11–50 条', max: 50 },
-  { label: '51–200 条', max: 200 },
-  { label: '201–1000 条', max: 1000 },
-  { label: '1001 条以上', max: Infinity },
-];
+/**
+ * 历史记录条数分布曲线（每台设备取最近一次上报的精确条数）
+ *
+ * X 轴 = 条数分组，Y 轴 = 该组设备数。分组步长分两段，避免尾部点过密或过疏：
+ * - 1–{@link HISTORY_COUNT_CURVE_MID - 1}：每 {@link HISTORY_COUNT_CURVE_STEP} 条一组（1–9、10–19、…）
+ * - {HISTORY_COUNT_CURVE_MID}–{HISTORY_COUNT_CURVE_MAX - 1}：每 {@link HISTORY_COUNT_CURVE_WIDE_STEP} 条一组（500–549、550–599、…）
+ * - {HISTORY_COUNT_CURVE_MAX} 条以上：全部并入末组
+ *
+ * **0 条的设备整组排除**：那表示从未产生过历史记录，与「有少量记录」是两种状态，
+ * 混进首组会把曲线左端拉成一个高大尖峰，掩盖真实分布。
+ * 合计固定 1 + 49 + 10 + 1 = 61 个点。
+ */
+export const HISTORY_COUNT_CURVE_STEP = 10;
+/** 1–499 段每 10 条一组 */
+export const HISTORY_COUNT_CURVE_MID = 500;
+/** 500–999 段每 50 条一组 */
+export const HISTORY_COUNT_CURVE_WIDE_STEP = 50;
+/** 末组「N 条以上」的起点（条数） */
+export const HISTORY_COUNT_CURVE_MAX = 1000;
 
-export function historyCountHistogram(values) {
-  const counts = HISTORY_COUNT_BUCKETS.map(() => 0);
+export function historyCountCurve(values) {
+  const groups = [];
+  const push = (from, to) => groups.push({ from, to, count: 0 });
+  // 1–9 单列（0 条已单独排除），10 起每 10 条一组直到 499
+  push(1, HISTORY_COUNT_CURVE_STEP - 1);
+  for (let from = HISTORY_COUNT_CURVE_STEP; from < HISTORY_COUNT_CURVE_MID; from += HISTORY_COUNT_CURVE_STEP) {
+    push(from, from + HISTORY_COUNT_CURVE_STEP - 1);
+  }
+  // 500 起每 50 条一组直到 999
+  const wideStart = groups.length;
+  for (let from = HISTORY_COUNT_CURVE_MID; from < HISTORY_COUNT_CURVE_MAX; from += HISTORY_COUNT_CURVE_WIDE_STEP) {
+    push(from, from + HISTORY_COUNT_CURVE_WIDE_STEP - 1);
+  }
+  // 末组吸收 1000 条以上的设备，避免尾部出现空洞
+  push(HISTORY_COUNT_CURVE_MAX, null);
+
   for (const raw of Array.isArray(values) ? values : []) {
     const value = Math.max(0, Math.floor(numberOrZero(raw)));
-    let index = HISTORY_COUNT_BUCKETS.findIndex((bucket) => value <= bucket.max);
-    if (index < 0) index = HISTORY_COUNT_BUCKETS.length - 1;
-    counts[index] += 1;
+    if (value < 1) continue;
+    let index;
+    if (value >= HISTORY_COUNT_CURVE_MAX) index = groups.length - 1;
+    else if (value >= HISTORY_COUNT_CURVE_MID) {
+      index = wideStart + Math.floor((value - HISTORY_COUNT_CURVE_MID) / HISTORY_COUNT_CURVE_WIDE_STEP);
+    } else index = Math.floor(value / HISTORY_COUNT_CURVE_STEP);
+    groups[Math.min(index, groups.length - 1)].count += 1;
   }
-  return HISTORY_COUNT_BUCKETS.map((bucket, index) => ({ label: bucket.label, count: counts[index] }));
+
+  return groups.map((group) => ({
+    from: group.from,
+    to: group.to,
+    label: group.to === null ? HISTORY_COUNT_CURVE_MAX + ' 条以上' : group.from + '–' + group.to + ' 条',
+    count: group.count,
+  }));
 }
 
 /**

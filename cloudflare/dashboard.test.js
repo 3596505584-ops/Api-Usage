@@ -1,6 +1,6 @@
 /**
  * 看板页渲染测试：用最小 DOM 桩在 Node 里执行 dashboard.html 的内联脚本，
- * 覆盖「图表库可用」与「图表库不可用（CDN 全部失败）」两条路径，
+ * 覆盖「图表库可用」与「图表库不可用（自托管来源失败）」两条路径，
  * 确保数据加载、卡片、图表 option 与文本兜底都不会回归。
  */
 import { readFileSync } from 'node:fs';
@@ -29,14 +29,18 @@ const summaryData = {
   pages: {
     overview: 12, stats: 9, history: 7, forecast: 5, wallet: 4, settings: 3, help: 2, about: 1, total: 43,
   },
-  historyCount: [
-    { label: '0 条', count: 2 },
-    { label: '1–10 条', count: 10 },
-    { label: '11–50 条', count: 18 },
-    { label: '51–200 条', count: 9 },
-    { label: '201–1000 条', count: 3 },
-    { label: '1001 条以上', count: 0 },
-  ],
+  // 历史记录条数：X 轴分段分组（0 条不计），Y 轴为该组设备数（服务端固定生成 61 组）
+  historyCount: Array.from({ length: 61 }, (_, index) => {
+    const wide = index >= 50;
+    const from = index === 0 ? 1 : wide ? 500 + (index - 50) * 50 : index * 10;
+    const to = index === 60 ? null : wide ? from + 49 : from + 9;
+    return {
+      from,
+      to,
+      label: index === 60 ? '1000 条以上' : from + '–' + to + ' 条',
+      count: index === 0 ? 2 : index === 1 ? 10 : index === 2 ? 18 : index === 5 ? 9 : index === 20 ? 3 : 0,
+    };
+  }),
   // 数量与版本高低故意逆序（低版本数量更高），用于验证展示层按版本号降序排列
   versions: [{ label: '3.1.1', count: 40 }, { label: '3.1.2', count: 2 }],
   env: {
@@ -104,6 +108,7 @@ function makeEl(tag, id) {
     className: '',
     style: {},
     _attrs: {},
+    _listeners: [],
     classList: { add() {}, remove() {}, toggle() {}, contains() { return false; } },
     setAttribute(key, value) { el._attrs[key] = value; },
     getAttribute(key) { return Object.prototype.hasOwnProperty.call(el._attrs, key) ? el._attrs[key] : null; },
@@ -111,28 +116,42 @@ function makeEl(tag, id) {
     remove() {},
     querySelector() { return null; },
     querySelectorAll() { return []; },
-    addEventListener() {},
+    addEventListener(type, fn) { el._listeners.push({ type, fn }); },
     closest() { return null; },
+    getBoundingClientRect() { return { left: 0, top: 0, width: 600, height: 260 }; },
+    /** 测试用：手动触发已注册的事件监听 */
+    fire(type, event) {
+      el._listeners.filter((item) => item.type === type).forEach((item) => item.fn(event));
+    },
   };
   return el;
 }
 
 /**
  * 每个场景一套独立 DOM 桩。
- * mode：'no-lib'（全部来源失败）/ 'echarts-ready'（页面已存在 echarts）/
- *       'self-host-ok'（自托管成功）/ 'cdn-ok'（仅公共 CDN 成功）/
- *       'late-ok'（脚本超时判负后才真正执行成功）
+ * mode：'no-lib'（自托管来源失败）/ 'echarts-ready'（页面已存在 echarts）/
+ *       'self-host-ok'（自托管成功）/ 'late-ok'（脚本超时判负后才真正执行成功）
  */
 function createHarness(mode) {
   const elements = new Map();
   const options = new Map();
+  const instances = new Map();
+  const actions = [];
   const mockEcharts = {
     init(host) {
-      return {
+      const instance = {
         setOption(option) { options.set(host && host.id ? host.id : 'unknown', option); },
         resize() {},
         dispose() {},
+        dispatchAction(action) { actions.push(action); },
+        convertFromPixel(finder, point) {
+          // 简单线性映射：x=100 落在第 2 个数据点
+          return [Math.round((point[0] - 20) / 40), point[1]];
+        },
+        getZr() { return { getDom: () => host, handler: { findHover: () => null } }; },
       };
+      instances.set(host && host.id ? host.id : 'unknown', instance);
+      return instance;
     },
   };
 
@@ -147,18 +166,15 @@ function createHarness(mode) {
       appendChild(script) {
         const src = String(script.src || '');
         if (mode === 'late-ok') {
-          // 所有来源先报失败，但稍后 window.echarts 出现（模拟「脚本迟到」）
+          // 自托管来源先报失败，但稍后 window.echarts 出现（模拟「脚本迟到」）
           setTimeout(() => { if (typeof script.onerror === 'function') script.onerror(); }, 0);
           if (!windowStub.echarts) {
             setTimeout(() => { windowStub.echarts = mockEcharts; }, 300);
           }
           return;
         }
-        const success = mode === 'self-host-ok'
-          ? src.indexOf('/vendor/echarts.js') >= 0
-          : mode === 'cdn-ok'
-            ? src.indexOf('npmmirror') >= 0
-            : false;
+        // 看板只加载同源自托管来源，任何非 /vendor/echarts.js 的请求都视为失败
+        const success = mode === 'self-host-ok' && src.indexOf('/vendor/echarts.js') >= 0;
         setTimeout(() => {
           if (success) {
             windowStub.echarts = mockEcharts;
@@ -226,6 +242,8 @@ function createHarness(mode) {
   return {
     localGetEl,
     options,
+    instances,
+    actions,
     text: (id) => localGetEl(id).innerHTML,
     settle: () => new Promise((resolve) => setTimeout(resolve, 320)),
   };
@@ -301,10 +319,16 @@ describe('看板页渲染（图表库可用）', () => {
     const aboutSeries = dailyPages.series.find((item) => item.name === '关于');
     expect(aboutSeries.data).toEqual([3.3, 0, null]);
 
+    // 历史记录条数改为曲线：X 轴条数分组、Y 轴该组设备数
     const historyCount = option('history-count');
-    expect(historyCount.series[0].type).toBe('pie');
-    expect(historyCount.series[0].data.map((item) => item.name)).toContain('1–10 条');
-    expect(historyCount.series[0].data.map((item) => item.value).reduce((sum, value) => sum + value, 0)).toBe(42);
+    expect(historyCount.series[0].type).toBe('line');
+    expect(historyCount.xAxis.data).toHaveLength(61);
+    // 0 条不显示，X 轴从 1 开始
+    expect(historyCount.xAxis.data[0]).toBe(1);
+    expect(historyCount.xAxis.data).not.toContain(0);
+    expect(historyCount.xAxis.data[60]).toBe(1000);
+    expect(historyCount.series[0].data.reduce((sum, value) => sum + value, 0)).toBe(42);
+    expect(typeof historyCount.tooltip.formatter).toBe('function');
 
     const os = option('os');
     expect(os.series[0].type).toBe('pie');
@@ -338,7 +362,16 @@ describe('看板页渲染（图表库可用）', () => {
   });
 });
 
-describe('图表库多源竞速', () => {
+describe('图表库仅自托管加载', () => {
+  it('看板页不再引用任何第三方图表库地址', () => {
+    expect(html).not.toContain('npmmirror');
+    expect(html).not.toContain('cdn.jsdelivr.net');
+    expect(html).not.toContain('unpkg.com');
+    expect(html).toContain("'/vendor/echarts.js?v=6.1.0-full'");
+    // 加载 URL 不能指向 simple 构建：它不含 Tooltip 组件，tooltip 会被静默忽略
+    expect(html).not.toMatch(/echarts\.js\?v=[^'"]*simple/);
+  });
+
   it('自托管可用时使用自托管并正常渲染', async () => {
     const harness = createHarness('self-host-ok');
     await harness.settle();
@@ -348,23 +381,12 @@ describe('图表库多源竞速', () => {
     expect(harness.options.get('chart-daily-pages').series).toHaveLength(8);
   });
 
-  it('自托管不可用时自动切到公共 CDN', async () => {
-    const harness = createHarness('cdn-ok');
-    await harness.settle();
-    expect(harness.localGetEl('lib-badge').textContent).toContain('npmmirror');
-    expect(harness.localGetEl('lib-banner').hidden).toBe(true);
-    expect(harness.options.get('chart-os')).toBeTruthy();
-  });
-
-  it('全部来源失败时把每个来源的结果显示出来', async () => {
+  it('自托管失败时展示失败原因并退回纯文本列表', async () => {
     const harness = createHarness('no-lib');
     await harness.settle();
     expect(harness.localGetEl('lib-banner').hidden).toBe(false);
     const text = harness.localGetEl('lib-banner-text').textContent;
     expect(text).toContain('自托管：失败');
-    expect(text).toContain('npmmirror：失败');
-    expect(text).toContain('jsdelivr：失败');
-    expect(text).toContain('unpkg：失败');
     expect(harness.localGetEl('lib-badge').hidden).toBe(true);
   });
 
@@ -379,4 +401,66 @@ describe('图表库多源竞速', () => {
     expect(harness.localGetEl('lib-badge').textContent).toContain('迟到加载');
     expect(harness.options.get('chart-pages')).toBeTruthy();
   }, 12000);
+});
+
+describe('看板页移动端触屏提示', () => {
+  /** 模拟一次触屏点按：clientX=100 经 convertFromPixel 换算为第 2 个数据点 */
+  function touchChart(harness, id, clientX) {
+    const host = harness.localGetEl('chart-' + id);
+    const instance = harness.instances.get('chart-' + id);
+    host.fire('touchstart', { touches: [{ clientX: clientX === undefined ? 100 : clientX, clientY: 80 }] });
+    return instance;
+  }
+
+  it('触屏点按图表后固定显示数值提示（抬手不消失）', async () => {
+    const harness = createHarness('echarts-ready');
+    await harness.settle();
+    touchChart(harness, 'growth', 100);
+
+    const show = harness.actions.filter((item) => item.type === 'showTip');
+    expect(show).toHaveLength(1);
+    expect(show[0]).toEqual({ type: 'showTip', seriesIndex: 0, dataIndex: 2 });
+
+    // 抬手后延迟再钉一次，避免 ECharts 在 touchend 收起提示
+    const before = harness.actions.length;
+    harness.localGetEl('chart-growth').fire('touchend', {});
+    await new Promise((resolve) => setTimeout(resolve, 160));
+    expect(harness.actions.slice(before)).toEqual([{ type: 'showTip', seriesIndex: 0, dataIndex: 2 }]);
+  });
+
+  it('所有图表都绑定了触屏提示，折线、条形与饼图均可', async () => {
+    const harness = createHarness('echarts-ready');
+    await harness.settle();
+    for (const id of ['growth', 'pages', 'os', 'duration']) {
+      const host = harness.localGetEl('chart-' + id);
+      expect(host._listeners.some((item) => item.type === 'touchstart')).toBe(true);
+      touchChart(harness, id);
+    }
+    expect(harness.actions.filter((item) => item.type === 'showTip')).toHaveLength(4);
+  });
+
+  it('手指在图上滑动时逐点跟读，抬手后停止更新', async () => {
+    const harness = createHarness('echarts-ready');
+    await harness.settle();
+    const host = harness.localGetEl('chart-growth');
+
+    host.fire('touchstart', { touches: [{ clientX: 100, clientY: 80 }] });
+    harness.actions.length = 0;
+    host.fire('touchmove', { touches: [{ clientX: 140, clientY: 80 }] });
+    expect(harness.actions.filter((item) => item.type === 'showTip')).toEqual([
+      { type: 'showTip', seriesIndex: 0, dataIndex: 3 },
+    ]);
+
+    host.fire('touchend', {});
+    harness.actions.length = 0;
+    host.fire('touchmove', { touches: [{ clientX: 180, clientY: 80 }] });
+    expect(harness.actions.filter((item) => item.type === 'showTip')).toHaveLength(0);
+  });
+
+  it('图表库不可用时不绑定触屏提示（无图表可提示）', async () => {
+    const harness = createHarness('no-lib');
+    await harness.settle();
+    expect(harness.localGetEl('chart-growth')._listeners).toHaveLength(0);
+    expect(harness.actions).toHaveLength(0);
+  });
 });

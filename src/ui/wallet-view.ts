@@ -1,6 +1,7 @@
 import { icon } from './icons';
 import { repository } from '../data/repository';
 import {
+  defaultContextLimitForModel,
   walletBalanceToCny,
   walletPendingModelCount,
 } from '../data/wallets';
@@ -552,7 +553,10 @@ function bindWalletView(doc: Document): void {
       const contextLimit = Number.isFinite(value) && value > 0 ? Math.round(value) : null;
       repository.updateWallet(walletId, (wallet) => {
         const model = wallet.models.find((item) => item.id === modelId);
-        if (model) model.contextLimit = contextLimit;
+        if (model) {
+          model.contextLimit = contextLimit ?? defaultContextLimitForModel(model.sourceModel);
+          model.contextLimitManual = contextLimit != null;
+        }
       });
       renderWalletView();
     };
