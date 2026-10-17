@@ -7239,7 +7239,7 @@ async function renderMainChart(echarts, options) {
 		label: {
 			show: true,
 			position: "insideEndTop",
-			formatter: `上下文上限 ${compactNumber(ctxLimit)}`,
+			formatter: `参考上限 ${compactNumber(ctxLimit)}`,
 			color: "#DC2626",
 			fontSize: 10
 		}
@@ -8249,8 +8249,9 @@ function renderKpis(series, priceContext, ctxLimit, options, balance) {
 	const costValue = series.next.cost == null || !pricingKnown ? "—" : formatCost(series.next.cost, 4);
 	const costSub = series.next.cost == null || !pricingKnown ? "未配置价格，成本类不可用" : series.next.costLow != null && series.next.costHigh != null ? `区间 ${formatCost(series.next.costLow, 4)} – ${formatCost(series.next.costHigh, 4)}` : "按当前模型与时段价格";
 	const ctxCompaction = options.compaction && series.compactionForecast.detected;
+	const promptOverLimit = ctxLimit != null && series.currentPrompt > ctxLimit;
 	const ctxValue = ctxCompaction ? series.compactionForecast.roundsUntilNext != null ? `距下次压缩 ${series.compactionForecast.roundsUntilNext} 轮` : "距下次压缩 —" : ctxRounds != null ? `${ctxRounds} 轮` : ctxLimit != null && series.fit.delta <= 0 ? "可维持" : "—";
-	const ctxSub = ctxCompaction ? `预计第 ${series.compactionForecast.nextRound ?? "—"} 轮 · 本次压缩前 ${series.compactionForecast.period ?? "—"} 轮` : ctxLimit != null ? series.fit.delta <= 0 ? "Δ≈0，上下文不再增长" : `上下文上限 ${compactTok(ctxLimit)} tok` : "上下文上限未知";
+	const ctxSub = ctxCompaction ? `预计第 ${series.compactionForecast.nextRound ?? "—"} 轮 · 本次压缩前 ${series.compactionForecast.period ?? "—"} 轮` : ctxLimit != null ? promptOverLimit ? `当前输入 ${compactTok(series.currentPrompt)} 已超过参考上限 ${compactTok(ctxLimit)} tok` : series.fit.delta <= 0 ? "Δ≈0，上下文不再增长" : `上下文上限 ${compactTok(ctxLimit)} tok` : "上下文上限未知";
 	const remainingValue = remaining == null ? "—" : `${remaining.R} 轮`;
 	const remainingSub = balance == null ? "未设置余额，可在钱包页填写" : !pricingKnown ? "未配置价格，无法估算" : `区间 ${remaining?.low ?? 0} – ${remaining?.high ?? 0} 轮${remaining?.ctxLimited ? " · 受上下文上限限制" : ""}`;
 	host.innerHTML = [
@@ -8548,7 +8549,7 @@ function renderNoSeries(message) {
 	const mainSub = getDoc$3().getElementById("aus-forecast-main-sub");
 	if (mainSub) mainSub.textContent = message;
 }
-function renderMainSub(series) {
+function renderMainSub(series, ctxLimit) {
 	const mainSub = getDoc$3().getElementById("aus-forecast-main-sub");
 	if (!mainSub) return;
 	const future = series.future.length;
@@ -8558,6 +8559,7 @@ function renderMainSub(series) {
 		"虚线为预测 · 阴影为 95% 区间"
 	];
 	if (series.compactionForecast.detected) parts.push("橙色标记为压缩点");
+	if (ctxLimit != null && series.history.some((point) => point.input > ctxLimit)) parts.push("历史输入已超过参考上限，参考线按当前计价模型估算");
 	mainSub.textContent = parts.join(" · ");
 }
 async function renderForecastView() {
@@ -8613,7 +8615,7 @@ async function renderForecastView() {
 		renderTop(fullHist);
 		return;
 	}
-	renderMainSub(series);
+	renderMainSub(series, ctxLimit);
 	renderKpis(series, priceContext, ctxLimit, options, balanceNum());
 	renderHealth(effective, model);
 	renderCompaction(series, options);

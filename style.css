@@ -870,6 +870,20 @@
   cursor: pointer;
   white-space: nowrap;
 }
+.aus-forecast-toggle input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px !important;
+  min-height: 16px !important;
+  margin: 0;
+  padding: 0 !important;
+  border-radius: 3px;
+  box-sizing: border-box;
+  appearance: auto;
+  -webkit-appearance: checkbox;
+  accent-color: var(--ds-orange);
+}
 .aus-forecast-toggle input {
   accent-color: var(--ds-orange);
 }

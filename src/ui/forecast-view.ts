@@ -609,13 +609,16 @@ function renderKpis(
       : '按当前模型与时段价格');
 
   const ctxCompaction = options.compaction && series.compactionForecast.detected;
+  const promptOverLimit = ctxLimit != null && series.currentPrompt > ctxLimit;
   const ctxValue = ctxCompaction
     ? (series.compactionForecast.roundsUntilNext != null ? `距下次压缩 ${series.compactionForecast.roundsUntilNext} 轮` : '距下次压缩 —')
     : (ctxRounds != null ? `${ctxRounds} 轮` : (ctxLimit != null && series.fit.delta <= 0 ? '可维持' : '—'));
   const ctxSub = ctxCompaction
     ? `预计第 ${series.compactionForecast.nextRound ?? '—'} 轮 · 本次压缩前 ${series.compactionForecast.period ?? '—'} 轮`
     : (ctxLimit != null
-      ? (series.fit.delta <= 0 ? 'Δ≈0，上下文不再增长' : `上下文上限 ${compactTok(ctxLimit)} tok`)
+      ? (promptOverLimit
+        ? `当前输入 ${compactTok(series.currentPrompt)} 已超过参考上限 ${compactTok(ctxLimit)} tok`
+        : (series.fit.delta <= 0 ? 'Δ≈0，上下文不再增长' : `上下文上限 ${compactTok(ctxLimit)} tok`))
       : '上下文上限未知');
 
   const remainingValue = remaining == null
@@ -922,7 +925,7 @@ function renderNoSeries(message: string): void {
   if (mainSub) mainSub.textContent = message;
 }
 
-function renderMainSub(series: ForecastSeries): void {
+function renderMainSub(series: ForecastSeries, ctxLimit: number | null): void {
   const doc = getDoc();
   const mainSub = doc.getElementById('aus-forecast-main-sub') as HTMLElement | null;
   if (!mainSub) return;
@@ -933,6 +936,9 @@ function renderMainSub(series: ForecastSeries): void {
     '虚线为预测 · 阴影为 95% 区间',
   ];
   if (series.compactionForecast.detected) parts.push('橙色标记为压缩点');
+  if (ctxLimit != null && series.history.some((point) => point.input > ctxLimit)) {
+    parts.push('历史输入已超过参考上限，参考线按当前计价模型估算');
+  }
   mainSub.textContent = parts.join(' · ');
 }
 
@@ -1007,7 +1013,7 @@ export async function renderForecastView(): Promise<void> {
     return;
   }
 
-  renderMainSub(series);
+  renderMainSub(series, ctxLimit);
   renderKpis(series, priceContext, ctxLimit, options, balanceNum());
   renderHealth(effective, model);
   renderCompaction(series, options);

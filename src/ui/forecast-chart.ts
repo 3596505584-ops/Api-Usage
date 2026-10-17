@@ -252,7 +252,7 @@ async function renderMainChart(echarts: any, options: ForecastChartOptions): Pro
       label: {
         show: true,
         position: 'insideEndTop',
-        formatter: `上下文上限 ${compactNumber(ctxLimit)}`,
+        formatter: `参考上限 ${compactNumber(ctxLimit)}`,
         color: '#DC2626',
         fontSize: 10,
       },
