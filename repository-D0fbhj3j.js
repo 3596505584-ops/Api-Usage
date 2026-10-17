@@ -1,10 +1,10 @@
-import { cn as __exportAll } from "./Image-B5UjBJH1.js";
-import { a as defaultSettings, n as getSelectedSave, r as state } from "./store-DSiVmOSF.js";
+import { pn as __exportAll } from "./graphic-BAx7jeh4.js";
+import { a as defaultSettings, n as getSelectedSave, r as state } from "./store-D78Joj4J.js";
 import { a as MAX_HISTORY, i as HIDDEN_PRICING_MODELS, n as DEFAULT_PEAK_HOURS, o as PRICE_HISTORY, s as PRICING } from "./pricing-bcKQQNo6.js";
-import { a as loadHistoryCold, c as saveExtensionSettings, d as historyRecordKey, i as getExtensionSettings, l as saveHistoryCold, n as clearHistoryCold, o as loadHot, r as getAllHistory, t as appendHistoryCold, u as saveHot } from "./persistence-CrFXrRB_.js";
-import { r as toast, t as log } from "./logger-Bv-AT94O.js";
-import { a as isUnsafeKey, c as localDay, i as isPeakHour, n as isChinaHoliday, o as isValidDayKey, r as isExtraOffDay, s as isWeekendDay } from "./date-BJI2m6dS.js";
-import { a as getWalletExchangeRate } from "./currency-IAtpC2X8.js";
+import { a as loadHistoryCold, c as saveExtensionSettings, d as historyRecordKey, i as getExtensionSettings, l as saveHistoryCold, n as clearHistoryCold, o as loadHot, r as getAllHistory, t as appendHistoryCold, u as saveHot } from "./persistence-BRxkRWyJ.js";
+import { r as toast, t as log } from "./logger-8RGXnvfI.js";
+import { a as isUnsafeKey, c as localDay, i as isPeakHour$1, n as isChinaHoliday, o as isValidDayKey, r as isExtraOffDay, s as isWeekendDay } from "./date-BJI2m6dS.js";
+import { a as getWalletExchangeRate } from "./currency-CWUMnV7c.js";
 //#region src/types/wallet.ts
 var DEEPSEEK_WALLET_ID = "wallet:deepseek-official";
 var WALLET_CATALOG_PROVIDERS = [
@@ -933,6 +933,10 @@ function isDeepSeekOfficialModel(m) {
 	if (typeof m !== "string") return false;
 	return normalizeModel(m).toLowerCase().indexOf("deepseek") === 0 || String(m).toLowerCase().includes("deepseek");
 }
+function isPeakHour(timestamp, settings) {
+	const hours = settings && settings.peakHours || DEFAULT_PEAK_HOURS;
+	return isPeakHour$1(timestamp, hours, settings?.extraOffDays);
+}
 function isWithinPeakHours(timestamp, peakHours) {
 	const d = new Date(timestamp);
 	const totalMinutes = d.getHours() * 60 + d.getMinutes();
@@ -1026,7 +1030,7 @@ function calcCost(u, settings, wallet) {
 	let p;
 	let priceType;
 	if (useNewPricing && pricing.usePeakPricing !== false && isDeepSeekOfficialModel(model)) {
-		const isPeak = isPeakHour(u.timestamp, hours, settings?.extraOffDays);
+		const isPeak = isPeakHour$1(u.timestamp, hours, settings?.extraOffDays);
 		p = isPeak ? pricing.peak : pricing.offpeak;
 		priceType = isPeak ? "new-peak" : "new-offpeak";
 	} else {
@@ -1059,7 +1063,7 @@ function calcSavings(u, settings, wallet) {
 	const hours = peakHoursFor(hasCustomForModel(model, settings) ? null : findSegment(normalizeModel(model), u.timestamp), settings);
 	const useNewPricing = u.timestamp >= LEGACY_PEAK_PRICING_DATE;
 	let p;
-	if (useNewPricing && pricing.usePeakPricing !== false && isDeepSeekOfficialModel(model)) p = isPeakHour(u.timestamp, hours, settings?.extraOffDays) ? pricing.peak : pricing.offpeak;
+	if (useNewPricing && pricing.usePeakPricing !== false && isDeepSeekOfficialModel(model)) p = isPeakHour$1(u.timestamp, hours, settings?.extraOffDays) ? pricing.peak : pricing.offpeak;
 	else p = pricing.offpeak;
 	return (u.prompt_cache_hit_tokens || 0) / 1e6 * (p.miss - p.hit);
 }
@@ -2038,7 +2042,7 @@ var repository = {
 					const modelObservation = observeModel(wallet, model, nowTs);
 					if (modelObservation.changed) wallet.updatedAt = nowTs;
 					if (modelObservation.model?.source === "discovered" && modelObservation.model.price.priceConfigured !== true && state.settings.pricingSync?.enabled) try {
-						import("./pricing-sync-Cl187A8k.js").then((n) => n.i).then((module) => module.syncPricingFromModelsDev({ silent: true })).then(() => this.recalcWallet(wallet.id)).catch(() => {});
+						import("./pricing-sync-tQAPVaum.js").then((n) => n.i).then((module) => module.syncPricingFromModelsDev({ silent: true })).then(() => this.recalcWallet(wallet.id)).catch(() => {});
 					} catch {}
 				}
 				wallet.lastUsedAt = nowTs;
@@ -2717,4 +2721,4 @@ var repository = {
 	}
 };
 //#endregion
-export { initConnectionIdentity as C, WALLET_CATALOG_PROVIDERS as E, walletPendingModelCount as S, DEEPSEEK_WALLET_ID as T, cloneWallet as _, decryptKey as a, mergeWalletCollections as b, isTruncatedFinish as c, calcCost as d, calcSavings as f, DEEPSEEK_OFFICIAL_ENDPOINT_ID as g, normalizeModel as h, saveWalletApiKey as i, DataEvents as l, isDeepSeekOfficialModel as m, repository_exports as n, encryptKey as o, getPricing as p, getWalletApiKey as r, sanitizeHistoryTiming as s, repository as t, on as u, findWalletForHistory as v, resolveRuntimeConnectionContext as w, walletBalanceToCny as x, findWalletModel as y };
+export { walletBalanceToCny as C, DEEPSEEK_WALLET_ID as D, resolveRuntimeConnectionContext as E, WALLET_CATALOG_PROVIDERS as O, mergeWalletCollections as S, initConnectionIdentity as T, normalizeModel as _, decryptKey as a, findWalletForHistory as b, isTruncatedFinish as c, calcCost as d, calcSavings as f, isWalletPeakHour as g, isPeakHour as h, saveWalletApiKey as i, DataEvents as l, isDeepSeekOfficialModel as m, repository_exports as n, encryptKey as o, getPricing as p, getWalletApiKey as r, sanitizeHistoryTiming as s, repository as t, on as u, DEEPSEEK_OFFICIAL_ENDPOINT_ID as v, walletPendingModelCount as w, findWalletModel as x, cloneWallet as y };

@@ -1,4 +1,4 @@
-import { r as toast, t as log } from "./logger-Bv-AT94O.js";
+import { r as toast, t as log } from "./logger-8RGXnvfI.js";
 import { t as esc } from "./date-BJI2m6dS.js";
 //#region src/services/update.ts
 var CURRENT_VERSION = "3.1.4";

@@ -1,14 +1,14 @@
-import { cn as __exportAll } from "./Image-B5UjBJH1.js";
-import { n as getSelectedSave, r as state$2, t as getHistoryForDisplay } from "./store-DSiVmOSF.js";
+import { pn as __exportAll } from "./graphic-BAx7jeh4.js";
+import { n as getSelectedSave, r as state$2, t as getHistoryForDisplay } from "./store-D78Joj4J.js";
 import { d as WEBDAV_SYNC_FILE, i as HIDDEN_PRICING_MODELS, n as DEFAULT_PEAK_HOURS, s as PRICING } from "./pricing-bcKQQNo6.js";
-import { c as saveExtensionSettings, d as historyRecordKey, i as getExtensionSettings, u as saveHot } from "./persistence-CrFXrRB_.js";
-import { r as toast, t as log } from "./logger-Bv-AT94O.js";
-import { E as WALLET_CATALOG_PROVIDERS, S as walletPendingModelCount, T as DEEPSEEK_WALLET_ID, a as decryptKey, b as mergeWalletCollections, c as isTruncatedFinish, d as calcCost, f as calcSavings, h as normalizeModel, i as saveWalletApiKey, l as DataEvents, m as isDeepSeekOfficialModel, o as encryptKey, p as getPricing$1, r as getWalletApiKey, s as sanitizeHistoryTiming, t as repository, u as on, v as findWalletForHistory, x as walletBalanceToCny, y as findWalletModel } from "./repository-B4yMLqkN.js";
-import { a as isUnsafeKey$1, c as localDay$1, i as isPeakHour, l as localTimeHM, n as isChinaHoliday, o as isValidDayKey, r as isExtraOffDay, s as isWeekendDay, t as esc$1, u as CN_HOLIDAY_COVERAGE_LABEL } from "./date-BJI2m6dS.js";
-import { a as getWalletExchangeRate, i as getDisplayCurrency, n as fetchLiveRate, r as formatMoney } from "./currency-IAtpC2X8.js";
-import { r as recalcAllCosts, t as installInterception } from "./interception-CtyZNjCZ.js";
-import { i as saveApiKey, n as queryBalance, r as queryWalletBalance } from "./balance-BQzxLpAs.js";
-import { a as removeSyncedModels, n as isSyncedCustomModel, o as syncPricingFromModelsDev, r as previewSync, t as fetchModelsDevCatalog } from "./pricing-sync-Cl187A8k.js";
+import { c as saveExtensionSettings, d as historyRecordKey, i as getExtensionSettings, u as saveHot } from "./persistence-BRxkRWyJ.js";
+import { r as toast, t as log } from "./logger-8RGXnvfI.js";
+import { C as walletBalanceToCny, D as DEEPSEEK_WALLET_ID, O as WALLET_CATALOG_PROVIDERS, S as mergeWalletCollections, _ as normalizeModel, a as decryptKey, b as findWalletForHistory, c as isTruncatedFinish, d as calcCost, f as calcSavings, g as isWalletPeakHour, h as isPeakHour, i as saveWalletApiKey, l as DataEvents, m as isDeepSeekOfficialModel, o as encryptKey, p as getPricing$1, r as getWalletApiKey, s as sanitizeHistoryTiming, t as repository, u as on, w as walletPendingModelCount, x as findWalletModel } from "./repository-D0fbhj3j.js";
+import { a as isUnsafeKey$1, c as localDay$1, i as isPeakHour$1, l as localTimeHM, n as isChinaHoliday, o as isValidDayKey, r as isExtraOffDay, s as isWeekendDay, t as esc$1, u as CN_HOLIDAY_COVERAGE_LABEL } from "./date-BJI2m6dS.js";
+import { a as getWalletExchangeRate, i as getDisplayCurrency, n as fetchLiveRate, r as formatMoney } from "./currency-CWUMnV7c.js";
+import { r as recalcAllCosts, t as installInterception } from "./interception-PcvsLS03.js";
+import { i as saveApiKey, n as queryBalance, r as queryWalletBalance } from "./balance-CwKDQcAf.js";
+import { a as removeSyncedModels, n as isSyncedCustomModel, o as syncPricingFromModelsDev, r as previewSync, t as fetchModelsDevCatalog } from "./pricing-sync-tQAPVaum.js";
 //#region src/services/import-export.ts
 function isUnsafeKey(k) {
 	return k === "__proto__" || k === "constructor" || k === "prototype";
@@ -1817,14 +1817,14 @@ function renderSettings(doc) {
 		doc.getElementById("aus-auto-balance-interval").style.display = autoCb.checked ? "block" : "none";
 		saveHot({ settings: state$2.settings });
 		try {
-			import("./balance-BQzxLpAs.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
+			import("./balance-CwKDQcAf.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
 		} catch {}
 	};
 	doc.getElementById("aus-balance-interval").onchange = (e) => {
 		state$2.settings.balanceInterval = parseInt(e.target.value) || 10;
 		saveHot({ settings: state$2.settings });
 		try {
-			import("./balance-BQzxLpAs.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
+			import("./balance-CwKDQcAf.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
 		} catch {}
 	};
 	if (dbgCb) dbgCb.onchange = () => {
@@ -1869,8 +1869,8 @@ function renderSettings(doc) {
 		const clearBtn = doc.getElementById("aus-btn-debug-clear");
 		if (clearBtn) clearBtn.onclick = async () => {
 			try {
-				const { repository } = await import("./repository-B4yMLqkN.js").then((n) => n.n);
-				const { state: st } = await import("./store-DSiVmOSF.js").then((n) => n.i);
+				const { repository } = await import("./repository-D0fbhj3j.js").then((n) => n.n);
+				const { state: st } = await import("./store-D78Joj4J.js").then((n) => n.i);
 				await repository.replaceAll({ history: (st.history || []).filter((h) => h._debug !== true) });
 				await repository.recalcAll();
 				await repository.rebuildAggregates();
@@ -2019,8 +2019,8 @@ function renderSettings(doc) {
 					intervalDrop.style.display = "none";
 					if (intervalLabel) intervalLabel.textContent = intervalMap[el.getAttribute("data-interval")] || el.getAttribute("data-interval");
 					try {
-						import("./pricing-sync-Cl187A8k.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
-						import("./currency-IAtpC2X8.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
+						import("./pricing-sync-tQAPVaum.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
+						import("./currency-CWUMnV7c.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
 					} catch {}
 				};
 			});
@@ -2041,7 +2041,7 @@ function renderSettings(doc) {
 			if (panel) panel.style.display = enabledEl.checked ? "grid" : "none";
 			let removed = 0;
 			if (!enabledEl.checked) try {
-				const m = await import("./pricing-sync-Cl187A8k.js").then((n) => n.i);
+				const m = await import("./pricing-sync-tQAPVaum.js").then((n) => n.i);
 				try {
 					await m.markLegacySyncedModels?.({ skipRerender: true });
 				} catch {}
@@ -2051,8 +2051,8 @@ function renderSettings(doc) {
 			}
 			saveHot({ settings: state$2.settings });
 			try {
-				import("./currency-IAtpC2X8.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
-				import("./pricing-sync-Cl187A8k.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
+				import("./currency-CWUMnV7c.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
+				import("./pricing-sync-tQAPVaum.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
 			} catch {}
 			if (removed) {
 				renderModelsEditor(doc);
@@ -2082,7 +2082,7 @@ function renderSettings(doc) {
 			state$2.settings.pricingSync.useLiveRate = liveEl.checked;
 			saveHot({ settings: state$2.settings });
 			try {
-				import("./currency-IAtpC2X8.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
+				import("./currency-CWUMnV7c.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
 			} catch {}
 		};
 		if (recalcEl) recalcEl.onchange = () => {
@@ -2538,7 +2538,7 @@ function fillDebugModelSelect(doc) {
 //#region src/ui/compare.ts
 var selOld = null;
 var selNew = null;
-function getDoc$9() {
+function getDoc$10() {
 	return window.parent?.document ?? document;
 }
 function diffMessages(oldMsgs, newMsgs) {
@@ -2552,7 +2552,7 @@ function diffMessages(oldMsgs, newMsgs) {
 	return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div style="background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:10px;padding:10px;font-size:var(--aus-fs-sm);white-space:pre-wrap;word-break:break-all;color:var(--ds-text);">旧：${esc$1(a.slice(Math.max(0, i - ctx), i)) + "<span style=\"background:var(--ds-red-bg);color:var(--ds-red);padding:0 2px;border-radius:3px;\">" + esc$1(a.slice(i, i + 200)) + "</span>" + esc$1(a.slice(i + 200, i + 280))}</div><div style="background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:10px;padding:10px;font-size:var(--aus-fs-sm);white-space:pre-wrap;word-break:break-all;color:var(--ds-text);">新：${esc$1(b.slice(Math.max(0, i - ctx), i)) + "<span style=\"background:var(--ds-green-bg);color:var(--ds-green);padding:0 2px;border-radius:3px;\">" + esc$1(b.slice(i, i + 200)) + "</span>" + esc$1(b.slice(i + 200, i + 280))}</div></div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-top:8px;">差异起点即缓存发散位置，前 ${i} 字符一致为命中段</div>`;
 }
 function bindHistoryCompare() {
-	const doc = getDoc$9();
+	const doc = getDoc$10();
 	doc.addEventListener("click", (e) => {
 		const t = e.target;
 		if (!t) return;
@@ -2569,7 +2569,7 @@ function bindHistoryCompare() {
 	});
 }
 function renderDiff() {
-	const host = getDoc$9().getElementById("aus-diff");
+	const host = getDoc$10().getElementById("aus-diff");
 	if (!host) return;
 	if (selOld == null || selNew == null) {
 		host.innerHTML = "<div style=\"text-align:center;padding:16px;color:var(--ds-text-3);font-size:var(--aus-fs-base);\">已选 " + (selOld != null ? "旧 " : "") + (selNew != null ? "新 " : "") + "，请在历史中各选一条 旧/新 进行对比</div>";
@@ -2583,6 +2583,716 @@ function renderDiff() {
 		return;
 	}
 	host.innerHTML = diffMessages(oldEntry.messages || [], newEntry.messages || []);
+}
+function clamp01$1(value) {
+	if (!Number.isFinite(value)) return 0;
+	return Math.max(0, Math.min(1, value));
+}
+function average(values) {
+	if (!values.length) return 0;
+	let sum = 0;
+	for (const value of values) sum += value;
+	return sum / values.length;
+}
+function standardDeviation(values) {
+	if (values.length <= 1) return 0;
+	const mean = average(values);
+	let sum = 0;
+	for (const value of values) sum += (value - mean) ** 2;
+	return Math.sqrt(sum / values.length);
+}
+function median(values) {
+	if (!values.length) return 0;
+	const sorted = [...values].sort((a, b) => a - b);
+	const mid = Math.floor(sorted.length / 2);
+	return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+function quantile(values, q) {
+	if (!values.length) return 0;
+	const sorted = [...values].sort((a, b) => a - b);
+	if (sorted.length === 1) return sorted[0];
+	const pos = (sorted.length - 1) * q;
+	const base = Math.floor(pos);
+	const rest = pos - base;
+	const next = sorted[Math.min(sorted.length - 1, base + 1)];
+	return sorted[base] + rest * (next - sorted[base]);
+}
+function medianAbsoluteDeviation(values) {
+	if (!values.length) return 0;
+	const med = median(values);
+	return median(values.map((value) => Math.abs(value - med)));
+}
+/**
+* 数据准备：按时间升序、过滤空 prompt、计算命中率与截断标记。
+* 无缓存字段时 hit=0、miss=prompt，仅用于堆叠图展示，不伪造命中率。
+*/
+function prepareEntries(history) {
+	const sorted = [...history || []].sort((a, b) => (Number(a?.timestamp) || 0) - (Number(b?.timestamp) || 0));
+	const prepared = [];
+	for (const entry of sorted) {
+		const rawHit = Math.max(0, Number(entry?.cache_hit_tokens) || 0);
+		const rawMiss = Math.max(0, Number(entry?.cache_miss_tokens) || 0);
+		const cacheSamples = rawHit + rawMiss;
+		const prompt = Math.max(0, Number(entry?.prompt_tokens) || cacheSamples);
+		if (prompt <= 0) continue;
+		const output = Math.max(0, Number(entry?.completion_tokens) || 0);
+		const hitRate = cacheSamples > 0 ? clamp01$1(rawHit / cacheSamples) : null;
+		prepared.push({
+			index: prepared.length,
+			timestamp: Number(entry?.timestamp) || 0,
+			model: entry?.model || "unknown",
+			prompt,
+			hit: cacheSamples > 0 ? rawHit : 0,
+			miss: cacheSamples > 0 ? rawMiss : prompt,
+			output,
+			total: Math.max(0, Number(entry?.total_tokens) || prompt + output),
+			cost: Number(entry?.cost) || 0,
+			inputCost: Number(entry?.input_cost) || 0,
+			outputCost: Number(entry?.output_cost) || 0,
+			hitRate,
+			cacheSamples,
+			truncated: entry?.isTruncated === true || isTruncatedFinish(entry?.finishReason),
+			round: prepared.length + 1
+		});
+	}
+	return prepared;
+}
+/**
+* 识别上下文回落点。连续回落只记录第一次，避免一次压缩被拆成多个点。
+*/
+function detectCompactions(prepared) {
+	const points = [];
+	let lastRound = 0;
+	for (let i = 1; i < prepared.length; i++) {
+		if (points.length && points[points.length - 1].index === i - 1) continue;
+		const previous = prepared[i - 1];
+		const current = prepared[i];
+		const drop = previous.prompt - current.prompt;
+		if (previous.prompt <= 0) continue;
+		if (current.prompt / previous.prompt > .8) continue;
+		if (drop < 1500) continue;
+		const gapRounds = lastRound ? current.round - lastRound : current.round;
+		points.push({
+			index: i,
+			round: current.round,
+			before: previous.prompt,
+			after: current.prompt,
+			dropPct: drop / previous.prompt,
+			gapRounds,
+			postHitRate: current.hitRate
+		});
+		lastRound = current.round;
+	}
+	return points;
+}
+function regression(xs, ys) {
+	const n = xs.length;
+	let sx = 0;
+	let sy = 0;
+	let sxx = 0;
+	let sxy = 0;
+	for (let i = 0; i < n; i += 1) {
+		sx += xs[i];
+		sy += ys[i];
+		sxx += xs[i] * xs[i];
+		sxy += xs[i] * ys[i];
+	}
+	const xMean = n ? sx / n : 0;
+	const yMean = n ? sy / n : 0;
+	const centeredXX = xs.reduce((sum, x) => sum + (x - xMean) ** 2, 0);
+	const denominator = centeredXX;
+	const slope = denominator > 1e-9 ? xs.reduce((sum, x, i) => sum + (x - xMean) * (ys[i] - yMean), 0) / denominator : 0;
+	const intercept = yMean - slope * xMean;
+	let rss = 0;
+	let tss = 0;
+	for (let i = 0; i < n; i += 1) {
+		const predicted = intercept + slope * xs[i];
+		rss += (ys[i] - predicted) ** 2;
+		tss += (ys[i] - yMean) ** 2;
+	}
+	const variance = n > 2 ? rss / (n - 2) : 0;
+	const sigma = Math.sqrt(Math.max(0, variance));
+	return {
+		slope,
+		intercept,
+		r2: tss > 1e-9 ? 1 - rss / tss : 1,
+		sigma,
+		xMean,
+		sxx: centeredXX
+	};
+}
+function averageIntervalMs$1(prepared) {
+	if (prepared.length < 2) return 0;
+	const recent = prepared.slice(-21);
+	const diffs = [];
+	for (let i = 1; i < recent.length; i += 1) {
+		const diff = recent[i].timestamp - recent[i - 1].timestamp;
+		if (diff > 0) diffs.push(diff);
+	}
+	return diffs.length ? average(diffs) : 0;
+}
+/**
+* 对最后一个压缩点之后的当前段做增长拟合。
+* 样本 >= 12 时先用中位绝对偏差剔除离群点，再回归。
+*/
+function computeGrowthFit(prepared, compactions) {
+	const segStart = compactions.length ? compactions[compactions.length - 1].index : 0;
+	const segment = prepared.slice(segStart);
+	const n = segment.length;
+	const interval = averageIntervalMs$1(prepared);
+	if (!n) return {
+		model: "recent-mean",
+		c0: 0,
+		delta: 0,
+		sigma: 0,
+		r2: 0,
+		n: 0,
+		segStart,
+		lastPrompt: 0,
+		avgIntervalMs: interval,
+		xMean: 0,
+		sxx: 0
+	};
+	const y = segment.map((entry) => entry.prompt);
+	const lastPrompt = y[n - 1];
+	if (n === 1) return {
+		model: "recent-mean",
+		c0: lastPrompt,
+		delta: 0,
+		sigma: Math.max(1, lastPrompt * .01),
+		r2: 0,
+		n,
+		segStart,
+		lastPrompt,
+		avgIntervalMs: interval,
+		xMean: 0,
+		sxx: 0
+	};
+	if (n === 2) {
+		const delta = Math.max(0, y[1] - y[0]);
+		return {
+			model: "linear",
+			c0: y[0],
+			delta,
+			sigma: Math.max(1, standardDeviation(y), lastPrompt * .01),
+			r2: 0,
+			n,
+			segStart,
+			lastPrompt,
+			avgIntervalMs: interval,
+			xMean: .5,
+			sxx: .5
+		};
+	}
+	let xs = y.map((_, index) => index);
+	let ys = y.slice();
+	if (n >= 12) {
+		const med = median(y);
+		const mad = medianAbsoluteDeviation(y) * 1.4826;
+		if (mad > 0) {
+			const filtered = y.map((value, index) => ({
+				value,
+				index
+			})).filter((point) => Math.abs(point.value - med) <= 3 * mad);
+			if (filtered.length >= 6) {
+				xs = filtered.map((point) => point.index);
+				ys = filtered.map((point) => point.value);
+			}
+		}
+	}
+	const fit = regression(xs, ys);
+	const sigmaFloor = Math.max(1, lastPrompt * .01);
+	const sigma = Math.max(fit.sigma, sigmaFloor);
+	if (fit.r2 < .35 && n >= 6) {
+		const recent = y.slice(-Math.min(5, n));
+		return {
+			model: "recent-mean",
+			c0: median(recent),
+			delta: 0,
+			sigma: Math.max(standardDeviation(recent), sigmaFloor),
+			r2: fit.r2,
+			n,
+			segStart,
+			lastPrompt,
+			avgIntervalMs: interval,
+			xMean: 0,
+			sxx: 0
+		};
+	}
+	return {
+		model: "linear",
+		c0: Math.max(0, fit.intercept),
+		delta: Math.max(0, fit.slope),
+		sigma,
+		r2: fit.r2,
+		n,
+		segStart,
+		lastPrompt,
+		avgIntervalMs: interval,
+		xMean: fit.xMean,
+		sxx: fit.sxx
+	};
+}
+/** 当前段内第 offset 轮的拟合 prompt（offset 从当前段起点算） */
+function promptAt(fit, offset) {
+	if (fit.model === "recent-mean") return Math.max(0, fit.c0);
+	return Math.max(0, fit.c0 + fit.delta * offset);
+}
+/** 95% 预测区间半宽 */
+function predictionBand(fit, offset) {
+	if (fit.n <= 0) return 0;
+	const base = fit.sigma * Math.sqrt(1 + 1 / fit.n);
+	if (fit.model === "recent-mean" || fit.sxx <= 1e-9) return 1.96 * base;
+	const distance = offset - fit.xMean;
+	const factor = Math.sqrt(1 + 1 / fit.n + distance * distance / fit.sxx);
+	return 1.96 * fit.sigma * factor;
+}
+/** 全量历史的有效缓存命中率（hit / (hit + miss)） */
+function computeGlobalHitRate$1(history) {
+	let hit = 0;
+	let samples = 0;
+	for (const entry of history || []) {
+		const h = Math.max(0, Number(entry?.cache_hit_tokens) || 0);
+		const m = Math.max(0, Number(entry?.cache_miss_tokens) || 0);
+		if (h + m <= 0) continue;
+		hit += h;
+		samples += h + m;
+	}
+	return samples > 0 ? clamp01$1(hit / samples) : null;
+}
+/** 指定模型的有效缓存命中率 */
+function computeModelHitRate$1(history, model) {
+	let hit = 0;
+	let samples = 0;
+	for (const entry of history || []) {
+		if ((entry?.model || "") !== model) continue;
+		const h = Math.max(0, Number(entry?.cache_hit_tokens) || 0);
+		const m = Math.max(0, Number(entry?.cache_miss_tokens) || 0);
+		if (h + m <= 0) continue;
+		hit += h;
+		samples += h + m;
+	}
+	return samples > 0 ? clamp01$1(hit / samples) : null;
+}
+function pickWeightedHitRate(entries) {
+	const recent = entries.slice(-10);
+	let hit = 0;
+	let samples = 0;
+	for (const entry of recent) {
+		if (entry.hitRate == null || entry.cacheSamples <= 0) continue;
+		hit += entry.hit;
+		samples += entry.cacheSamples;
+	}
+	return samples > 0 ? {
+		rate: clamp01$1(hit / samples),
+		samples
+	} : null;
+}
+/**
+* 命中率测算：
+* 1. 当前段有有效样本 → token 加权（最近 10 个有效样本）；
+* 2. 当前段无、但对话更早有样本 → 用对话最近的有效样本；
+* 3. 完全没有样本 → 按选项回退（全站/同模型/手动），都没有则为 0。
+*/
+function computeHitEstimate(prepared, compactions, fallback) {
+	const segStart = compactions.length ? compactions[compactions.length - 1].index : 0;
+	const segmentData = prepared.slice(segStart).filter((entry) => entry.hitRate != null && entry.cacheSamples > 0);
+	const allData = prepared.filter((entry) => entry.hitRate != null && entry.cacheSamples > 0);
+	const segmentPick = pickWeightedHitRate(segmentData);
+	if (segmentPick) return {
+		rate: segmentPick.rate,
+		source: "data",
+		samples: segmentPick.samples,
+		segmentSamples: segmentData.length,
+		hasData: true
+	};
+	const allPick = pickWeightedHitRate(allData);
+	if (allPick) return {
+		rate: allPick.rate,
+		source: "data",
+		samples: allPick.samples,
+		segmentSamples: 0,
+		hasData: true
+	};
+	if (fallback.mode === "manual" && fallback.manualRate != null) return {
+		rate: clamp01$1(fallback.manualRate),
+		source: "manual",
+		samples: 0,
+		segmentSamples: 0,
+		hasData: false
+	};
+	if (fallback.mode === "model" && fallback.modelRate != null) return {
+		rate: clamp01$1(fallback.modelRate),
+		source: "model",
+		samples: 0,
+		segmentSamples: 0,
+		hasData: false
+	};
+	if (fallback.globalRate != null) return {
+		rate: clamp01$1(fallback.globalRate),
+		source: "global",
+		samples: 0,
+		segmentSamples: 0,
+		hasData: false
+	};
+	return {
+		rate: 0,
+		source: "none",
+		samples: 0,
+		segmentSamples: 0,
+		hasData: false
+	};
+}
+/** 输出 token 估计：当前段非截断样本的中位数，MAD 作为波动半宽 */
+function computeOutputEstimate(prepared, compactions) {
+	const segStart = compactions.length ? compactions[compactions.length - 1].index : 0;
+	const segment = prepared.slice(segStart);
+	const excluded = prepared.filter((entry) => entry.truncated).length;
+	const segmentCandidates = segment.filter((entry) => !entry.truncated && entry.output > 0);
+	const allCandidates = prepared.filter((entry) => !entry.truncated && entry.output > 0);
+	const list = (segmentCandidates.length ? segmentCandidates : allCandidates).slice(-10);
+	if (!list.length) return {
+		value: 0,
+		low: 0,
+		high: 0,
+		samples: 0,
+		excluded
+	};
+	const values = list.map((entry) => entry.output);
+	const med = median(values);
+	const mad = medianAbsoluteDeviation(values) * 1.4826;
+	const spread = mad > 0 ? mad : Math.max(0, quantile(values, .75) - quantile(values, .25)) / 2;
+	return {
+		value: med,
+		low: Math.max(0, med - spread),
+		high: med + spread,
+		samples: values.length,
+		excluded
+	};
+}
+/**
+* 压缩预测：用最近一次压缩的“压缩前段长度”作为周期。
+* 即使只有一次压缩，也能给出下次压缩的估计。
+*/
+function computeCompactionForecast(prepared, compactions) {
+	if (!compactions.length) return {
+		detected: false,
+		count: 0,
+		lastRound: null,
+		period: null,
+		retention: null,
+		postHitRate: null,
+		segmentAge: prepared.length,
+		roundsUntilNext: null,
+		nextRound: null,
+		medianGap: null
+	};
+	const last = compactions[compactions.length - 1];
+	const currentRound = prepared.length;
+	const period = last.gapRounds > 0 ? last.gapRounds : null;
+	const segmentAge = Math.max(0, currentRound - last.round);
+	const roundsUntilNext = period != null ? Math.max(1, period - segmentAge) : null;
+	const retention = last.before > 0 ? Math.max(.05, Math.min(.95, last.after / last.before)) : null;
+	const medianGap = compactions.length >= 2 ? median(compactions.map((point) => point.gapRounds)) : null;
+	return {
+		detected: true,
+		count: compactions.length,
+		lastRound: last.round,
+		period,
+		retention,
+		postHitRate: last.postHitRate,
+		segmentAge,
+		roundsUntilNext,
+		nextRound: roundsUntilNext != null ? currentRound + roundsUntilNext : null,
+		medianGap
+	};
+}
+function buildHistoryPoints(prepared, compactions) {
+	const compactionRounds = new Set(compactions.map((point) => point.round));
+	let cumulative = 0;
+	return prepared.map((entry) => {
+		cumulative += entry.cost;
+		return {
+			round: entry.round,
+			input: entry.prompt,
+			hit: entry.hit,
+			miss: entry.miss,
+			output: entry.output,
+			cost: entry.cost,
+			cumulativeCost: cumulative,
+			hitRate: entry.hitRate,
+			compaction: compactionRounds.has(entry.round)
+		};
+	});
+}
+function projectRounds(prepared, fit, hit, output, pricing, ctxLimit, compactionForecast, compactionEnabled, maxRounds) {
+	const out = [];
+	const currentRound = prepared.length;
+	let cumulative = prepared.reduce((sum, entry) => sum + entry.cost, 0);
+	let factor = 1;
+	let currentHit = hit.rate;
+	const retention = compactionForecast.retention ?? .5;
+	let nextCompactionRound = compactionEnabled && compactionForecast.detected ? compactionForecast.nextRound : null;
+	for (let k = 0; k < maxRounds; k += 1) {
+		const round = currentRound + k + 1;
+		const offset = fit.n + k;
+		const base = promptAt(fit, offset);
+		const baseBand = predictionBand(fit, offset);
+		let input = base * factor;
+		let overLimit = ctxLimit != null && input > ctxLimit;
+		let isCompaction = false;
+		if (compactionEnabled && nextCompactionRound != null && round >= nextCompactionRound) {
+			isCompaction = true;
+			factor *= retention;
+			input = base * factor;
+			currentHit = compactionForecast.postHitRate ?? hit.rate;
+			nextCompactionRound = compactionForecast.period != null ? round + compactionForecast.period : null;
+		} else if (compactionEnabled && compactionForecast.postHitRate != null && currentHit < hit.rate) currentHit = Math.min(hit.rate, currentHit + (hit.rate - currentHit) * .35);
+		const hitRate = clamp01$1(currentHit);
+		const hitTokens = input * hitRate;
+		const missTokens = input * (1 - hitRate);
+		let cost = null;
+		let costLow = null;
+		let costHigh = null;
+		if (pricing) {
+			const costAt = (rate) => (input * rate * pricing.hit + input * (1 - rate) * pricing.miss + output.value * pricing.output) / 1e6;
+			cost = costAt(hitRate);
+			const low = costAt(clamp01$1(hitRate + .1));
+			const high = costAt(clamp01$1(hitRate - .1));
+			costLow = Math.min(low, high);
+			costHigh = Math.max(low, high);
+			cumulative += cost;
+		}
+		const band = baseBand * factor;
+		out.push({
+			round,
+			input,
+			inputLow: Math.max(0, input - band),
+			inputHigh: input + band,
+			hit: hitTokens,
+			miss: missTokens,
+			output: output.value,
+			hitRate,
+			cost,
+			costLow,
+			costHigh,
+			cumulativeCost: pricing ? cumulative : null,
+			compaction: isCompaction,
+			overLimit
+		});
+		if (overLimit) break;
+	}
+	return out;
+}
+/**
+* 构建完整预测序列。历史点完整保留，未来点按 horizon 生成。
+* 无任何有效历史时返回 null。
+*/
+function buildForecastSeries(history, options) {
+	const prepared = prepareEntries(history);
+	if (!prepared.length) return null;
+	const compactions = detectCompactions(prepared);
+	const fit = computeGrowthFit(prepared, compactions);
+	const hit = computeHitEstimate(prepared, compactions, options.hitFallback);
+	const output = computeOutputEstimate(prepared, compactions);
+	const compactionForecast = computeCompactionForecast(prepared, compactions);
+	const historyPoints = buildHistoryPoints(prepared, compactions);
+	const horizon = Math.max(1, Math.floor(options.horizon) || 10);
+	const future = projectRounds(prepared, fit, hit, output, options.pricing, options.ctxLimit, compactionForecast, options.compaction, horizon);
+	const first = future[0];
+	const last = prepared[prepared.length - 1];
+	const totalCost = prepared.reduce((sum, entry) => sum + entry.cost, 0);
+	const next = first ? {
+		input: first.input,
+		inputLow: first.inputLow,
+		inputHigh: first.inputHigh,
+		output: first.output,
+		hitRate: first.hitRate,
+		cost: first.cost,
+		costLow: first.costLow,
+		costHigh: first.costHigh
+	} : {
+		input: promptAt(fit, fit.n),
+		inputLow: promptAt(fit, fit.n),
+		inputHigh: promptAt(fit, fit.n),
+		output: output.value,
+		hitRate: hit.rate,
+		cost: null,
+		costLow: null,
+		costHigh: null
+	};
+	return {
+		prepared,
+		history: historyPoints,
+		future,
+		compactions,
+		fit,
+		hit,
+		output,
+		compactionForecast,
+		currentRound: prepared.length,
+		currentPrompt: last?.prompt || 0,
+		totalCost,
+		averageCost: prepared.length ? totalCost / prepared.length : 0,
+		next
+	};
+}
+/**
+* 逐轮模拟余额可支撑轮数。与图表共用 projectRounds，保证口径一致。
+* 返回 null 表示无法估算（价格未知）。
+*/
+function simulateRemainingRounds(budget, series, options, maxRounds = 1e4) {
+	if (!options.pricing) return null;
+	if (!Number.isFinite(budget) || budget <= 0) return {
+		R: 0,
+		low: 0,
+		high: 0,
+		ctxLimited: false
+	};
+	const run = (deltaScale, hitDelta) => {
+		const fit = {
+			...series.fit,
+			delta: series.fit.delta * deltaScale
+		};
+		const hit = {
+			...series.hit,
+			rate: clamp01$1(series.hit.rate + hitDelta)
+		};
+		const points = projectRounds(series.prepared, fit, hit, series.output, options.pricing, options.ctxLimit, series.compactionForecast, options.compaction, maxRounds);
+		let spent = 0;
+		let rounds = 0;
+		let ctxLimited = false;
+		for (const point of points) {
+			if (point.overLimit) {
+				ctxLimited = true;
+				break;
+			}
+			if (point.cost == null) break;
+			if (spent + point.cost > budget) break;
+			spent += point.cost;
+			rounds += 1;
+		}
+		return {
+			R: rounds,
+			ctxLimited
+		};
+	};
+	const base = run(1, 0);
+	const optimistic = run(.5, .05);
+	const pessimistic = run(1.5, -.05);
+	return {
+		R: base.R,
+		low: Math.min(base.R, pessimistic.R),
+		high: Math.max(base.R, optimistic.R),
+		ctxLimited: base.ctxLimited
+	};
+}
+/**
+* 上下文可支撑轮数。
+* - 未启用压缩预测：按当前段 Δ 线性外推；
+* - 启用且检测到压缩：返回 null，由“距下次压缩”表达（压缩会主动回落）。
+*/
+function contextRoundsFor(series, ctxLimit, compactionEnabled) {
+	if (!ctxLimit) return null;
+	if (compactionEnabled && series.compactionForecast.detected) return null;
+	if (series.fit.delta <= 0) return null;
+	const remain = ctxLimit - series.currentPrompt;
+	return remain <= 0 ? 0 : Math.max(0, Math.floor(remain / series.fit.delta));
+}
+//#endregion
+//#region src/stats/model-efficiency.ts
+/**
+* 模型效率/性价比聚合 — 纯函数。
+*
+* 输入输出比只说明“单位产出的上下文开销”，不能单独代表便宜；
+* 每 1k 输出 token 成本才是产出成本的直接度量。两者并列展示。
+*/
+function clamp01(value) {
+	if (!Number.isFinite(value)) return 0;
+	return Math.max(0, Math.min(1, value));
+}
+function compareNullableAsc(a, b) {
+	if (a == null && b == null) return 0;
+	if (a == null) return 1;
+	if (b == null) return -1;
+	return a - b;
+}
+/**
+* 按模型聚合效率指标，默认按每 1k 输出成本升序（无价排最后）。
+*/
+function aggregateModelEfficiency(history, options = {}) {
+	const prepared = prepareEntries(history);
+	const map = /* @__PURE__ */ new Map();
+	for (const entry of prepared) {
+		const model = entry.model || "unknown";
+		let acc = map.get(model);
+		if (!acc) {
+			acc = {
+				model,
+				rounds: 0,
+				inputTokens: 0,
+				outputTokens: 0,
+				totalTokens: 0,
+				cost: 0,
+				inputCost: 0,
+				outputCost: 0,
+				hit: 0,
+				hitSamples: 0
+			};
+			map.set(model, acc);
+		}
+		acc.rounds += 1;
+		acc.inputTokens += entry.prompt;
+		acc.outputTokens += entry.output;
+		acc.totalTokens += entry.total;
+		acc.cost += entry.cost;
+		acc.inputCost += entry.inputCost;
+		acc.outputCost += entry.outputCost;
+		if (entry.cacheSamples > 0) {
+			acc.hit += entry.hit;
+			acc.hitSamples += entry.cacheSamples;
+		}
+	}
+	const rows = [];
+	for (const acc of map.values()) {
+		const price = options.priceForModel ? options.priceForModel(acc.model) : null;
+		const priced = acc.cost > 0 || acc.inputCost > 0 || acc.outputCost > 0;
+		const ioRatio = acc.outputTokens > 0 ? acc.inputTokens / acc.outputTokens : null;
+		const outputShare = acc.totalTokens > 0 ? acc.outputTokens / acc.totalTokens : 0;
+		const costPer1kOutput = priced && acc.outputTokens > 0 ? acc.cost / acc.outputTokens * 1e3 : null;
+		const avgCost = priced && acc.rounds > 0 ? acc.cost / acc.rounds : null;
+		const hitRate = acc.hitSamples > 0 ? clamp01(acc.hit / acc.hitSamples) : null;
+		let cacheSaving = null;
+		if (price && price.miss > 0 && acc.inputTokens > 0 && (acc.cost > 0 || acc.inputCost > 0)) {
+			const expected = acc.inputTokens * price.miss / 1e6;
+			if (expected > 0) cacheSaving = clamp01(1 - acc.inputCost / expected);
+		}
+		rows.push({
+			model: acc.model,
+			rounds: acc.rounds,
+			inputTokens: acc.inputTokens,
+			outputTokens: acc.outputTokens,
+			totalTokens: acc.totalTokens,
+			cost: acc.cost,
+			inputCost: acc.inputCost,
+			outputCost: acc.outputCost,
+			ioRatio,
+			outputShare,
+			costPer1kOutput,
+			avgCost,
+			hitRate,
+			cacheSaving,
+			priced
+		});
+	}
+	rows.sort((a, b) => {
+		const byCost = compareNullableAsc(a.costPer1kOutput, b.costPer1kOutput);
+		if (byCost !== 0) return byCost;
+		const byRatio = compareNullableAsc(a.ioRatio, b.ioRatio);
+		if (byRatio !== 0) return byRatio;
+		return a.model.localeCompare(b.model);
+	});
+	return rows;
 }
 //#endregion
 //#region src/data/computed.ts
@@ -3075,20 +3785,32 @@ function computeStatsFour(filtered) {
 		rounds
 	};
 }
+/** 全量历史有效缓存命中率；无样本时返回 null */
+function computeGlobalHitRate(history) {
+	return computeGlobalHitRate$1(history || []);
+}
+/** 指定模型的有效缓存命中率；无样本时返回 null */
+function computeModelHitRate(history, model) {
+	return computeModelHitRate$1(history || [], model);
+}
+/** 模型效率对比（按每 1k 输出成本升序，无价排最后） */
+function computeModelEfficiency(history, options = {}) {
+	return aggregateModelEfficiency(history || [], options);
+}
 //#endregion
 //#region src/ui/heatmap.ts
-function getDoc$8() {
+function getDoc$9() {
 	return window.parent?.document ?? document;
 }
 function themeIsDark() {
 	try {
-		return getDoc$8().getElementById("aus-panel")?.getAttribute("data-ds-theme") === "dark";
+		return getDoc$9().getElementById("aus-panel")?.getAttribute("data-ds-theme") === "dark";
 	} catch {
 		return false;
 	}
 }
 function renderHeatmap(filtered) {
-	const doc = getDoc$8();
+	const doc = getDoc$9();
 	const container = doc.getElementById("aus-heatmap-container-overview") || doc.getElementById("aus-heatmap-container");
 	const legendEl = doc.getElementById("aus-heatmap-legend-overview") || doc.getElementById("aus-heatmap-legend");
 	const labelsEl = doc.getElementById("aus-heatmap-labels-overview") || doc.getElementById("aus-heatmap-labels");
@@ -3236,7 +3958,7 @@ function renderHeatmap(filtered) {
 }
 //#endregion
 //#region src/ui/overview.ts
-function getDoc$7() {
+function getDoc$8() {
 	return window.parent?.document ?? document;
 }
 function fmt(n) {
@@ -3471,7 +4193,7 @@ var overviewWalletBound = false;
 var overviewWalletViewportBound = false;
 var overviewAsyncToken = 0;
 function closeOverviewWalletDropdown() {
-	const dropdown = getDoc$7().getElementById("aus-overview-wallet-dropdown");
+	const dropdown = getDoc$8().getElementById("aus-overview-wallet-dropdown");
 	if (dropdown) dropdown.style.display = "none";
 }
 function bindOverviewWalletViewport() {
@@ -3484,12 +4206,12 @@ function bindOverviewWalletViewport() {
 		window.addEventListener("resize", closeOverviewWalletDropdown, { passive: true });
 	} catch {}
 	try {
-		getDoc$7().getElementById("aus-main")?.addEventListener("scroll", closeOverviewWalletDropdown, { passive: true });
+		getDoc$8().getElementById("aus-main")?.addEventListener("scroll", closeOverviewWalletDropdown, { passive: true });
 	} catch {}
 }
 function positionOverviewWalletDropdown(btn, dropdown) {
 	try {
-		const panelRect = getDoc$7().getElementById("aus-panel")?.getBoundingClientRect();
+		const panelRect = getDoc$8().getElementById("aus-panel")?.getBoundingClientRect();
 		const btnRect = btn.getBoundingClientRect();
 		const viewportWidth = window.parent?.innerWidth ?? window.innerWidth;
 		const viewportHeight = window.parent?.innerHeight ?? window.innerHeight;
@@ -3695,7 +4417,7 @@ function renderChatSummaryOverview(fullHistory) {
 	if (fullHistory) return;
 	(async () => {
 		try {
-			const mod = await import("./persistence-CrFXrRB_.js").then((n) => n.s);
+			const mod = await import("./persistence-BRxkRWyJ.js").then((n) => n.s);
 			if (!mod.getAllHistory) return;
 			const all = await mod.getAllHistory();
 			if (!all || all.length <= (state$2.history?.length || 0)) return;
@@ -3999,12 +4721,12 @@ var state$1 = {
 		pieMode: "token"
 	}
 };
-function getDoc$6() {
+function getDoc$7() {
 	return window.parent?.document ?? document;
 }
-function themeColor$2(name, fallback) {
+function themeColor$3(name, fallback) {
 	try {
-		const doc = getDoc$6();
+		const doc = getDoc$7();
 		const el = doc.getElementById("aus-panel") || doc.documentElement;
 		return getComputedStyle(el).getPropertyValue(name).trim() || fallback;
 	} catch {
@@ -4060,10 +4782,10 @@ function getYValue(e, key) {
 	return 0;
 }
 async function getEcharts$1() {
-	const ec = await import("./core-CiUETK4X.js");
-	const { BarChart, LineChart, PieChart } = await import("./charts-CIYbZu-X.js");
-	const { GridComponent, TooltipComponent, LegendComponent } = await import("./components-CMxWfAxU.js");
-	const { CanvasRenderer } = await import("./renderers-oWWT994T.js");
+	const ec = await import("./core-ooVr14Lq.js");
+	const { BarChart, LineChart, PieChart } = await import("./charts-6tQsz9zF.js");
+	const { GridComponent, TooltipComponent, LegendComponent } = await import("./components-jF_EZHLs.js");
+	const { CanvasRenderer } = await import("./renderers-DtxFY9_W.js");
 	ec.use([
 		BarChart,
 		LineChart,
@@ -4083,7 +4805,7 @@ function renderExtraCharts(filtered) {
 }
 async function renderOne$1(id, filtered) {
 	try {
-		const el = getDoc$6().getElementById(`aus-chart-${id}`);
+		const el = getDoc$7().getElementById(`aus-chart-${id}`);
 		if (!el) return;
 		if (id === "req" && state$1[id].x === "round") state$1[id].x = "day";
 		if (id === "pie") {
@@ -4113,18 +4835,18 @@ async function renderOne$1(id, filtered) {
 				backgroundColor: "transparent",
 				tooltip: {
 					trigger: "item",
-					backgroundColor: themeColor$2("--ds-card-inner", "#FFFFFF"),
-					borderColor: themeColor$2("--ds-border", "#E5E7EB"),
+					backgroundColor: themeColor$3("--ds-card-inner", "#FFFFFF"),
+					borderColor: themeColor$3("--ds-border", "#E5E7EB"),
 					textStyle: {
 						fontSize: 12,
-						color: themeColor$2("--ds-text", "#111827")
+						color: themeColor$3("--ds-text", "#111827")
 					}
 				},
 				legend: {
 					bottom: 0,
 					textStyle: {
 						fontSize: 12,
-						color: themeColor$2("--ds-text-2", "#6B7280")
+						color: themeColor$3("--ds-text-2", "#6B7280")
 					}
 				},
 				series: [{
@@ -4132,7 +4854,7 @@ async function renderOne$1(id, filtered) {
 					radius: ["40%", "70%"],
 					itemStyle: {
 						borderRadius: 6,
-						borderColor: themeColor$2("--ds-card-inner", "#FFFFFF"),
+						borderColor: themeColor$3("--ds-card-inner", "#FFFFFF"),
 						borderWidth: 2
 					},
 					label: { fontSize: 12 },
@@ -4221,7 +4943,7 @@ async function renderOne$1(id, filtered) {
 		}));
 	} catch (e) {
 		try {
-			const el2 = getDoc$6().getElementById(`aus-chart-${id}`);
+			const el2 = getDoc$7().getElementById(`aus-chart-${id}`);
 			if (el2) el2.innerHTML = "<div style=\"text-align:center;padding:20px;color:#DC2626;font-size:var(--aus-fs-sm);\">图表加载失败: " + (e?.message || e) + "</div>";
 		} catch {}
 		try {
@@ -4264,8 +4986,8 @@ async function drawBarLine(el, id, labels, series) {
 			backgroundColor: "transparent",
 			tooltip: {
 				trigger: "axis",
-				backgroundColor: themeColor$2("--ds-card-inner", "#FFFFFF"),
-				borderColor: themeColor$2("--ds-border", "#E5E7EB"),
+				backgroundColor: themeColor$3("--ds-card-inner", "#FFFFFF"),
+				borderColor: themeColor$3("--ds-border", "#E5E7EB"),
 				textStyle: { fontSize: 12 }
 			},
 			grid: {
@@ -4277,10 +4999,10 @@ async function drawBarLine(el, id, labels, series) {
 			xAxis: {
 				type: "category",
 				data: labels,
-				axisLine: { lineStyle: { color: themeColor$2("--ds-border", "#E5E7EB") } },
+				axisLine: { lineStyle: { color: themeColor$3("--ds-border", "#E5E7EB") } },
 				axisLabel: {
 					fontSize: 12,
-					color: themeColor$2("--ds-text-3", "#9CA3AF"),
+					color: themeColor$3("--ds-text-3", "#9CA3AF"),
 					rotate: labels.length > 12 ? 30 : 0,
 					interval,
 					hideOverlap: false
@@ -4290,9 +5012,9 @@ async function drawBarLine(el, id, labels, series) {
 				type: "value",
 				axisLabel: {
 					fontSize: 12,
-					color: themeColor$2("--ds-text-3", "#9CA3AF")
+					color: themeColor$3("--ds-text-3", "#9CA3AF")
 				},
-				splitLine: { lineStyle: { color: themeColor$2("--ds-card", "#F6F7F8") } }
+				splitLine: { lineStyle: { color: themeColor$3("--ds-card", "#F6F7F8") } }
 			},
 			dataZoom: labels.length > 8 ? [{
 				type: "inside",
@@ -4353,15 +5075,15 @@ async function drawBarLine(el, id, labels, series) {
 				type: "value",
 				axisLabel: {
 					fontSize: 12,
-					color: themeColor$2("--ds-text-3", "#9CA3AF"),
+					color: themeColor$3("--ds-text-3", "#9CA3AF"),
 					formatter: (v) => curCur.symbol + Number(v).toFixed(2)
 				},
-				splitLine: { lineStyle: { color: themeColor$2("--ds-card", "#F6F7F8") } }
+				splitLine: { lineStyle: { color: themeColor$3("--ds-card", "#F6F7F8") } }
 			};
 			opts.tooltip = {
 				trigger: "axis",
-				backgroundColor: themeColor$2("--ds-card-inner", "#FFFFFF"),
-				borderColor: themeColor$2("--ds-border", "#E5E7EB"),
+				backgroundColor: themeColor$3("--ds-card-inner", "#FFFFFF"),
+				borderColor: themeColor$3("--ds-border", "#E5E7EB"),
 				textStyle: { fontSize: 12 },
 				formatter: (params) => {
 					let html = `<div style="font-weight:600;margin-bottom:6px;">${params[0]?.axisValueLabel || ""}</div>`;
@@ -4395,16 +5117,16 @@ async function drawBarLine(el, id, labels, series) {
 				position: "left",
 				axisLabel: {
 					fontSize: 12,
-					color: themeColor$2("--ds-text-3", "#9CA3AF")
+					color: themeColor$3("--ds-text-3", "#9CA3AF")
 				},
-				splitLine: { lineStyle: { color: themeColor$2("--ds-card", "#F6F7F8") } }
+				splitLine: { lineStyle: { color: themeColor$3("--ds-card", "#F6F7F8") } }
 			}, {
 				type: "value",
 				name: "速率 t/s",
 				position: "right",
 				axisLabel: {
 					fontSize: 12,
-					color: themeColor$2("--ds-text-3", "#9CA3AF")
+					color: themeColor$3("--ds-text-3", "#9CA3AF")
 				},
 				splitLine: { show: false }
 			}];
@@ -4437,7 +5159,7 @@ async function drawBarLine(el, id, labels, series) {
 	}
 }
 function initExtraCharts() {
-	const doc = getDoc$6();
+	const doc = getDoc$7();
 	for (const id of Object.keys(CHART_DEFS)) {
 		if (!CHART_DEFS[id].hasX) continue;
 		const yBtn = doc.getElementById(`aus-extra-y-${id}`);
@@ -4473,7 +5195,7 @@ function initExtraCharts() {
 	});
 }
 function renderExtraY(id) {
-	const doc = getDoc$6();
+	const doc = getDoc$7();
 	const drop = doc.getElementById(`aus-extra-y-drop-${id}`);
 	const label = doc.getElementById(`aus-extra-y-label-${id}`);
 	if (!drop) return;
@@ -4496,7 +5218,7 @@ function renderExtraY(id) {
 	});
 }
 function renderExtraX(id) {
-	const doc = getDoc$6();
+	const doc = getDoc$7();
 	const drop = doc.getElementById(`aus-extra-x-drop-${id}`);
 	const label = doc.getElementById(`aus-extra-x-label-${id}`);
 	if (!drop) return;
@@ -4541,12 +5263,12 @@ var state = {
 	token: { x: "day" },
 	req: { x: "day" }
 };
-function getDoc$5() {
+function getDoc$6() {
 	return window.parent?.document ?? document;
 }
-function themeColor$1(name, fallback) {
+function themeColor$2(name, fallback) {
 	try {
-		const doc = getDoc$5();
+		const doc = getDoc$6();
 		const el = doc.getElementById("aus-panel") || doc.documentElement;
 		return getComputedStyle(el).getPropertyValue(name).trim() || fallback;
 	} catch {
@@ -4576,10 +5298,10 @@ function bucketKey(ts, x, idx) {
 	return localDay$1(ts);
 }
 async function getEcharts() {
-	const ec = await import("./core-CiUETK4X.js");
-	const { LineChart } = await import("./charts-CIYbZu-X.js");
-	const { GridComponent, TooltipComponent, LegendComponent } = await import("./components-CMxWfAxU.js");
-	const { CanvasRenderer } = await import("./renderers-oWWT994T.js");
+	const ec = await import("./core-ooVr14Lq.js");
+	const { LineChart } = await import("./charts-6tQsz9zF.js");
+	const { GridComponent, TooltipComponent, LegendComponent } = await import("./components-jF_EZHLs.js");
+	const { CanvasRenderer } = await import("./renderers-DtxFY9_W.js");
 	ec.use([
 		LineChart,
 		GridComponent,
@@ -4598,7 +5320,7 @@ function renderModelTrends(filtered) {
 }
 async function renderOne(id, filtered) {
 	try {
-		const doc = getDoc$5();
+		const doc = getDoc$6();
 		const el = doc.getElementById(`aus-chart-model-${id}`);
 		if (!el) return;
 		const xKey = state[id].x;
@@ -4676,11 +5398,11 @@ async function renderOne(id, filtered) {
 			el.style.height = "220px";
 			c = charts[id] = ec.init(el);
 		}
-		const cBorder = themeColor$1("--ds-border", "#E5E7EB");
-		const cCard = themeColor$1("--ds-card", "#F6F7F8");
-		const cText3 = themeColor$1("--ds-text-3", "#9CA3AF");
-		const cCardInner = themeColor$1("--ds-card-inner", "#FFFFFF");
-		const cText = themeColor$1("--ds-text", "#111827");
+		const cBorder = themeColor$2("--ds-border", "#E5E7EB");
+		const cCard = themeColor$2("--ds-card", "#F6F7F8");
+		const cText3 = themeColor$2("--ds-text-3", "#9CA3AF");
+		const cCardInner = themeColor$2("--ds-card-inner", "#FFFFFF");
+		const cText = themeColor$2("--ds-text", "#111827");
 		const cw = w || 320;
 		const maxLabels = Math.max(8, Math.floor(cw / (cw < 500 ? 42 : cw < 760 ? 56 : 68)));
 		const xInterval = labels.length <= maxLabels ? 0 : Math.ceil(labels.length / maxLabels) - 1;
@@ -4785,7 +5507,7 @@ async function renderOne(id, filtered) {
 		}, 60);
 	} catch (e) {
 		try {
-			const el2 = getDoc$5().getElementById(`aus-chart-model-${id}`);
+			const el2 = getDoc$6().getElementById(`aus-chart-model-${id}`);
 			if (el2) el2.innerHTML = "<div style=\"text-align:center;padding:20px;color:#DC2626;font-size:var(--aus-fs-sm);\">图表加载失败</div>";
 		} catch {}
 		try {
@@ -4794,7 +5516,7 @@ async function renderOne(id, filtered) {
 	}
 }
 function initModelTrends() {
-	const doc = getDoc$5();
+	const doc = getDoc$6();
 	for (const id of ["token", "req"]) {
 		const btn = doc.getElementById(`aus-modeltrends-x-${id}`);
 		const drop = doc.getElementById(`aus-modeltrends-x-drop-${id}`);
@@ -4813,7 +5535,7 @@ function initModelTrends() {
 	});
 }
 function renderXDrop(id) {
-	const doc = getDoc$5();
+	const doc = getDoc$6();
 	const drop = doc.getElementById(`aus-modeltrends-x-drop-${id}`);
 	const label = doc.getElementById(`aus-modeltrends-x-label-${id}`);
 	if (!drop) return;
@@ -4852,7 +5574,7 @@ var summarySortKey = null;
 var summarySortDir = "desc";
 var lastSummaryFiltered = null;
 function updateSummarySortHeader() {
-	const doc = getDoc$4();
+	const doc = getDoc$5();
 	doc.querySelectorAll("#aus-model-summary thead th[data-sort-key]").forEach((th) => {
 		th.style.color = "";
 		th.style.fontWeight = "";
@@ -4870,7 +5592,7 @@ function updateSummarySortHeader() {
 	}
 }
 function bindSummarySort() {
-	const ths = getDoc$4().querySelectorAll("#aus-model-summary thead th[data-sort-key]");
+	const ths = getDoc$5().querySelectorAll("#aus-model-summary thead th[data-sort-key]");
 	if (!ths.length) return;
 	if (bindSummarySort._bound) return;
 	bindSummarySort._bound = true;
@@ -4894,12 +5616,12 @@ function bindSummarySort() {
 		});
 	});
 }
-function getDoc$4() {
+function getDoc$5() {
 	return window.parent?.document ?? document;
 }
-function themeColor(name, fallback) {
+function themeColor$1(name, fallback) {
 	try {
-		const doc = getDoc$4();
+		const doc = getDoc$5();
 		const el = doc.getElementById("aus-panel") || doc.documentElement;
 		return getComputedStyle(el).getPropertyValue(name).trim() || fallback;
 	} catch {
@@ -5014,7 +5736,7 @@ function currentStatsFilter() {
 	};
 }
 function updateRangeHighlight() {
-	const doc = getDoc$4();
+	const doc = getDoc$5();
 	doc.querySelectorAll("[data-range]").forEach((el) => {
 		if (el.getAttribute("data-range") === currentRange) {
 			el.style.background = "var(--ds-card)";
@@ -5028,7 +5750,7 @@ function updateRangeHighlight() {
 	if (calWrap) calWrap.style.display = currentRange === "custom" ? "block" : "none";
 }
 function renderCalendar() {
-	const doc = getDoc$4();
+	const doc = getDoc$5();
 	const cal = doc.getElementById("aus-date-calendar");
 	if (!cal) return;
 	updateRangeHighlight();
@@ -5063,7 +5785,7 @@ function renderCalendar() {
 	if (applyBtn) applyBtn.onclick = apply;
 }
 function updatePickerLabel() {
-	const label = getDoc$4().getElementById("aus-range-label");
+	const label = getDoc$5().getElementById("aus-range-label");
 	if (!label) return;
 	const map = {
 		all: "全部",
@@ -5080,7 +5802,7 @@ function updatePickerLabel() {
 	updateRangeHighlight();
 }
 function renderModelPicker(modelsHist) {
-	const doc = getDoc$4();
+	const doc = getDoc$5();
 	const dropdown = doc.getElementById("aus-model-dropdown");
 	const label = doc.getElementById("aus-model-label");
 	if (!dropdown || !label) return;
@@ -5114,7 +5836,7 @@ function renderModelPicker(modelsHist) {
 	});
 }
 function renderChatPicker(chatHist) {
-	const doc = getDoc$4();
+	const doc = getDoc$5();
 	const dropdown = doc.getElementById("aus-chat-dropdown");
 	const label = doc.getElementById("aus-chat-label");
 	if (!dropdown || !label) return;
@@ -5141,7 +5863,7 @@ function renderChatPicker(chatHist) {
 	});
 }
 function renderEndpointPicker(history) {
-	const doc = getDoc$4();
+	const doc = getDoc$5();
 	const dropdown = doc.getElementById("aus-endpoint-dropdown");
 	const label = doc.getElementById("aus-endpoint-label");
 	if (!dropdown || !label) return;
@@ -5168,7 +5890,7 @@ function renderEndpointPicker(history) {
 	});
 }
 function renderCredentialPicker$1(history, endpoint = selectedEndpoint) {
-	const doc = getDoc$4();
+	const doc = getDoc$5();
 	const dropdown = doc.getElementById("aus-credential-dropdown");
 	const label = doc.getElementById("aus-credential-label");
 	if (!dropdown || !label) return;
@@ -5195,7 +5917,7 @@ function renderCredentialPicker$1(history, endpoint = selectedEndpoint) {
 }
 function positionFilterDropdown(btn, dropdown) {
 	try {
-		const panel = getDoc$4().getElementById("aus-panel");
+		const panel = getDoc$5().getElementById("aus-panel");
 		if (!panel) return;
 		const panelRect = panel.getBoundingClientRect();
 		const btnRect = btn.getBoundingClientRect();
@@ -5210,7 +5932,7 @@ function positionFilterDropdown(btn, dropdown) {
 	} catch {}
 }
 function closeFilterDropdowns(except) {
-	const doc = getDoc$4();
+	const doc = getDoc$5();
 	if (except !== "range") {
 		pickerOpen = false;
 		const el = doc.getElementById("aus-range-dropdown");
@@ -5238,7 +5960,7 @@ function closeFilterDropdowns(except) {
 	}
 }
 function bindPicker() {
-	const doc = getDoc$4();
+	const doc = getDoc$5();
 	const btn = doc.getElementById("aus-range-btn");
 	const dropdown = doc.getElementById("aus-range-dropdown");
 	if (btn && dropdown) {
@@ -5346,7 +6068,7 @@ function bindPicker() {
 var chartYOpen = false;
 var chartXOpen = false;
 function renderChartSelectors() {
-	const doc = getDoc$4();
+	const doc = getDoc$5();
 	const yBtn = doc.getElementById("aus-chart-y-btn");
 	const xBtn = doc.getElementById("aus-chart-x-btn");
 	const yDrop = doc.getElementById("aus-chart-y-dropdown");
@@ -5395,7 +6117,7 @@ function renderChartSelectors() {
 	});
 }
 function bindChartSelectors() {
-	const doc = getDoc$4();
+	const doc = getDoc$5();
 	const yBtn = doc.getElementById("aus-chart-y-btn");
 	const yDrop = doc.getElementById("aus-chart-y-dropdown");
 	const xBtn = doc.getElementById("aus-chart-x-btn");
@@ -5440,7 +6162,7 @@ function bindChartSelectors() {
 }
 var chart = null;
 async function renderChart(filteredRaw) {
-	const doc = getDoc$4();
+	const doc = getDoc$5();
 	const el = doc.getElementById("aus-stats-chart");
 	if (!el) return;
 	const { labels, series } = aggregateForChart(filteredRaw, getYSelected(), getXSelected());
@@ -5459,7 +6181,7 @@ async function renderChart(filteredRaw) {
 		const statsView = doc.querySelector("[data-view=\"stats\"]");
 		if (statsView ? statsView.style.display === "none" || statsView.offsetParent === null : false) {
 			try {
-				const { log } = await import("./logger-Bv-AT94O.js").then((n) => n.n);
+				const { log } = await import("./logger-8RGXnvfI.js").then((n) => n.n);
 				log.debug("renderChart 容器隐藏，等待切换");
 			} catch {}
 			return;
@@ -5476,10 +6198,10 @@ async function renderChart(filteredRaw) {
 	renderChart._retryCount = 0;
 	let echarts;
 	try {
-		echarts = await import("./core-CiUETK4X.js").then(async (ec) => {
-			const { BarChart, LineChart } = await import("./charts-CIYbZu-X.js");
-			const { GridComponent, TooltipComponent } = await import("./components-CMxWfAxU.js");
-			const { CanvasRenderer } = await import("./renderers-oWWT994T.js");
+		echarts = await import("./core-ooVr14Lq.js").then(async (ec) => {
+			const { BarChart, LineChart } = await import("./charts-6tQsz9zF.js");
+			const { GridComponent, TooltipComponent } = await import("./components-jF_EZHLs.js");
+			const { CanvasRenderer } = await import("./renderers-DtxFY9_W.js");
 			ec.use([
 				BarChart,
 				LineChart,
@@ -5500,9 +6222,9 @@ async function renderChart(filteredRaw) {
 	} catch {}
 	const hasToken = series.some((s) => s.kind === "token");
 	const hasCost = series.some((s) => s.kind === "cost");
-	const cBorder = themeColor("--ds-border", "#E5E7EB");
-	const cCard = themeColor("--ds-card", "#F6F7F8");
-	const cText3 = themeColor("--ds-text-3", "#9CA3AF");
+	const cBorder = themeColor$1("--ds-border", "#E5E7EB");
+	const cCard = themeColor$1("--ds-card", "#F6F7F8");
+	const cText3 = themeColor$1("--ds-text-3", "#9CA3AF");
 	const curCur = (() => {
 		try {
 			return getDisplayCurrency();
@@ -5551,7 +6273,7 @@ async function renderChart(filteredRaw) {
 		const yIndex = hasToken && hasCost ? isCost ? 1 : 0 : 0;
 		const isTop = idx === lastBarIdx;
 		let col = s.color;
-		if (col === "#111827" || typeof col === "string" && col.indexOf("var(") === 0) col = themeColor("--ds-text", "#111827");
+		if (col === "#111827" || typeof col === "string" && col.indexOf("var(") === 0) col = themeColor$1("--ds-text", "#111827");
 		if (isCost) return {
 			name: s.name,
 			type: "line",
@@ -5592,8 +6314,8 @@ async function renderChart(filteredRaw) {
 			emphasis: { focus: "series" }
 		};
 	});
-	const cCardInner = themeColor("--ds-card-inner", "#FFFFFF");
-	const cText = themeColor("--ds-text", "#111827");
+	const cCardInner = themeColor$1("--ds-card-inner", "#FFFFFF");
+	const cText = themeColor$1("--ds-text", "#111827");
 	const cw = w || 320;
 	const maxLabels = Math.max(8, Math.floor(cw / (cw < 500 ? 42 : cw < 760 ? 56 : 68)));
 	const xInterval = labels.length <= maxLabels ? 0 : Math.ceil(labels.length / maxLabels) - 1;
@@ -5665,7 +6387,7 @@ async function renderChart(filteredRaw) {
 	}, 60);
 }
 function renderModelSummary(filtered) {
-	const tbody = getDoc$4().getElementById("aus-summary-tbody");
+	const tbody = getDoc$5().getElementById("aus-summary-tbody");
 	if (!tbody) return;
 	lastSummaryFiltered = filtered;
 	try {
@@ -5783,7 +6505,7 @@ async function getHistoryForStats() {
 	if (allHistoryPromise) return allHistoryPromise;
 	allHistoryPromise = (async () => {
 		try {
-			const mod = await import("./persistence-CrFXrRB_.js").then((n) => n.s);
+			const mod = await import("./persistence-BRxkRWyJ.js").then((n) => n.s);
 			if (mod.getAllHistory) {
 				const result = await mod.getAllHistory() || hot;
 				cachedAllHistory = result;
@@ -5804,7 +6526,7 @@ async function getHistoryForStats() {
 	return allHistoryPromise;
 }
 async function renderStatsView() {
-	const doc = getDoc$4();
+	const doc = getDoc$5();
 	if (!getSelectedSave()) return;
 	const allHistory = await getHistoryForStats();
 	lastStatsHistory = allHistory;
@@ -5845,7 +6567,7 @@ async function renderStatsView() {
 		renderExtraCharts(chartFiltered);
 		renderModelTrends(chartFiltered);
 	} else try {
-		const { log } = await import("./logger-Bv-AT94O.js").then((n) => n.n);
+		const { log } = await import("./logger-8RGXnvfI.js").then((n) => n.n);
 		log.debug("stats 隐藏，跳过图表初始化");
 	} catch {}
 }
@@ -5872,7 +6594,7 @@ var statsFourBound = false;
 function bindStatsFour() {
 	if (statsFourBound) return;
 	statsFourBound = true;
-	const doc = getDoc$4();
+	const doc = getDoc$5();
 	doc.addEventListener("click", (e) => {
 		const t = e.target;
 		for (let i = 0; i < 4; i++) {
@@ -5883,7 +6605,7 @@ function bindStatsFour() {
 	});
 }
 function openStatsFourDrop(idx, v) {
-	const drop = getDoc$4().getElementById(`aus-stats-four-drop-${idx}`);
+	const drop = getDoc$5().getElementById(`aus-stats-four-drop-${idx}`);
 	if (!drop) return;
 	const cur = ensureStatsFour()[idx];
 	drop.innerHTML = FOUR_OPTIONS.map((o) => {
@@ -5907,7 +6629,7 @@ function openStatsFourDrop(idx, v) {
 	drop.style.display = drop.style.display === "block" ? "none" : "block";
 }
 function renderStatsFour(filtered) {
-	const doc = getDoc$4();
+	const doc = getDoc$5();
 	const host = doc.getElementById("aus-stats-four");
 	if (!host) return;
 	const v = computeStatsFour(filtered || []);
@@ -6093,62 +6815,6 @@ function finalize(seg, sorted, C0, delta, sigma, r2, model, segStart, extra) {
 		hitEwma,
 		outEwma,
 		avgIntervalMs
-	};
-}
-/** 命中率加权单轮成本 c(n) */
-function costAt(n, fit, pricing) {
-	const prompt = Math.max(0, fit.C0 + fit.delta * n);
-	const hitTok = prompt * fit.hitEwma;
-	const missTok = prompt * (1 - fit.hitEwma);
-	return (hitTok * pricing.hit + missTok * pricing.miss + fit.outEwma * pricing.output) / 1e6;
-}
-/** 解二次方程求 R：B = Σ c(n) 1..R */
-function remainingRounds(budget, fit, pricing) {
-	if (budget <= 0 || !fit) return {
-		R: 0,
-		R_low: 0,
-		R_high: 0
-	};
-	const pIn = fit.hitEwma * pricing.hit + (1 - fit.hitEwma) * pricing.miss;
-	const a = fit.delta * pIn / 1e6 / 2;
-	const b = fit.C0 * pIn / 1e6 + fit.outEwma * pricing.output / 1e6 + fit.delta * pIn / 1e6 / 2;
-	const solve = (dlt) => {
-		const aa = dlt * pIn / 1e6 / 2;
-		const bb = fit.C0 * pIn / 1e6 + fit.outEwma * pricing.output / 1e6 + dlt * pIn / 1e6 / 2;
-		if (Math.abs(aa) < 1e-12) return bb ? Math.floor(budget / bb) : 0;
-		const disc = bb * bb + 4 * aa * budget;
-		const r = (-bb + Math.sqrt(disc)) / (2 * aa);
-		return Math.max(0, Math.floor(r));
-	};
-	if (Math.abs(a) < 1e-12) {
-		const r = b ? Math.floor(budget / b) : 0;
-		return {
-			R: Math.max(0, r),
-			R_low: Math.max(0, r),
-			R_high: Math.max(0, r)
-		};
-	}
-	const R = solve(fit.delta);
-	const R_low = solve(Math.max(0, fit.delta - fit.sigma));
-	const R_high = solve(fit.delta + fit.sigma);
-	return {
-		R,
-		R_low: Math.min(R, R_low),
-		R_high: Math.max(R, R_high)
-	};
-}
-function ctxLimitRounds(fit, limit) {
-	if (!fit || !limit || fit.delta <= 0) return null;
-	const r = (limit - fit.C0) / fit.delta;
-	return r > 0 ? Math.floor(r) : 0;
-}
-function nextPromptWithBand(fit) {
-	const n = fit.segLen;
-	const p = fit.C0 + fit.delta * n;
-	return {
-		prompt: Math.max(0, p),
-		low: Math.max(0, p - fit.sigma),
-		high: p + fit.sigma
 	};
 }
 function ctxLimitForModel(model, configuredLimit) {
@@ -6347,7 +7013,809 @@ function topPowerChats(history, limit = 10) {
 	return list.slice(0, limit);
 }
 //#endregion
+//#region src/ui/forecast-chart.ts
+var instances = {};
+var echartsPromise = null;
+var resizeObserver = null;
+var resizeBound = false;
+function getDoc$4() {
+	return window.parent?.document ?? document;
+}
+function themeColor(name, fallback) {
+	try {
+		const doc = getDoc$4();
+		const el = doc.getElementById("aus-panel") || doc.documentElement;
+		return getComputedStyle(el).getPropertyValue(name).trim() || fallback;
+	} catch {
+		return fallback;
+	}
+}
+async function loadECharts() {
+	if (!echartsPromise) echartsPromise = (async () => {
+		const echarts = await import("./core-ooVr14Lq.js");
+		const { LineChart, ScatterChart } = await import("./charts-6tQsz9zF.js");
+		const { GridComponent, TooltipComponent, LegendComponent, MarkLineComponent, MarkPointComponent, GraphicComponent } = await import("./components-jF_EZHLs.js");
+		const { CanvasRenderer } = await import("./renderers-DtxFY9_W.js");
+		echarts.use([
+			LineChart,
+			ScatterChart,
+			GridComponent,
+			TooltipComponent,
+			LegendComponent,
+			MarkLineComponent,
+			MarkPointComponent,
+			GraphicComponent,
+			CanvasRenderer
+		]);
+		return echarts;
+	})();
+	return echartsPromise;
+}
+function compactNumber(value) {
+	const n = Number(value) || 0;
+	if (Math.abs(n) >= 1e8) return (n / 1e8).toFixed(2) + "亿";
+	if (Math.abs(n) >= 1e4) return (n / 1e4).toFixed(1) + "万";
+	return Math.round(n).toLocaleString("zh-CN");
+}
+function axisMoney(currency, cnyValue) {
+	const n = currency.code === "USD" ? (Number(cnyValue) || 0) / (currency.rate || 1) : Number(cnyValue) || 0;
+	if (currency.code === "USD") {
+		if (Math.abs(n) >= 1) return currency.symbol + n.toFixed(2);
+		if (Math.abs(n) >= .01) return currency.symbol + n.toFixed(4);
+		return currency.symbol + n.toFixed(5);
+	}
+	if (Math.abs(n) >= 1) return currency.symbol + n.toFixed(2);
+	return currency.symbol + n.toFixed(4);
+}
+async function initChart(id, echarts) {
+	const el = getDoc$4().getElementById(id);
+	if (!el) return null;
+	if (!el.clientWidth || !el.clientHeight) return null;
+	if (instances[id]) {
+		try {
+			instances[id].dispose();
+		} catch {}
+		delete instances[id];
+	}
+	try {
+		const existing = echarts.getInstanceByDom?.(el);
+		if (existing) existing.dispose();
+	} catch {}
+	el.innerHTML = "";
+	const chart = echarts.init(el);
+	instances[id] = chart;
+	return chart;
+}
+function ensureResizeObserver() {
+	if (resizeObserver || typeof ResizeObserver === "undefined") return;
+	const doc = getDoc$4();
+	const targets = [
+		"aus-forecast-main-chart",
+		"aus-forecast-hit-chart",
+		"aus-forecast-cost-chart"
+	];
+	const observed = [];
+	for (const id of targets) {
+		const el = doc.getElementById(id);
+		if (el) observed.push(el);
+	}
+	if (!observed.length) return;
+	resizeObserver = new ResizeObserver(() => {
+		try {
+			resizeForecastCharts();
+		} catch {}
+	});
+	observed.forEach((el) => resizeObserver.observe(el));
+	if (!resizeBound) {
+		resizeBound = true;
+		try {
+			window.addEventListener("resize", () => {
+				try {
+					resizeForecastCharts();
+				} catch {}
+			});
+			const parentWindow = window.parent;
+			if (parentWindow && parentWindow !== window && parentWindow.addEventListener) parentWindow.addEventListener("resize", () => {
+				try {
+					resizeForecastCharts();
+				} catch {}
+			});
+		} catch {}
+	}
+}
+function resizeForecastCharts() {
+	for (const id of Object.keys(instances)) try {
+		instances[id]?.resize();
+	} catch {}
+}
+function disposeForecastCharts() {
+	for (const id of Object.keys(instances)) {
+		try {
+			instances[id]?.dispose();
+		} catch {}
+		delete instances[id];
+	}
+	if (resizeObserver) {
+		try {
+			resizeObserver.disconnect();
+		} catch {}
+		resizeObserver = null;
+	}
+}
+function buildLabels(series) {
+	return {
+		labels: [...series.history.map((point) => `#${point.round}`), ...series.future.map((point) => `+${point.round - series.currentRound}`)],
+		historyLength: series.history.length,
+		futureLength: series.future.length
+	};
+}
+function futureOnlySeries(historyLength, futureValues, connection) {
+	const result = new Array(historyLength + futureValues.length).fill(null);
+	if (historyLength > 0 && connection != null) result[historyLength - 1] = connection;
+	for (let i = 0; i < futureValues.length; i += 1) result[historyLength + i] = futureValues[i];
+	return result;
+}
+function baseAxisStyle(border, text3) {
+	return {
+		axisLine: { lineStyle: { color: border } },
+		axisTick: { show: false },
+		axisLabel: {
+			color: text3,
+			fontSize: 12,
+			hideOverlap: true
+		}
+	};
+}
+function compactionTooltip(point) {
+	if (!point) return "";
+	return `<div style="font-size:11px;color:#9CA3AF;">压缩前 ${compactNumber(point.before)} → 后 ${compactNumber(point.after)}（降 ${Math.round(point.dropPct * 100)}%）</div>`;
+}
+async function renderMainChart(echarts, options) {
+	const chart = await initChart("aus-forecast-main-chart", echarts);
+	if (!chart) return;
+	const { series, ctxLimit, currency, formatCost } = options;
+	const { labels, historyLength } = buildLabels(series);
+	if (!labels.length) return;
+	const border = themeColor("--ds-border", "#E5E7EB");
+	const text3 = themeColor("--ds-text-3", "#9CA3AF");
+	const text = themeColor("--ds-text", "#111827");
+	const cardInner = themeColor("--ds-card-inner", "#FFFFFF");
+	const historyHit = series.history.map((point) => point.hit);
+	const historyMiss = series.history.map((point) => point.miss);
+	const historyInput = series.history.map((point) => point.input);
+	const historyOutput = series.history.map((point) => point.output);
+	const historyCost = series.history.map((point) => point.cost);
+	const futureInput = series.future.map((point) => point.input);
+	const futureOutput = series.future.map((point) => point.output);
+	const futureCost = series.future.map((point) => point.cost ?? 0);
+	const lastInput = historyLength ? historyInput[historyLength - 1] : null;
+	const lastOutput = historyLength ? historyOutput[historyLength - 1] : null;
+	const lastCost = historyLength ? historyCost[historyLength - 1] : null;
+	const predInput = futureOnlySeries(historyLength, futureInput, lastInput);
+	const predOutput = futureOnlySeries(historyLength, futureOutput, lastOutput);
+	const predCost = series.future.some((point) => point.cost != null) ? futureOnlySeries(historyLength, futureCost, lastCost) : null;
+	const bandLow = futureOnlySeries(historyLength, series.future.map((point) => point.inputLow), lastInput);
+	const bandHigh = futureOnlySeries(historyLength, series.future.map((point) => Math.max(0, point.inputHigh - point.inputLow)), 0);
+	const historyCompactions = series.history.filter((point) => point.compaction).map((point) => {
+		const detail = series.compactions.find((item) => item.round === point.round);
+		return {
+			value: [`#${point.round}`, point.input],
+			compaction: detail
+		};
+	});
+	const futureCompactions = series.future.filter((point) => point.compaction).map((point) => ({
+		value: [`+${point.round - series.currentRound}`, point.input],
+		compaction: null
+	}));
+	const markLineData = [];
+	for (const compaction of series.compactions) markLineData.push({
+		xAxis: `#${compaction.round}`,
+		lineStyle: {
+			color: "#F59E0B",
+			width: 1,
+			type: "dashed",
+			opacity: .45
+		},
+		label: { show: false }
+	});
+	for (const point of series.future.filter((item) => item.compaction)) markLineData.push({
+		xAxis: `+${point.round - series.currentRound}`,
+		lineStyle: {
+			color: "#F59E0B",
+			width: 1,
+			type: "dotted",
+			opacity: .6
+		},
+		label: { show: false }
+	});
+	if (ctxLimit != null) markLineData.push({
+		yAxis: ctxLimit,
+		lineStyle: {
+			color: "#DC2626",
+			width: 1,
+			type: "dashed",
+			opacity: .75
+		},
+		label: {
+			show: true,
+			position: "insideEndTop",
+			formatter: `上下文上限 ${compactNumber(ctxLimit)}`,
+			color: "#DC2626",
+			fontSize: 10
+		}
+	});
+	const markArea = historyLength && series.future.length ? {
+		silent: true,
+		itemStyle: { color: "rgba(16, 185, 129, 0.06)" },
+		label: { show: false },
+		data: [[{ xAxis: labels[historyLength - 1] }, { xAxis: labels[labels.length - 1] }]]
+	} : void 0;
+	const legendData = [
+		"历史输入(命中)",
+		"历史输入(未命中)",
+		"历史输出",
+		...series.future.length ? ["预测输入", "预测输出"] : [],
+		...predCost ? ["历史成本", "预测成本"] : [],
+		...historyCompactions.length ? ["历史压缩"] : [],
+		...futureCompactions.length ? ["预测压缩"] : []
+	];
+	const hasCost = predCost != null;
+	const yAxis = [{
+		type: "value",
+		name: "tokens",
+		position: "left",
+		nameTextStyle: {
+			color: text3,
+			fontSize: 11
+		},
+		axisLine: { show: false },
+		splitLine: { lineStyle: { color: border } },
+		axisLabel: {
+			color: text3,
+			fontSize: 12,
+			formatter: (value) => compactNumber(value)
+		}
+	}];
+	if (hasCost) yAxis.push({
+		type: "value",
+		name: currency.code,
+		position: "right",
+		nameTextStyle: {
+			color: text3,
+			fontSize: 11
+		},
+		axisLine: { show: false },
+		splitLine: { show: false },
+		axisLabel: {
+			color: text3,
+			fontSize: 12,
+			formatter: (value) => axisMoney(currency, value)
+		}
+	});
+	const seriesOption = [
+		{
+			name: "历史输入(命中)",
+			type: "line",
+			stack: "input",
+			data: historyHit,
+			smooth: false,
+			showSymbol: false,
+			lineStyle: {
+				width: 1,
+				color: "#0BA25E"
+			},
+			itemStyle: { color: "#0BA25E" },
+			areaStyle: { color: "rgba(11, 162, 94, 0.28)" },
+			sampling: "lttb",
+			markLine: markLineData.length ? {
+				silent: true,
+				symbol: "none",
+				data: markLineData
+			} : void 0,
+			markArea
+		},
+		{
+			name: "历史输入(未命中)",
+			type: "line",
+			stack: "input",
+			data: historyMiss,
+			smooth: false,
+			showSymbol: false,
+			lineStyle: {
+				width: 1,
+				color: "#F87171"
+			},
+			itemStyle: { color: "#F87171" },
+			areaStyle: { color: "rgba(248, 113, 113, 0.26)" },
+			sampling: "lttb"
+		},
+		{
+			name: "历史输出",
+			type: "line",
+			data: historyOutput,
+			smooth: false,
+			showSymbol: false,
+			lineStyle: {
+				width: 1.6,
+				color: "#6366F1"
+			},
+			itemStyle: { color: "#6366F1" },
+			sampling: "lttb"
+		}
+	];
+	if (series.future.length) seriesOption.push({
+		name: "预测输入",
+		type: "line",
+		data: predInput,
+		smooth: false,
+		showSymbol: false,
+		lineStyle: {
+			width: 1.8,
+			color: "#0BA25E",
+			type: "dashed"
+		},
+		itemStyle: { color: "#0BA25E" }
+	}, {
+		name: "预测输出",
+		type: "line",
+		data: predOutput,
+		smooth: false,
+		showSymbol: false,
+		lineStyle: {
+			width: 1.4,
+			color: "#8B5CF6",
+			type: "dashed"
+		},
+		itemStyle: { color: "#8B5CF6" }
+	}, {
+		name: "__bandLow",
+		type: "line",
+		stack: "band",
+		data: bandLow,
+		showSymbol: false,
+		lineStyle: { opacity: 0 },
+		areaStyle: { opacity: 0 },
+		silent: true,
+		tooltip: { show: false }
+	}, {
+		name: "__bandHigh",
+		type: "line",
+		stack: "band",
+		data: bandHigh,
+		showSymbol: false,
+		lineStyle: { opacity: 0 },
+		areaStyle: { color: "rgba(11, 162, 94, 0.12)" },
+		silent: true,
+		tooltip: { show: false }
+	});
+	if (predCost) seriesOption.push({
+		name: "历史成本",
+		type: "line",
+		yAxisIndex: 1,
+		data: historyCost,
+		smooth: false,
+		showSymbol: false,
+		lineStyle: {
+			width: 1.8,
+			color: "#FF6A00"
+		},
+		itemStyle: { color: "#FF6A00" },
+		sampling: "lttb"
+	}, {
+		name: "预测成本",
+		type: "line",
+		yAxisIndex: 1,
+		data: predCost,
+		smooth: false,
+		showSymbol: false,
+		lineStyle: {
+			width: 1.8,
+			color: "#FF6A00",
+			type: "dashed"
+		},
+		itemStyle: { color: "#FF6A00" }
+	});
+	if (historyCompactions.length) seriesOption.push({
+		name: "历史压缩",
+		type: "scatter",
+		data: historyCompactions,
+		symbol: "triangle",
+		symbolSize: 9,
+		itemStyle: { color: "#F59E0B" },
+		z: 8
+	});
+	if (futureCompactions.length) seriesOption.push({
+		name: "预测压缩",
+		type: "scatter",
+		data: futureCompactions,
+		symbol: "diamond",
+		symbolSize: 8,
+		itemStyle: {
+			color: "#F59E0B",
+			opacity: .8
+		},
+		z: 8
+	});
+	const maxLabels = 12;
+	const interval = labels.length <= maxLabels ? 0 : Math.ceil(labels.length / maxLabels) - 1;
+	chart.setOption({
+		animation: false,
+		backgroundColor: "transparent",
+		legend: {
+			type: "scroll",
+			top: 0,
+			left: 0,
+			right: 0,
+			data: legendData,
+			textStyle: {
+				color: text3,
+				fontSize: 11
+			},
+			itemWidth: 14,
+			itemHeight: 8,
+			pageIconColor: text3,
+			pageIconInactiveColor: border,
+			pageTextStyle: {
+				color: text3,
+				fontSize: 11
+			}
+		},
+		tooltip: {
+			trigger: "axis",
+			backgroundColor: cardInner,
+			borderColor: border,
+			borderWidth: 1,
+			textStyle: {
+				color: text,
+				fontSize: 12
+			},
+			axisPointer: {
+				type: "line",
+				lineStyle: { color: border }
+			},
+			formatter: (params) => {
+				if (!Array.isArray(params) || !params.length) return "";
+				const index = params[0].dataIndex;
+				const label = labels[index] || "";
+				const isFuture = index >= historyLength;
+				let html = `<div style="font-weight:600;margin-bottom:6px;">第 ${isFuture ? series.currentRound + (index - historyLength) + 1 : index + 1} 轮${isFuture ? "（预测）" : ""}</div>`;
+				for (const param of params) {
+					if (!param || String(param.seriesName).startsWith("__")) continue;
+					if (param.seriesName === "历史压缩" || param.seriesName === "预测压缩") continue;
+					const value = Array.isArray(param.value) ? param.value[1] : param.value;
+					if (value == null || !Number.isFinite(Number(value))) continue;
+					const display = param.seriesName.includes("成本") ? formatCost(Number(value), 4) : compactNumber(Number(value)) + " tok";
+					html += `<div style="display:flex;align-items:center;gap:6px;line-height:1.7;"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${param.color};"></span><span>${param.seriesName}</span><span style="margin-left:auto;font-weight:600;">${display}</span></div>`;
+				}
+				const hitPoint = historyCompactions.find((point) => point.value[0] === label);
+				if (hitPoint?.compaction) html += compactionTooltip(hitPoint.compaction);
+				if (futureCompactions.find((point) => point.value[0] === label)) html += "<div style=\"font-size:11px;color:#F59E0B;\">预测压缩点（按历史压缩节奏）</div>";
+				return `<div style="padding:2px 4px;min-width:190px;">${html}</div>`;
+			}
+		},
+		grid: {
+			left: 52,
+			right: hasCost ? 58 : 20,
+			top: 42,
+			bottom: 30
+		},
+		xAxis: {
+			type: "category",
+			data: labels,
+			boundaryGap: false,
+			...baseAxisStyle(border, text3),
+			axisLabel: {
+				color: text3,
+				fontSize: 12,
+				interval,
+				hideOverlap: true
+			}
+		},
+		yAxis,
+		series: seriesOption
+	}, true);
+}
+async function renderHitChart(echarts, options) {
+	const chart = await initChart("aus-forecast-hit-chart", echarts);
+	if (!chart) return;
+	const { series } = options;
+	const { labels, historyLength } = buildLabels(series);
+	if (!labels.length) return;
+	const border = themeColor("--ds-border", "#E5E7EB");
+	const text3 = themeColor("--ds-text-3", "#9CA3AF");
+	const text = themeColor("--ds-text", "#111827");
+	const cardInner = themeColor("--ds-card-inner", "#FFFFFF");
+	const historyRate = series.history.map((point) => point.hitRate == null ? null : point.hitRate * 100);
+	const lastRate = historyLength ? historyRate[historyLength - 1] : null;
+	const futureRate = futureOnlySeries(historyLength, series.future.map((point) => point.hitRate * 100), lastRate);
+	const fallbackLine = !series.hit.hasData ? [{
+		yAxis: series.hit.rate * 100,
+		lineStyle: {
+			color: "#0BA25E",
+			width: 1,
+			type: "dashed",
+			opacity: .7
+		},
+		label: {
+			show: true,
+			position: "insideEndTop",
+			formatter: `回退命中率 ${Math.round(series.hit.rate * 100)}%`,
+			color: "#0BA25E",
+			fontSize: 10
+		}
+	}] : [];
+	const compactionLines = series.compactions.map((point) => ({
+		xAxis: `#${point.round}`,
+		lineStyle: {
+			color: "#F59E0B",
+			width: 1,
+			type: "dashed",
+			opacity: .35
+		},
+		label: { show: false }
+	}));
+	const interval = labels.length <= 12 ? 0 : Math.ceil(labels.length / 12) - 1;
+	chart.setOption({
+		animation: false,
+		backgroundColor: "transparent",
+		tooltip: {
+			trigger: "axis",
+			backgroundColor: cardInner,
+			borderColor: border,
+			borderWidth: 1,
+			textStyle: {
+				color: text,
+				fontSize: 12
+			},
+			formatter: (params) => {
+				if (!Array.isArray(params) || !params.length) return "";
+				const index = params[0].dataIndex;
+				labels[index];
+				const isFuture = index >= historyLength;
+				let html = `<div style="font-weight:600;margin-bottom:4px;">第 ${isFuture ? series.currentRound + (index - historyLength) + 1 : index + 1} 轮${isFuture ? "（预测）" : ""}</div>`;
+				for (const param of params) {
+					if (!param || String(param.seriesName).startsWith("__")) continue;
+					const value = Array.isArray(param.value) ? param.value[1] : param.value;
+					if (value == null || !Number.isFinite(Number(value))) continue;
+					html += `<div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${param.color};"></span><span>${param.seriesName}</span><span style="margin-left:auto;font-weight:600;">${Number(value).toFixed(1)}%</span></div>`;
+				}
+				return `<div style="padding:2px 4px;min-width:160px;">${html}</div>`;
+			}
+		},
+		grid: {
+			left: 42,
+			right: 18,
+			top: 18,
+			bottom: 26
+		},
+		xAxis: {
+			type: "category",
+			data: labels,
+			boundaryGap: false,
+			...baseAxisStyle(border, text3),
+			axisLabel: {
+				color: text3,
+				fontSize: 12,
+				interval,
+				hideOverlap: true
+			}
+		},
+		yAxis: {
+			type: "value",
+			min: 0,
+			max: 100,
+			axisLine: { show: false },
+			splitLine: { lineStyle: { color: border } },
+			axisLabel: {
+				color: text3,
+				fontSize: 12,
+				formatter: (value) => `${value}%`
+			}
+		},
+		series: [{
+			name: "缓存命中率",
+			type: "line",
+			data: historyRate,
+			showSymbol: false,
+			connectNulls: false,
+			lineStyle: {
+				width: 1.8,
+				color: "#0BA25E"
+			},
+			itemStyle: { color: "#0BA25E" },
+			markLine: {
+				silent: true,
+				symbol: "none",
+				data: [...compactionLines, ...fallbackLine]
+			}
+		}, ...series.future.length ? [{
+			name: "预测命中率",
+			type: "line",
+			data: futureRate,
+			showSymbol: false,
+			lineStyle: {
+				width: 1.8,
+				color: "#0BA25E",
+				type: "dashed"
+			},
+			itemStyle: { color: "#0BA25E" }
+		}] : []]
+	}, true);
+}
+async function renderCostChart(echarts, options) {
+	const chart = await initChart("aus-forecast-cost-chart", echarts);
+	if (!chart) return;
+	const { series, currency, formatCost } = options;
+	const { labels, historyLength } = buildLabels(series);
+	if (!labels.length) return;
+	const border = themeColor("--ds-border", "#E5E7EB");
+	const text3 = themeColor("--ds-text-3", "#9CA3AF");
+	const text = themeColor("--ds-text", "#111827");
+	const cardInner = themeColor("--ds-card-inner", "#FFFFFF");
+	if (!series.future.some((point) => point.cost != null)) {
+		chart.setOption({
+			animation: false,
+			backgroundColor: "transparent",
+			graphic: [{
+				type: "text",
+				left: "center",
+				top: "middle",
+				style: {
+					text: "未配置价格，无法估算成本",
+					fill: text3,
+					fontSize: 12
+				}
+			}],
+			xAxis: {
+				type: "category",
+				data: labels,
+				show: false
+			},
+			yAxis: {
+				type: "value",
+				show: false
+			},
+			series: []
+		}, true);
+		return;
+	}
+	const historyCumulative = series.history.map((point) => point.cumulativeCost);
+	const lastCumulative = historyLength ? historyCumulative[historyLength - 1] : 0;
+	const futureCumulative = futureOnlySeries(historyLength, series.future.map((point) => point.cumulativeCost ?? lastCumulative), lastCumulative);
+	const futureTotal = series.future.reduce((sum, point) => sum + (point.cost ?? 0), 0);
+	const interval = labels.length <= 12 ? 0 : Math.ceil(labels.length / 12) - 1;
+	chart.setOption({
+		animation: false,
+		backgroundColor: "transparent",
+		tooltip: {
+			trigger: "axis",
+			backgroundColor: cardInner,
+			borderColor: border,
+			borderWidth: 1,
+			textStyle: {
+				color: text,
+				fontSize: 12
+			},
+			formatter: (params) => {
+				if (!Array.isArray(params) || !params.length) return "";
+				const index = params[0].dataIndex;
+				const isFuture = index >= historyLength;
+				let html = `<div style="font-weight:600;margin-bottom:4px;">第 ${isFuture ? series.currentRound + (index - historyLength) + 1 : index + 1} 轮${isFuture ? "（预测）" : ""}</div>`;
+				for (const param of params) {
+					const value = Array.isArray(param.value) ? param.value[1] : param.value;
+					if (value == null || !Number.isFinite(Number(value))) continue;
+					html += `<div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${param.color};"></span><span>${param.seriesName}</span><span style="margin-left:auto;font-weight:600;">${formatCost(Number(value), 4)}</span></div>`;
+				}
+				return `<div style="padding:2px 4px;min-width:170px;">${html}</div>`;
+			}
+		},
+		graphic: futureTotal > 0 ? [{
+			type: "text",
+			right: 10,
+			top: 0,
+			style: {
+				text: `未来 ${series.future.length} 轮 ≈ ${formatCost(futureTotal, 4)}`,
+				fill: text3,
+				fontSize: 11
+			}
+		}] : void 0,
+		grid: {
+			left: 58,
+			right: 22,
+			top: 28,
+			bottom: 26
+		},
+		xAxis: {
+			type: "category",
+			data: labels,
+			boundaryGap: false,
+			...baseAxisStyle(border, text3),
+			axisLabel: {
+				color: text3,
+				fontSize: 12,
+				interval,
+				hideOverlap: true
+			}
+		},
+		yAxis: {
+			type: "value",
+			axisLine: { show: false },
+			splitLine: { lineStyle: { color: border } },
+			axisLabel: {
+				color: text3,
+				fontSize: 12,
+				formatter: (value) => axisMoney(currency, value)
+			}
+		},
+		series: [{
+			name: "累计成本",
+			type: "line",
+			data: historyCumulative,
+			showSymbol: false,
+			smooth: false,
+			lineStyle: {
+				width: 1.8,
+				color: "#FF6A00"
+			},
+			itemStyle: { color: "#FF6A00" },
+			areaStyle: { color: "rgba(255, 106, 0, 0.12)" },
+			sampling: "lttb"
+		}, {
+			name: "预测累计成本",
+			type: "line",
+			data: futureCumulative,
+			showSymbol: false,
+			lineStyle: {
+				width: 1.8,
+				color: "#FF6A00",
+				type: "dashed"
+			},
+			itemStyle: { color: "#FF6A00" }
+		}]
+	}, true);
+}
+async function renderForecastCharts(options) {
+	let echarts;
+	try {
+		echarts = await loadECharts();
+	} catch (error) {
+		console.error("[Api-Usage] 预测图表加载失败", error);
+		return;
+	}
+	ensureResizeObserver();
+	await Promise.all([
+		renderMainChart(echarts, options),
+		renderHitChart(echarts, options),
+		renderCostChart(echarts, options)
+	]);
+}
+//#endregion
 //#region src/ui/forecast-view.ts
+var PREFS_KEY = "aus_forecast_prefs_v1";
+var HORIZONS = [
+	5,
+	10,
+	20,
+	50,
+	100
+];
+var selectedForecastKey = "__current__";
+var selectedForecastModel = null;
+var horizon = 10;
+var hitMode = "global";
+var manualHitRate = 50;
+var compactionEnabled = true;
+var efficiencyScope = "all";
+var showTop = false;
+var openDropdown = null;
+var renderToken = 0;
+var globalCloseBound = false;
+var hitRefreshTimer = null;
+var lastFullHistory = [];
+var lastEffectiveHistory = [];
+var lastEfficiencyHistory = [];
+var lastEfficiencyLabel = "全部历史";
+var efficiencySort = null;
 function getDoc$3() {
 	return window.parent?.document ?? document;
 }
@@ -6357,6 +7825,33 @@ function currentChatId() {
 	} catch {
 		return null;
 	}
+}
+function loadPreferences() {
+	try {
+		const raw = localStorage.getItem(PREFS_KEY);
+		if (!raw) return;
+		const parsed = JSON.parse(raw);
+		if (HORIZONS.includes(Number(parsed.horizon))) horizon = Number(parsed.horizon);
+		if (parsed.hitMode === "global" || parsed.hitMode === "model" || parsed.hitMode === "manual") hitMode = parsed.hitMode;
+		const manual = Number(parsed.manualHit);
+		if (Number.isFinite(manual)) manualHitRate = Math.max(0, Math.min(100, manual));
+		if (typeof parsed.compaction === "boolean") compactionEnabled = parsed.compaction;
+		if (parsed.scope === "all" || parsed.scope === "chat") efficiencyScope = parsed.scope;
+		if (typeof parsed.showTop === "boolean") showTop = parsed.showTop;
+	} catch {}
+}
+function savePreferences() {
+	try {
+		const prefs = {
+			horizon,
+			hitMode,
+			manualHit: manualHitRate,
+			compaction: compactionEnabled,
+			scope: efficiencyScope,
+			showTop
+		};
+		localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+	} catch {}
 }
 function balanceNum() {
 	const ignored = new Set(state$2.walletIgnored || []);
@@ -6377,413 +7872,767 @@ function balanceNum() {
 	}
 	return total;
 }
-var selectedForecastKey = "__current__";
-var forecastChatPickerOpen = false;
 function getRecordedChatsForForecast(list) {
 	const map = /* @__PURE__ */ new Map();
-	for (const h of list || []) {
-		const cid = h.chatId ?? null;
-		const cname = h.chatName ?? null;
-		const key = cid ?? "__null__";
-		const timestamp = Number(h?.timestamp) || 0;
+	for (const entry of list || []) {
+		const chatId = entry.chatId ?? null;
+		const chatName = entry.chatName ?? null;
+		const key = chatId ?? "__null__";
+		const timestamp = Number(entry?.timestamp) || 0;
 		if (!map.has(key)) map.set(key, {
-			chatId: cid,
-			chatName: cname,
+			chatId,
+			chatName,
 			lastSeen: timestamp
 		});
 		else {
 			const current = map.get(key);
-			if (timestamp >= current.lastSeen && cname) current.chatName = cname;
+			if (timestamp >= current.lastSeen && chatName) current.chatName = chatName;
 			if (timestamp > current.lastSeen) current.lastSeen = timestamp;
 		}
 	}
-	return Array.from(map.values()).sort((a, b) => b.lastSeen - a.lastSeen).map((v) => {
-		let display = v.chatName || "";
+	return Array.from(map.values()).sort((a, b) => b.lastSeen - a.lastSeen).map((value) => {
+		let display = value.chatName || "";
 		if (!display) {
-			if (v.chatId) display = v.chatId.length > 18 ? v.chatId.slice(0, 8) + "…" + v.chatId.slice(-4) : v.chatId;
+			if (value.chatId) display = value.chatId.length > 18 ? value.chatId.slice(0, 8) + "…" + value.chatId.slice(-4) : value.chatId;
 			else display = "未分组/旧数据";
 		}
 		return {
-			chatId: v.chatId,
-			chatName: v.chatName,
+			chatId: value.chatId,
+			chatName: value.chatName,
 			displayName: display
 		};
 	});
 }
 function getEffectiveHist(fullHist) {
 	if (selectedForecastKey === "__all__") return fullHist.slice();
-	if (selectedForecastKey === "__current__") {
-		const cur = currentChatId();
-		if (!cur) return fullHist.slice();
-		return fullHist.filter((h) => (h.chatId ?? null) === cur);
-	}
-	if (selectedForecastKey === "__null__") return fullHist.filter((h) => !h.chatId);
-	return fullHist.filter((h) => (h.chatId ?? null) === selectedForecastKey);
+	if (selectedForecastKey === "__current__") return getCurrentChatHist(fullHist);
+	if (selectedForecastKey === "__null__") return fullHist.filter((entry) => !entry.chatId);
+	return fullHist.filter((entry) => (entry.chatId ?? null) === selectedForecastKey);
+}
+function getCurrentChatHist(fullHist) {
+	const current = currentChatId();
+	if (!current) return [];
+	return fullHist.filter((entry) => (entry.chatId ?? null) === current);
 }
 function getForecastLabel(fullHist) {
-	if (selectedForecastKey === "__current__") return "当前对话";
+	if (selectedForecastKey === "__current__") return currentChatId() ? "当前对话" : "当前对话（未打开）";
 	if (selectedForecastKey === "__all__") return "全部";
 	if (selectedForecastKey === "__null__") return "未分组/旧数据";
-	return getRecordedChatsForForecast(fullHist).find((c) => (c.chatId ?? "__null__") === selectedForecastKey)?.displayName || selectedForecastKey;
+	return getRecordedChatsForForecast(fullHist).find((chat) => (chat.chatId ?? "__null__") === selectedForecastKey)?.displayName || selectedForecastKey;
 }
-function renderForecastChatPicker(fullHist) {
-	const doc = getDoc$3();
-	const btn = doc.getElementById("aus-forecast-chat-btn");
-	const dropdown = doc.getElementById("aus-forecast-chat-dropdown");
-	const label = doc.getElementById("aus-forecast-chat-label");
-	if (!btn || !dropdown || !label) return;
-	label.textContent = getForecastLabel(fullHist);
-	const chats = getRecordedChatsForForecast(fullHist);
-	let html = "";
-	html += `<div data-fchat="__current__" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${selectedForecastKey === "__current__" ? "background:var(--ds-card);font-weight:600;" : ""}">当前对话</div>`;
-	html += `<div data-fchat="__all__" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${selectedForecastKey === "__all__" ? "background:var(--ds-card);font-weight:600;" : ""}">全部</div>`;
-	for (const c of chats) {
-		const key = c.chatId ?? "__null__";
-		const active = key === selectedForecastKey ? "background:var(--ds-card);font-weight:600;" : "";
-		html += `<div data-fchat="${esc$1(key)}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${active}" title="${esc$1(c.chatId || "")}">${esc$1(c.displayName)}</div>`;
+function getModelOptions(history) {
+	const map = /* @__PURE__ */ new Map();
+	for (const entry of history || []) {
+		const model = entry?.model;
+		if (!model) continue;
+		const timestamp = Number(entry?.timestamp) || 0;
+		const current = map.get(model);
+		if (current) {
+			current.count += 1;
+			if (timestamp > current.lastSeen) current.lastSeen = timestamp;
+		} else map.set(model, {
+			model,
+			count: 1,
+			lastSeen: timestamp
+		});
 	}
-	if (!chats.length) html += "<div style=\"padding:8px 10px;color:var(--ds-text-3);font-size:var(--aus-fs-base);\">暂无对话</div>";
+	return Array.from(map.values()).sort((a, b) => b.lastSeen - a.lastSeen);
+}
+function latestEntryForModel(history, model) {
+	if (!history.length) return null;
+	if (!model) return [...history].sort((a, b) => (Number(a.timestamp) || 0) - (Number(b.timestamp) || 0)).slice(-1)[0] || null;
+	const filtered = history.filter((entry) => entry.model === model);
+	if (!filtered.length) return null;
+	return [...filtered].sort((a, b) => (Number(a.timestamp) || 0) - (Number(b.timestamp) || 0)).slice(-1)[0] || null;
+}
+function averageIntervalMs(history) {
+	if (history.length < 2) return 0;
+	const sorted = [...history].sort((a, b) => (Number(a.timestamp) || 0) - (Number(b.timestamp) || 0)).slice(-21);
+	const diffs = [];
+	for (let i = 1; i < sorted.length; i += 1) {
+		const diff = (Number(sorted[i].timestamp) || 0) - (Number(sorted[i - 1].timestamp) || 0);
+		if (diff > 0) diffs.push(diff);
+	}
+	return diffs.length ? diffs.reduce((a, b) => a + b, 0) / diffs.length : 0;
+}
+function resolvePriceContext(history, model) {
+	if (!model) return null;
+	const latest = latestEntryForModel(history, model);
+	if (!latest && !history.length) return null;
+	const wallet = findWalletForHistory(state$2.wallets || [], latest || history[history.length - 1] || {});
+	const walletModel = findWalletModel(wallet, model);
+	const pricing = getPricing$1(model, state$2.settings, wallet);
+	const pending = pricing?.pending === true;
+	const avgInterval = averageIntervalMs(history);
+	const nextTs = latest?.timestamp ? Number(latest.timestamp) + avgInterval : Date.now();
+	const usePeak = pricing?.usePeakPricing !== false && (wallet ? isWalletPeakHour(nextTs, wallet, state$2.settings) : isPeakHour(nextTs, state$2.settings));
+	const tier = usePeak ? pricing?.peak : pricing?.offpeak;
+	const trio = pending || !tier ? null : {
+		hit: Number(tier.hit) || 0,
+		miss: Number(tier.miss) || 0,
+		output: Number(tier.output) || 0
+	};
+	return {
+		model,
+		wallet,
+		walletModel,
+		pricing,
+		trio,
+		known: !pending && trio != null,
+		usePeak,
+		label: pending ? "未配置价格" : pricing?.usePeakPricing === false ? "固定价" : usePeak ? "高峰价" : "低谷价",
+		walletLabel: wallet?.name || "未归属钱包",
+		nextTs
+	};
+}
+function formatCost(value, digits = 4) {
+	try {
+		return formatMoney(value || 0, digits);
+	} catch {
+		return "¥" + (value || 0).toFixed(digits) + " CNY";
+	}
+}
+function compactTok(value) {
+	return Math.round(Number(value) || 0).toLocaleString("zh-CN");
+}
+function pct(value, digits = 1) {
+	return (Number(value) * 100).toFixed(digits) + "%";
+}
+function currencyInfo() {
+	const currency = getDisplayCurrency();
+	return {
+		code: currency.code,
+		symbol: currency.symbol,
+		rate: currency.rate
+	};
+}
+function hitSourceText(series) {
+	switch (series.hit.source) {
+		case "data": return series.hit.segmentSamples > 0 ? `自动测算 · 当前段 ${series.hit.segmentSamples} 条记录` : "自动测算 · 对话历史有效样本";
+		case "global": return "无缓存数据 · 全站平均";
+		case "model": return "无缓存数据 · 同模型平均";
+		case "manual": return "无缓存数据 · 手动假设";
+		default: return "无缓存数据 · 按 0% 保守估算";
+	}
+}
+function closeAllDropdowns() {
+	const doc = getDoc$3();
+	for (const name of [
+		"chat",
+		"model",
+		"horizon",
+		"hit",
+		"scope"
+	]) {
+		const dropdown = doc.getElementById(`aus-forecast-${name}-dropdown`);
+		if (dropdown) dropdown.style.display = "none";
+	}
+	openDropdown = null;
+}
+function toggleDropdown(name) {
+	const doc = getDoc$3();
+	if (openDropdown === name) {
+		closeAllDropdowns();
+		return;
+	}
+	closeAllDropdowns();
+	const dropdown = doc.getElementById(`aus-forecast-${name}-dropdown`);
+	if (!dropdown) return;
+	dropdown.style.display = "block";
+	openDropdown = name;
+}
+function bindGlobalClose() {
+	if (globalCloseBound) return;
+	globalCloseBound = true;
+	try {
+		getDoc$3().addEventListener("click", () => closeAllDropdowns());
+	} catch {}
+}
+function dropdownItem(attr, value, label, active, meta = "") {
+	return `<div class="aus-forecast-dropdown-item${active ? " is-active" : ""}" ${attr}="${esc$1(value)}" title="${esc$1(label)}">
+    <span class="aus-forecast-dropdown-label">${esc$1(label)}</span>
+    ${meta ? `<span class="aus-forecast-dropdown-meta">${esc$1(meta)}</span>` : ""}
+  </div>`;
+}
+function renderChatDropdown(fullHist) {
+	const dropdown = getDoc$3().getElementById("aus-forecast-chat-dropdown");
+	if (!dropdown) return;
+	const chats = getRecordedChatsForForecast(fullHist);
+	let html = dropdownItem("data-fchat", "__current__", "当前对话", selectedForecastKey === "__current__");
+	html += dropdownItem("data-fchat", "__all__", "全部", selectedForecastKey === "__all__");
+	for (const chat of chats) {
+		const key = chat.chatId ?? "__null__";
+		html += dropdownItem("data-fchat", key, chat.displayName, selectedForecastKey === key, chat.chatId ? "" : "旧数据");
+	}
+	if (!chats.length) html += "<div class=\"aus-forecast-dropdown-empty\">暂无对话</div>";
 	dropdown.innerHTML = html;
 	dropdown.querySelectorAll("[data-fchat]").forEach((el) => {
-		el.onclick = () => {
+		el.onclick = (event) => {
+			event.stopPropagation();
 			selectedForecastKey = el.getAttribute("data-fchat") || "__current__";
-			forecastChatPickerOpen = false;
-			dropdown.style.display = "none";
+			selectedForecastModel = null;
+			closeAllDropdowns();
 			renderForecastView();
 		};
 	});
 }
-function bindForecastChatPicker() {
-	const doc = getDoc$3();
-	const btn = doc.getElementById("aus-forecast-chat-btn");
-	const dropdown = doc.getElementById("aus-forecast-chat-dropdown");
-	if (!btn || !dropdown) return;
-	if (bindForecastChatPicker._bound) return;
-	bindForecastChatPicker._bound = true;
-	btn.onclick = () => {
-		forecastChatPickerOpen = !forecastChatPickerOpen;
-		dropdown.style.display = forecastChatPickerOpen ? "block" : "none";
-		if (forecastChatPickerOpen) renderForecastChatPicker(state$2.history || []);
-	};
-	doc.addEventListener("click", (e) => {
-		const t = e.target;
-		if (forecastChatPickerOpen && !t.closest("#aus-forecast-chat-dropdown") && !t.closest("#aus-forecast-chat-btn")) {
-			forecastChatPickerOpen = false;
-			const d = doc.getElementById("aus-forecast-chat-dropdown");
-			if (d) d.style.display = "none";
-		}
+function renderModelDropdown(options) {
+	const dropdown = getDoc$3().getElementById("aus-forecast-model-dropdown");
+	if (!dropdown) return;
+	dropdown.innerHTML = options.map((option) => dropdownItem("data-fmodel", option.model, option.model, selectedForecastModel === option.model, `${option.count} 轮`)).join("") || "<div class=\"aus-forecast-dropdown-empty\">暂无模型</div>";
+	dropdown.querySelectorAll("[data-fmodel]").forEach((el) => {
+		el.onclick = (event) => {
+			event.stopPropagation();
+			selectedForecastModel = el.getAttribute("data-fmodel") || null;
+			closeAllDropdowns();
+			renderForecastView();
+		};
 	});
 }
-var forecastRenderToken = 0;
-async function renderForecastView() {
-	const doc = getDoc$3();
-	const token = ++forecastRenderToken;
-	const hist = await import("./repository-B4yMLqkN.js").then((n) => n.n).then((mod) => mod.repository.getAllHistory()).catch(() => state$2.history || []);
-	if (token !== forecastRenderToken) return;
-	try {
-		renderForecastChatPicker(hist);
-	} catch {}
-	try {
-		bindForecastChatPicker();
-	} catch {}
-	const effectiveHist = getEffectiveHist(hist);
-	const renderCard = (host) => {
-		if (!host) return;
-		if (effectiveHist.length < 3) {
-			host.innerHTML = `<div style="text-align:center;padding:16px;color:var(--ds-text-3);font-size:var(--aus-fs-base);">继续对话以启用预测（需 ≥3 轮当前对话样本）</div>`;
-			return;
-		}
-		const fit = fitSegments(effectiveHist, null);
-		if (!fit) {
-			host.innerHTML = `<div style="padding:12px;color:var(--ds-text-2);font-size:var(--aus-fs-base);">暂无数据</div>`;
-			return;
-		}
-		const bal = balanceNum();
-		const latestEntry = [...effectiveHist].sort((a, b) => a.timestamp - b.timestamp)[effectiveHist.length - 1];
-		const model = latestEntry?.model || "deepseek-v4-flash";
-		const wallet = findWalletForHistory(state$2.wallets, latestEntry || {});
-		const walletModel = findWalletModel(wallet, model);
-		const p = getPricing$1(model, state$2.settings, wallet).offpeak;
-		const R = bal != null ? remainingRounds(bal, fit, p) : {
-			R: 0,
-			R_low: 0,
-			R_high: 0
+function renderHorizonDropdown() {
+	const dropdown = getDoc$3().getElementById("aus-forecast-horizon-dropdown");
+	if (!dropdown) return;
+	dropdown.innerHTML = HORIZONS.map((value) => dropdownItem("data-fhorizon", String(value), `${value} 轮`, horizon === value, value === 10 ? "默认" : "")).join("");
+	dropdown.querySelectorAll("[data-fhorizon]").forEach((el) => {
+		el.onclick = (event) => {
+			event.stopPropagation();
+			const value = Number(el.getAttribute("data-fhorizon"));
+			if (HORIZONS.includes(value)) horizon = value;
+			savePreferences();
+			closeAllDropdowns();
+			renderForecastView();
 		};
-		const ctxLim = ctxLimitForModel(model, walletModel?.contextLimit);
-		const rCtx = ctxLim != null ? ctxLimitRounds(fit, ctxLim) : null;
-		const rShow = rCtx != null ? Math.min(R.R, rCtx) : R.R;
-		const next = nextPromptWithBand(fit);
-		const hitPct = (fit.hitEwma * 100).toFixed(1);
-		const deltaTok = Math.round(fit.delta);
-		const cNext = costAt(fit.segLen, fit, p);
-		host.innerHTML = `<div style="line-height:1.6;">
-      <div style="font-size:var(--aus-fs-base);font-weight:700;color:var(--ds-text);">预计还可 <span style="color:var(--ds-green);">~${rShow} 轮</span>（余额口径）· ±${Math.abs(R.R_high - R.R_low) / 2 | 0}</div>
-      <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-top:4px;">每轮新增 ≈ ${deltaTok.toLocaleString()} tok · 命中率(近5) ${hitPct}% · 下一轮成本 ≈ ${(() => {
-			try {
-				return formatMoney(cNext, 4);
-			} catch {
-				return "¥" + cNext.toFixed(4) + " CNY";
-			}
-		})()} · 下一轮 prompt ≈ ${Math.round(next.prompt).toLocaleString()} tok</div>
-      <div style="display:flex;gap:8px;margin-top:10px;">
-        <div style="flex:1;background:var(--ds-card);border-radius:6px;height:8px;position:relative;overflow:hidden;"><div style="position:absolute;left:0;top:0;bottom:0;width:${Math.min(100, R.R / Math.max(10, R.R + (rCtx || 0)) * 100)}%;background:var(--ds-green);"></div></div>
-        <div style="flex:1;background:var(--ds-card);border-radius:6px;height:8px;position:relative;overflow:hidden;"><div style="position:absolute;left:0;top:0;bottom:0;width:${rCtx != null ? Math.min(100, rCtx / Math.max(10, rCtx) * 100) : 0}%;background:${rCtx != null && rCtx < rShow ? "var(--ds-red)" : "var(--ds-purple-bg)"};"></div></div>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:var(--aus-fs-sm);color:var(--ds-text-3);margin-top:4px;"><span>R(余额) ${R.R}</span><span>R(ctx ${ctxLim != null ? `${ctxLim / 1e3 | 0}k` : "未知"}) ${rCtx ?? "—"}</span></div>
-      ${rCtx != null && rCtx < rShow ? `<div style="font-size:var(--aus-fs-sm);color:var(--ds-red);margin-top:6px;">⚠ ${rCtx} 轮后 prompt 达上限 ${ctxLim?.toLocaleString()} tok，建议压缩上下文</div>` : ""}
-    </div>`;
-	};
-	renderCard(doc.getElementById("aus-forecast-card"));
-	const badgeHost = doc.getElementById("aus-energy-badge");
-	if (badgeHost) {
-		const r = energyScore(effectiveHist, null);
-		const grade = r.grade;
-		const colors = {
-			A: "#16a34a",
-			B: "#22c55e",
-			C: "#84cc16",
-			D: "#eab308",
-			E: "#f97316",
-			F: "#ef4444",
-			G: "#dc2626"
-		};
-		const grades = [
-			"A",
-			"B",
-			"C",
-			"D",
-			"E",
-			"F",
-			"G"
-		];
-		const idx = grades.indexOf(grade);
-		badgeHost.innerHTML = `<div style="display:flex;gap:12px;align-items:center;justify-content:flex-start;">
-      <div style="display:flex;flex-direction:column;gap:2px;flex:none;">
-        ${grades.map((g, i) => `<div style="display:flex;align-items:center;gap:6px;"><span style="width:28px;height:22px;border-radius:4px;background:${colors[g]};color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:var(--aus-fs-base);">${g}</span>${i === idx ? `<span style="color:${colors[g]};font-weight:700;">◀ 当前</span>` : ""}</div>`).join("")}
-      </div>
-        <div style="flex:0 1 300px;min-width:210px;max-width:340px;display:grid;gap:6px;font-size:var(--aus-fs-sm);">
-        <div style="display:flex;justify-content:space-between;gap:16px;"><span style="color:var(--ds-text-2);">增速 Δ</span><span style="font-weight:600;white-space:nowrap;">${Math.round(r.metrics.delta).toLocaleString()} tok/轮</span></div>
-        <div style="display:flex;justify-content:space-between;gap:16px;"><span style="color:var(--ds-text-2);">输出</span><span style="font-weight:600;white-space:nowrap;">${Math.round(r.metrics.out).toLocaleString()} tok/轮</span></div>
-        <div style="display:flex;justify-content:space-between;gap:16px;"><span style="color:var(--ds-text-2);">效率</span><span style="font-weight:600;white-space:nowrap;">${(r.metrics.efficiency * 100).toFixed(1)}%</span></div>
-        <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);margin-top:4px;">综合评分 ${r.score.toFixed(0)} · ${grade} 级 · 样本 ${effectiveHist.length} 轮 · ${esc$1(getForecastLabel(hist))}</div>
-      </div>
-    </div>`;
-	}
-	renderForecastChart(effectiveHist, null);
-	renderSensitivity(effectiveHist, null);
-	renderCompare(hist);
+	});
 }
-var forecastChart = null;
-async function renderForecastChart(history, chatId) {
+function hitModeLabel(mode, globalRate, modelRate) {
+	if (mode === "manual") return `手动 ${Math.round(manualHitRate)}%`;
+	if (mode === "model") return modelRate == null ? "同模型平均 —" : `同模型平均 ${pct(modelRate)}`;
+	return globalRate == null ? "全站平均 —" : `全站平均 ${pct(globalRate)}`;
+}
+function renderHitControl(fullHist, model, series, globalRate, modelRate) {
 	const doc = getDoc$3();
-	const el = doc.getElementById("aus-forecast-chart");
-	if (!el) return;
+	const host = doc.getElementById("aus-forecast-hit-control");
+	if (!host) return;
+	if (selectedForecastKey === "__all__" || !model) {
+		host.innerHTML = "";
+		return;
+	}
+	if (series?.hit.hasData) {
+		host.innerHTML = `<span class="aus-forecast-badge" title="命中率来自当前对话的缓存命中 token，不提供手动设置">自动测算 · ${pct(series.hit.rate)}</span>`;
+		return;
+	}
+	host.innerHTML = `
+    <div class="aus-forecast-picker" style="position:relative;">
+      <div id="aus-forecast-hit-btn" class="aus-forecast-pill" title="该对话没有缓存命中数据，可选择平均命中率">
+        <span class="aus-forecast-pill-label">平均命中率</span>
+        <span class="aus-forecast-pill-value">${esc$1(hitModeLabel(hitMode, globalRate, modelRate))}</span>
+        ${icon("chevron-down", 14)}
+      </div>
+      <div id="aus-forecast-hit-dropdown" class="aus-forecast-dropdown"></div>
+    </div>
+    ${hitMode === "manual" ? `<div class="aus-forecast-hit-range">
+      <input id="aus-forecast-hit-range" type="range" min="0" max="100" value="${Math.round(manualHitRate)}">
+      <span id="aus-forecast-hit-range-val">${Math.round(manualHitRate)}%</span>
+    </div>` : ""}
+  `;
+	const button = doc.getElementById("aus-forecast-hit-btn");
+	const dropdown = doc.getElementById("aus-forecast-hit-dropdown");
+	if (button) button.onclick = (event) => {
+		event.stopPropagation();
+		toggleDropdown("hit");
+	};
+	if (dropdown) {
+		dropdown.innerHTML = [
+			dropdownItem("data-fhit", "global", "全站平均", hitMode === "global", globalRate == null ? "无样本" : pct(globalRate)),
+			dropdownItem("data-fhit", "model", "同模型平均", hitMode === "model", modelRate == null ? "无样本" : pct(modelRate)),
+			dropdownItem("data-fhit", "manual", "手动假设", hitMode === "manual", `${Math.round(manualHitRate)}%`)
+		].join("");
+		dropdown.querySelectorAll("[data-fhit]").forEach((el) => {
+			el.onclick = (event) => {
+				event.stopPropagation();
+				const mode = el.getAttribute("data-fhit");
+				if (mode === "global" || mode === "model" || mode === "manual") hitMode = mode;
+				savePreferences();
+				closeAllDropdowns();
+				renderForecastView();
+			};
+		});
+	}
+	const range = doc.getElementById("aus-forecast-hit-range");
+	const valueLabel = doc.getElementById("aus-forecast-hit-range-val");
+	if (range) {
+		range.oninput = (event) => {
+			event.stopPropagation();
+			manualHitRate = Math.max(0, Math.min(100, Number(range.value) || 0));
+			if (valueLabel) valueLabel.textContent = `${Math.round(manualHitRate)}%`;
+			if (hitRefreshTimer) clearTimeout(hitRefreshTimer);
+			hitRefreshTimer = setTimeout(() => {
+				savePreferences();
+				renderForecastView();
+			}, 180);
+		};
+		range.onchange = () => savePreferences();
+	}
+}
+function renderToolbar(fullHist, effective, modelOptions, model, priceContext, series, globalRate, modelRate) {
+	const doc = getDoc$3();
+	bindGlobalClose();
+	const chatLabel = doc.getElementById("aus-forecast-chat-label");
+	if (chatLabel) chatLabel.textContent = getForecastLabel(fullHist);
+	renderChatDropdown(fullHist);
+	const chatButton = doc.getElementById("aus-forecast-chat-btn");
+	if (chatButton) chatButton.onclick = (event) => {
+		event.stopPropagation();
+		toggleDropdown("chat");
+	};
+	const modelWrap = doc.getElementById("aus-forecast-model-wrap");
+	if (modelWrap) modelWrap.style.display = modelOptions.length > 1 && selectedForecastKey !== "__all__" ? "flex" : "none";
+	const modelLabel = doc.getElementById("aus-forecast-model-label");
+	if (modelLabel) modelLabel.textContent = model || "—";
+	renderModelDropdown(modelOptions);
+	const modelButton = doc.getElementById("aus-forecast-model-btn");
+	if (modelButton) modelButton.onclick = (event) => {
+		event.stopPropagation();
+		toggleDropdown("model");
+	};
+	const horizonLabel = doc.getElementById("aus-forecast-horizon-label");
+	if (horizonLabel) horizonLabel.textContent = `${horizon} 轮`;
+	renderHorizonDropdown();
+	const horizonButton = doc.getElementById("aus-forecast-horizon-btn");
+	if (horizonButton) horizonButton.onclick = (event) => {
+		event.stopPropagation();
+		toggleDropdown("horizon");
+	};
+	renderHitControl(fullHist, model, series, globalRate, modelRate);
+	const compactionToggle = doc.getElementById("aus-forecast-compaction-toggle");
+	const compactionLabel = doc.getElementById("aus-forecast-compaction-label");
+	if (compactionToggle) {
+		compactionToggle.checked = compactionEnabled;
+		compactionToggle.onchange = () => {
+			compactionEnabled = compactionToggle.checked;
+			savePreferences();
+			renderForecastView();
+		};
+	}
+	if (compactionLabel) compactionLabel.textContent = series?.compactionForecast.detected ? `压缩情景（检测到 ${series?.compactionForecast.count} 次）` : "压缩情景（未检测到）";
+	const sub = doc.getElementById("aus-forecast-sub");
+	if (sub) {
+		const parts = [];
+		if (selectedForecastKey === "__all__") parts.push(`全部历史 ${fullHist.length} 条`, "逐轮预测需选择单个对话");
+		else {
+			parts.push(`样本 ${effective.length} 轮`);
+			if (series) {
+				parts.push(`当前段 ${series.fit.n} 轮`);
+				if (series.compactionForecast.detected) parts.push(`最近压缩第 ${series.compactionForecast.lastRound} 轮`);
+			}
+			if (priceContext?.known) parts.push(`计价 ${priceContext.walletLabel} · ${model || "—"} · ${priceContext.label}`);
+			else parts.push("未配置价格，成本类不可用");
+		}
+		sub.textContent = parts.join(" · ");
+	}
+}
+function kpiCard(label, value, sub, tone = "default", title = "") {
+	return `<div class="ds-card aus-forecast-kpi aus-forecast-kpi-${tone}"${title ? ` title="${esc$1(title)}"` : ""}>
+    <div class="aus-forecast-kpi-label">${esc$1(label)}</div>
+    <div class="aus-forecast-kpi-value">${value}</div>
+    <div class="aus-forecast-kpi-sub">${sub}</div>
+  </div>`;
+}
+function renderKpis(series, priceContext, ctxLimit, options, balance) {
+	const host = getDoc$3().getElementById("aus-forecast-kpis");
+	if (!host) return;
+	const remaining = balance != null ? simulateRemainingRounds(balance, series, options) : null;
+	const ctxRounds = contextRoundsFor(series, ctxLimit, options.compaction);
+	const futureCost = series.future.reduce((sum, point) => sum + (point.cost ?? 0), 0);
+	const futureInput = series.future.reduce((sum, point) => sum + point.input, 0);
+	const pricingKnown = priceContext?.known === true;
+	const costValue = series.next.cost == null || !pricingKnown ? "—" : formatCost(series.next.cost, 4);
+	const costSub = series.next.cost == null || !pricingKnown ? "未配置价格，成本类不可用" : series.next.costLow != null && series.next.costHigh != null ? `区间 ${formatCost(series.next.costLow, 4)} – ${formatCost(series.next.costHigh, 4)}` : "按当前模型与时段价格";
+	const ctxCompaction = options.compaction && series.compactionForecast.detected;
+	const ctxValue = ctxCompaction ? series.compactionForecast.roundsUntilNext != null ? `距下次压缩 ${series.compactionForecast.roundsUntilNext} 轮` : "距下次压缩 —" : ctxRounds != null ? `${ctxRounds} 轮` : ctxLimit != null && series.fit.delta <= 0 ? "可维持" : "—";
+	const ctxSub = ctxCompaction ? `预计第 ${series.compactionForecast.nextRound ?? "—"} 轮 · 本次压缩前 ${series.compactionForecast.period ?? "—"} 轮` : ctxLimit != null ? series.fit.delta <= 0 ? "Δ≈0，上下文不再增长" : `上下文上限 ${compactTok(ctxLimit)} tok` : "上下文上限未知";
+	const remainingValue = remaining == null ? "—" : `${remaining.R} 轮`;
+	const remainingSub = balance == null ? "未设置余额，可在钱包页填写" : !pricingKnown ? "未配置价格，无法估算" : `区间 ${remaining?.low ?? 0} – ${remaining?.high ?? 0} 轮${remaining?.ctxLimited ? " · 受上下文上限限制" : ""}`;
+	host.innerHTML = [
+		kpiCard("下一轮输入", `${compactTok(series.next.input)} tok`, `区间 ${compactTok(series.next.inputLow)} – ${compactTok(series.next.inputHigh)}`, "default", "基于当前段增长拟合，95% 预测区间"),
+		kpiCard("下一轮输出", `${compactTok(series.next.output)} tok`, `非截断样本 ${series.output.samples} 条`, "default", "已剔除截断/异常输出样本"),
+		kpiCard("下一轮成本", costValue, costSub, "orange", "按当前计价模型、钱包与下一轮预计时段价格"),
+		kpiCard("命中率", pct(series.hit.rate), hitSourceText(series), series.hit.hasData ? "green" : "orange", "有缓存数据时自动测算；无数据时才使用平均命中率"),
+		kpiCard("每轮增量 Δ", `${compactTok(series.fit.delta)} tok/轮`, `当前段 ${series.fit.n} 轮 · ${series.fit.model === "linear" ? "线性拟合" : "近期均值"}`, "default", "当前压缩后段的平均每轮新增"),
+		kpiCard("余额可撑", remainingValue, remainingSub, remaining != null && remaining.R <= 0 ? "red" : "default", "按预测成本逐轮累加，直到余额不足"),
+		kpiCard("上下文可撑", ctxValue, ctxSub, ctxCompaction ? "green" : "default", "未启用压缩预测时按当前 Δ 线性外推"),
+		kpiCard("未来 N 轮总成本", pricingKnown ? formatCost(futureCost, 4) : "—", pricingKnown ? `未来 ${series.future.length} 轮 · 输入 ${compactTok(futureInput)} tok` : "未配置价格，成本类不可用", "orange", "按当前视界累加预测成本")
+	].join("");
+}
+function renderHealth(history, model) {
+	const host = getDoc$3().getElementById("aus-forecast-health");
+	if (!host) return;
 	if (!history.length) {
-		el.innerHTML = "<div style=\"text-align:center;padding:40px;color:var(--ds-text-3);\">暂无数据</div>";
+		host.innerHTML = "<div class=\"aus-forecast-empty\">暂无数据</div>";
 		return;
 	}
-	const fit = fitSegments(history, chatId);
-	if (!fit || fit.segLen < 1) {
-		el.innerHTML = "<div style=\"text-align:center;padding:40px;color:var(--ds-text-3);\">样本不足</div>";
-		return;
-	}
-	const sorted = (chatId ? [...history].filter((h) => (h.chatId ?? null) === chatId) : [...history]).sort((a, b) => a.timestamp - b.timestamp);
-	const y = sorted.map((h) => h.prompt_tokens ?? (h.cache_hit_tokens || 0) + (h.cache_miss_tokens || 0));
-	const fitLine = y.map((_, i) => fit.C0 + fit.delta * (fit.segStart + i >= sorted.length - fit.segLen ? fit.segStart + i - (sorted.length - fit.segLen) : 0));
-	const futureN = 10;
-	const pred = [], low = [], high = [];
-	for (let k = 1; k <= futureN; k++) {
-		const n = fit.segLen + k - 1;
-		const p = fit.C0 + fit.delta * n;
-		pred.push(p);
-		low.push(Math.max(0, p - fit.sigma));
-		high.push(p + fit.sigma);
-	}
-	const labels = sorted.map((_, i) => `#${i + 1}`).concat(Array.from({ length: futureN }, (_, i) => `+${i + 1}`));
-	const histData = y.concat(Array(futureN).fill(null));
-	const predData = Array(y.length).fill(null).concat(pred);
-	const lowData = Array(y.length).fill(null).concat(low);
-	const highData = Array(y.length).fill(null).concat(high);
-	const latestModel = sorted[sorted.length - 1];
-	const latestWallet = findWalletForHistory(state$2.wallets, latestModel || {});
-	const ctxLim = ctxLimitForModel(latestModel?.model || "deepseek-v4-flash", findWalletModel(latestWallet, latestModel?.model || "")?.contextLimit);
-	const ec = await import("./core-CiUETK4X.js");
-	const { LineChart } = await import("./charts-CIYbZu-X.js");
-	const { GridComponent, TooltipComponent } = await import("./components-CMxWfAxU.js");
-	const { CanvasRenderer } = await import("./renderers-oWWT994T.js");
-	ec.use([
-		LineChart,
-		GridComponent,
-		TooltipComponent,
-		CanvasRenderer
-	]);
-	if (forecastChart) try {
-		forecastChart.dispose();
-	} catch {}
-	el.innerHTML = "";
-	el.style.height = "260px";
-	forecastChart = ec.init(el);
-	const cText3 = getComputedStyle(doc.getElementById("aus-panel") || doc.documentElement).getPropertyValue("--ds-text-3") || "#9CA3AF";
-	const cBorder = getComputedStyle(doc.getElementById("aus-panel") || doc.documentElement).getPropertyValue("--ds-border") || "#E5E7EB";
-	forecastChart.setOption({
-		backgroundColor: "transparent",
-		tooltip: { trigger: "axis" },
-		grid: {
-			left: 48,
-			right: 16,
-			top: 16,
-			bottom: 24
-		},
-		xAxis: {
-			type: "category",
-			data: labels,
-			axisLine: { lineStyle: { color: cBorder } },
-			axisLabel: {
-				color: cText3,
-				fontSize: 12,
-				interval: Math.ceil(labels.length / 12) - 1
-			}
-		},
-		yAxis: {
-			type: "value",
-			axisLabel: {
-				color: cText3,
-				fontSize: 12
-			},
-			splitLine: { lineStyle: { color: cBorder } }
-		},
-		series: [
-			{
-				name: "历史 prompt",
-				type: "line",
-				data: histData,
-				smooth: true,
-				symbol: "circle",
-				symbolSize: 3,
-				lineStyle: { width: 1.5 },
-				itemStyle: { color: "#6366F1" }
-			},
-			{
-				name: "拟合",
-				type: "line",
-				data: fitLine.concat(Array(futureN).fill(null)),
-				lineStyle: {
-					type: "dashed",
-					width: 1.5,
-					color: "#9CA3AF"
-				},
-				symbol: "none"
-			},
-			{
-				name: "预测",
-				type: "line",
-				data: predData,
-				lineStyle: {
-					width: 1.8,
-					color: "#0BA25E"
-				},
-				symbol: "none"
-			},
-			{
-				name: "置信下",
-				type: "line",
-				data: lowData,
-				lineStyle: { width: 0 },
-				symbol: "none",
-				areaStyle: { color: "rgba(16,185,129,0.12)" }
-			},
-			{
-				name: "置信上",
-				type: "line",
-				data: highData,
-				lineStyle: { width: 0 },
-				symbol: "none"
-			},
-			...ctxLim != null ? [{
-				type: "line",
-				data: Array(labels.length).fill(ctxLim),
-				lineStyle: {
-					type: "dashed",
-					color: "#ef4444"
-				},
-				symbol: "none",
-				markLine: { data: [{ yAxis: ctxLim }] }
-			}] : []
-		]
-	}, true);
-}
-function renderSensitivity(history, chatId) {
-	const host = getDoc$3().getElementById("aus-forecast-sensitivity");
-	if (!host) return;
-	const hitInit = (() => {
-		const fit = fitSegments(history, chatId);
-		return fit ? Math.round(fit.hitEwma * 100) : 50;
-	})();
-	host.innerHTML = `<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);">假设命中率</span><input id="aus-sens-hit" type="range" min="0" max="100" value="${hitInit}" style="flex:1;"><span id="aus-sens-hit-val" style="font-weight:600;min-width:36px;text-align:right;">${hitInit}%</span></div><div id="aus-sens-result" style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-top:6px;"></div>`;
-	const slider = host.querySelector("#aus-sens-hit");
-	const valEl = host.querySelector("#aus-sens-hit-val");
-	const resEl = host.querySelector("#aus-sens-result");
-	const update = () => {
-		const h = Number(slider.value) / 100;
-		if (valEl) valEl.textContent = slider.value + "%";
-		const fit = fitSegments(history, chatId);
-		if (!fit) {
-			if (resEl) resEl.textContent = "样本不足";
-			return;
-		}
-		const bal = balanceNum();
-		if (bal == null) {
-			if (resEl) resEl.textContent = "未设置余额，无法估算剩余轮数";
-			return;
-		}
-		const tmp = {
-			...fit,
-			hitEwma: h
-		};
-		const latestEntry = [...chatId ? history.filter((hh) => (hh.chatId ?? null) === chatId) : history].sort((a, b) => a.timestamp - b.timestamp).slice(-1)[0];
-		const model = latestEntry?.model || "deepseek-v4-flash";
-		const pricing = getPricing$1(model, state$2.settings, findWalletForHistory(state$2.wallets, latestEntry || {}));
-		const R = remainingRounds(bal, tmp, pricing.offpeak);
-		if (resEl) resEl.textContent = `命中 ${slider.value}% 时预计剩余 ${R.R} 轮（±${Math.abs(R.R_high - R.R_low) / 2 | 0}），降 10% 约少 ${Math.abs(R.R - remainingRounds(bal, {
-			...fit,
-			hitEwma: Math.max(0, h - .1)
-		}, pricing.offpeak).R)} 轮`;
+	const result = energyScore([...history].sort((a, b) => (Number(a.timestamp) || 0) - (Number(b.timestamp) || 0)), null);
+	const colors = {
+		A: "#16a34a",
+		B: "#22c55e",
+		C: "#84cc16",
+		D: "#eab308",
+		E: "#f97316",
+		F: "#ef4444",
+		G: "#dc2626"
 	};
-	if (slider) slider.oninput = update;
-	update();
+	const grades = [
+		"A",
+		"B",
+		"C",
+		"D",
+		"E",
+		"F",
+		"G"
+	];
+	const metrics = result.metrics;
+	host.innerHTML = `
+    <div class="aus-forecast-health-grades">
+      ${grades.map((grade) => `<span class="aus-forecast-grade${grade === result.grade ? " is-current" : ""}" style="background:${colors[grade]};">${grade}</span>`).join("")}
+    </div>
+    <div class="aus-forecast-health-score">
+      <span class="aus-forecast-health-score-value" style="color:${colors[result.grade]};">${result.score.toFixed(0)}</span>
+      <span class="aus-forecast-health-score-label">综合评分 · ${result.grade} 级</span>
+    </div>
+    <div class="aus-forecast-health-metrics">
+      <div><span>增速 Δ</span><b>${compactTok(metrics.delta)} tok/轮</b></div>
+      <div><span>输出</span><b>${compactTok(metrics.out)} tok/轮</b></div>
+      <div><span>效率</span><b>${pct(metrics.efficiency)}</b></div>
+      <div><span>命中</span><b>${pct(metrics.hitRate)}</b></div>
+      <div><span>截断</span><b>${pct(metrics.truncRate)}</b></div>
+      <div><span>思维链</span><b>${pct(metrics.thinkRatio)}</b></div>
+    </div>
+    <div class="aus-forecast-health-foot">样本 ${history.length} 轮 · ${esc$1(model || "—")} · ${esc$1(getForecastLabel(lastFullHistory))}</div>
+  `;
 }
-function renderCompare(history) {
-	const host = getDoc$3().getElementById("aus-forecast-compare");
+function renderCompaction(series, options) {
+	const host = getDoc$3().getElementById("aus-forecast-compaction");
 	if (!host) return;
-	const list = topPowerChats(history, 8);
-	if (!list.length) {
-		host.innerHTML = `<div style="padding:12px;color:var(--ds-text-3);font-size:var(--aus-fs-sm);">暂无对话</div>`;
+	const forecast = series.compactionForecast;
+	if (!forecast.detected) {
+		host.innerHTML = `<div class="aus-forecast-empty">
+      未检测到上下文压缩。判定规则：prompt 环比回落 ≥20% 且绝对降幅 ≥1500 tok；若酒馆使用总结/隐藏楼层，压缩点会在这里自动标记。
+    </div>`;
 		return;
 	}
-	host.innerHTML = list.map((r) => {
-		const name = r.chatId || "全部/未分组";
-		const pct = Math.max(6, Math.min(100, r.delta / 8e3 * 100));
-		return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--ds-border);font-size:var(--aus-fs-sm);">
-      <span style="min-width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc$1(name)}</span>
-      <span style="width:18px;height:18px;border-radius:999px;background:${gradeColor(r.grade)};color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:var(--aus-fs-sm);">${r.grade}</span>
-      <span style="flex:1;height:6px;background:var(--ds-card);border-radius:999px;position:relative;overflow:hidden;"><span style="position:absolute;left:0;top:0;bottom:0;width:${pct}%;background:var(--ds-purple-bg);"></span></span>
-      <span style="min-width:60px;text-align:right;">${Math.round(r.delta).toLocaleString()} tok/轮</span>
+	const list = series.compactions.slice(-3).reverse().map((point) => {
+		const gapLabel = point.gapRounds === point.round ? `累计 ${point.gapRounds} 轮` : `间隔 ${point.gapRounds} 轮`;
+		return `<div class="aus-forecast-compaction-row">
+    <span class="aus-forecast-compaction-round">第 ${point.round} 轮</span>
+    <span class="aus-forecast-compaction-change">${compactTok(point.before)} → ${compactTok(point.after)}</span>
+    <span class="aus-forecast-compaction-drop">-${Math.round(point.dropPct * 100)}%</span>
+    <span class="aus-forecast-compaction-gap">${gapLabel}</span>
+  </div>`;
+	}).join("");
+	host.innerHTML = `
+    <div class="aus-forecast-compaction-grid">
+      <div><span>本次压缩前</span><b>${forecast.period ?? "—"} 轮</b></div>
+      <div><span>压缩后保留</span><b>${forecast.retention != null ? Math.round(forecast.retention * 100) + "%" : "—"}</b></div>
+      <div><span>当前段已持续</span><b>${forecast.segmentAge} 轮</b></div>
+      <div><span>预计下次压缩</span><b>${forecast.nextRound != null ? `第 ${forecast.nextRound} 轮` : "—"}</b></div>
+    </div>
+    <div class="aus-forecast-compaction-note">
+      ${options.compaction ? `按最近一次压缩前 ${forecast.period ?? "—"} 轮推算，约 ${forecast.roundsUntilNext ?? "—"} 轮后触发。` : "压缩情景已关闭，当前预测按线性外推。"}
+      ${forecast.postHitRate != null ? ` 压缩后首轮命中率 ${pct(forecast.postHitRate)}。` : ""}
+      ${forecast.medianGap != null ? ` 历史间隔中位 ${forecast.medianGap} 轮。` : ""}
+    </div>
+    <div class="aus-forecast-compaction-list">${list}</div>
+    <div class="aus-forecast-compaction-foot">样本较少时压缩周期仅供参考；预测压缩点会在主图中以橙色虚线标出。</div>
+  `;
+}
+function sortEfficiencyRows(rows) {
+	if (!efficiencySort) return rows;
+	const { key, dir } = efficiencySort;
+	const sign = dir === "asc" ? 1 : -1;
+	return [...rows].sort((a, b) => {
+		const left = a[key];
+		const right = b[key];
+		if (left == null && right == null) return 0;
+		if (left == null) return 1;
+		if (right == null) return -1;
+		if (typeof left === "string") return String(left).localeCompare(String(right)) * sign;
+		return (Number(left) - Number(right)) * sign;
+	});
+}
+function renderEfficiency(history, scopeLabel) {
+	const doc = getDoc$3();
+	const host = doc.getElementById("aus-forecast-efficiency");
+	const sub = doc.getElementById("aus-forecast-efficiency-sub");
+	const scopeButton = doc.getElementById("aus-forecast-scope-btn");
+	if (scopeButton) {
+		scopeButton.innerHTML = `<span class="aus-forecast-pill-label">范围</span><span class="aus-forecast-pill-value">${scopeLabel}</span>${icon("chevron-down", 14)}`;
+		scopeButton.onclick = (event) => {
+			event.stopPropagation();
+			toggleDropdown("scope");
+		};
+	}
+	const scopeDropdown = doc.getElementById("aus-forecast-scope-dropdown");
+	if (scopeDropdown) {
+		scopeDropdown.innerHTML = [dropdownItem("data-fscope", "all", "全部历史", efficiencyScope === "all", `${lastFullHistory.length} 条`), dropdownItem("data-fscope", "chat", "当前对话", efficiencyScope === "chat", `${getCurrentChatHist(lastFullHistory).length} 条`)].join("");
+		scopeDropdown.querySelectorAll("[data-fscope]").forEach((el) => {
+			el.onclick = (event) => {
+				event.stopPropagation();
+				const value = el.getAttribute("data-fscope");
+				if (value === "all" || value === "chat") efficiencyScope = value;
+				savePreferences();
+				closeAllDropdowns();
+				renderForecastView();
+			};
+		});
+	}
+	if (!host) return;
+	const rows = computeModelEfficiency(history, { priceForModel: (model) => resolvePriceContext(history, model)?.trio ?? null });
+	lastEfficiencyHistory = history;
+	lastEfficiencyLabel = scopeLabel;
+	if (!rows.length) {
+		host.innerHTML = "<div class=\"aus-forecast-empty\">暂无模型效率数据</div>";
+		if (sub) sub.textContent = `范围：${scopeLabel} · 暂无记录`;
+		return;
+	}
+	const sorted = sortEfficiencyRows(rows);
+	const selectableModels = new Set(getModelOptions(lastEffectiveHistory).map((option) => option.model));
+	const pricedCosts = sorted.map((row) => row.costPer1kOutput).filter((value) => value != null && value > 0);
+	const maxCost = pricedCosts.length ? Math.max(...pricedCosts) : 0;
+	const sortArrow = (key) => {
+		if (!efficiencySort || efficiencySort.key !== key) return "<span class=\"aus-forecast-sort-arrow\">↕</span>";
+		return `<span class="aus-forecast-sort-arrow is-active">${efficiencySort.dir === "asc" ? "↑" : "↓"}</span>`;
+	};
+	const header = (key, label) => `<th class="aus-forecast-eff-th" data-sort="${key}">${label}${sortArrow(key)}</th>`;
+	const firstPriced = sorted.find((row) => row.costPer1kOutput != null);
+	const body = sorted.map((row) => {
+		const isBest = firstPriced === row;
+		const cost = row.costPer1kOutput == null ? "—" : formatCost(row.costPer1kOutput, 4);
+		const width = row.costPer1kOutput != null && maxCost > 0 ? Math.max(3, Math.min(100, row.costPer1kOutput / maxCost * 100)) : 0;
+		const hit = row.hitRate == null ? "—" : pct(row.hitRate);
+		const saving = row.cacheSaving == null ? "—" : pct(row.cacheSaving);
+		const avg = row.avgCost == null ? "—" : formatCost(row.avgCost, 4);
+		const ratio = row.ioRatio == null ? "—" : `${row.ioRatio.toFixed(1)} : 1`;
+		const selectable = selectableModels.has(row.model);
+		return `<tr class="aus-forecast-eff-row${row.model === selectedForecastModel ? " is-selected" : ""}" data-eff-model="${esc$1(row.model)}" title="${selectable ? "点击切换为计价模型" : "该模型不在当前对话中，仅作全量对比"}">
+      <td><div class="aus-forecast-eff-model"><span>${esc$1(row.model)}</span>${isBest ? "<span class=\"aus-forecast-eff-best\">最省</span>" : ""}</div></td>
+      <td>${row.rounds}</td>
+      <td>${ratio}</td>
+      <td><div class="aus-forecast-eff-cost"><span>${cost}</span><span class="aus-forecast-eff-bar"><i style="width:${width}%"></i></span></div></td>
+      <td>${hit}</td>
+      <td>${saving}</td>
+      <td>${avg}</td>
+    </tr>`;
+	}).join("");
+	host.innerHTML = `<div class="aus-forecast-eff-wrap">
+    <table class="aus-forecast-eff-table">
+      <thead><tr>
+        <th class="aus-forecast-eff-th" data-sort="model">模型${sortArrow("model")}</th>
+        ${header("rounds", "轮次")}
+        ${header("ioRatio", "输入/输出")}
+        ${header("costPer1kOutput", "每 1k 输出成本")}
+        ${header("hitRate", "命中率")}
+        ${header("cacheSaving", "缓存节省")}
+        ${header("avgCost", "平均每轮")}
+      </tr></thead>
+      <tbody>${body}</tbody>
+    </table>
+  </div>`;
+	if (sub) sub.textContent = `范围：${scopeLabel}（${history.length} 条）· 按每 1k 输出成本升序 · 点击行可切换计价模型`;
+	host.querySelectorAll("th[data-sort]").forEach((th) => {
+		th.onclick = (event) => {
+			event.stopPropagation();
+			const key = th.getAttribute("data-sort");
+			if (!key) return;
+			if (efficiencySort && efficiencySort.key === key) efficiencySort = {
+				key,
+				dir: efficiencySort.dir === "asc" ? "desc" : "asc"
+			};
+			else efficiencySort = {
+				key,
+				dir: key === "model" ? "asc" : "asc"
+			};
+			renderEfficiency(lastEfficiencyHistory, lastEfficiencyLabel);
+		};
+	});
+	host.querySelectorAll("[data-eff-model]").forEach((tr) => {
+		tr.onclick = (event) => {
+			event.stopPropagation();
+			const model = tr.getAttribute("data-eff-model");
+			if (!model) return;
+			if (!getModelOptions(lastEffectiveHistory).some((option) => option.model === model)) return;
+			selectedForecastModel = model;
+			closeAllDropdowns();
+			renderForecastView();
+		};
+	});
+}
+function chatDisplayNameMap(fullHist) {
+	const map = /* @__PURE__ */ new Map();
+	for (const chat of getRecordedChatsForForecast(fullHist)) map.set(chat.chatId ?? "__null__", chat.displayName);
+	return map;
+}
+function renderTop(fullHist) {
+	const doc = getDoc$3();
+	const host = doc.getElementById("aus-forecast-top");
+	const toggle = doc.getElementById("aus-forecast-top-toggle");
+	if (!host || !toggle) return;
+	toggle.textContent = `${showTop ? "▾" : "▸"} 最耗对话 Top`;
+	toggle.onclick = (event) => {
+		event.stopPropagation();
+		showTop = !showTop;
+		savePreferences();
+		renderTop(fullHist);
+	};
+	host.style.display = showTop ? "block" : "none";
+	if (!showTop) return;
+	const list = topPowerChats(fullHist, 8);
+	if (!list.length) {
+		host.innerHTML = "<div class=\"aus-forecast-empty\">暂无对话</div>";
+		return;
+	}
+	const names = chatDisplayNameMap(fullHist);
+	const colors = {
+		A: "#16a34a",
+		B: "#22c55e",
+		C: "#84cc16",
+		D: "#eab308",
+		E: "#f97316",
+		F: "#ef4444",
+		G: "#dc2626"
+	};
+	host.innerHTML = list.map((row) => {
+		const key = row.chatId ?? "__null__";
+		const name = names.get(key) || row.chatId || "未分组/旧数据";
+		const entries = fullHist.filter((entry) => (entry.chatId ?? null) === row.chatId);
+		const avgCost = entries.length ? entries.reduce((sum, entry) => sum + (Number(entry.cost) || 0), 0) / entries.length : 0;
+		const pctWidth = Math.max(4, Math.min(100, row.delta / Math.max(1, list[0].delta) * 100));
+		return `<div class="aus-forecast-top-row">
+      <span class="aus-forecast-top-name" title="${esc$1(row.chatId || "未分组/旧数据")}">${esc$1(name)}</span>
+      <span class="aus-forecast-grade aus-forecast-grade-sm" style="background:${colors[row.grade] || "#9CA3AF"};">${row.grade}</span>
+      <span class="aus-forecast-top-bar"><span style="width:${pctWidth}%"></span></span>
+      <span class="aus-forecast-top-delta">${compactTok(row.delta)} tok/轮</span>
+      <span class="aus-forecast-top-cost">${formatCost(avgCost, 4)}/轮</span>
     </div>`;
 	}).join("");
-	function gradeColor(g) {
-		return {
-			A: "#16a34a",
-			B: "#22c55e",
-			C: "#84cc16",
-			D: "#eab308",
-			E: "#f97316",
-			F: "#ef4444",
-			G: "#dc2626"
-		}[g] || "#9CA3AF";
+}
+function clearCharts(message) {
+	disposeForecastCharts();
+	const doc = getDoc$3();
+	for (const id of [
+		"aus-forecast-main-chart",
+		"aus-forecast-hit-chart",
+		"aus-forecast-cost-chart"
+	]) {
+		const el = doc.getElementById(id);
+		if (el) el.innerHTML = `<div class="aus-forecast-chart-empty">${esc$1(message)}</div>`;
+	}
+}
+function renderNoticeCards(message) {
+	const doc = getDoc$3();
+	const kpis = doc.getElementById("aus-forecast-kpis");
+	if (kpis) kpis.innerHTML = `<div class="ds-card aus-forecast-notice">${esc$1(message)}</div>`;
+	const health = doc.getElementById("aus-forecast-health");
+	if (health) health.innerHTML = "<div class=\"aus-forecast-empty\">需要单个对话的逐轮数据</div>";
+	const compaction = doc.getElementById("aus-forecast-compaction");
+	if (compaction) compaction.innerHTML = "<div class=\"aus-forecast-empty\">需要单个对话的逐轮数据</div>";
+}
+function renderAllNotice() {
+	renderNoticeCards("当前选择“全部”历史。逐轮预测、压缩与健康度需要单个对话的时间序列；请从上方对话胶囊选择具体对话。下方模型效率对比仍可查看。");
+	clearCharts("请选择单个对话以查看逐轮预测");
+	const mainSub = getDoc$3().getElementById("aus-forecast-main-sub");
+	if (mainSub) mainSub.textContent = "逐轮预测需要指定单个对话";
+}
+function renderNoSeries(message) {
+	renderNoticeCards(message);
+	clearCharts(message);
+	const mainSub = getDoc$3().getElementById("aus-forecast-main-sub");
+	if (mainSub) mainSub.textContent = message;
+}
+function renderMainSub(series) {
+	const mainSub = getDoc$3().getElementById("aus-forecast-main-sub");
+	if (!mainSub) return;
+	const future = series.future.length;
+	const parts = [
+		`历史 ${series.history.length} 轮`,
+		future ? `未来 ${future} 轮` : "未来预测受上下文上限限制",
+		"虚线为预测 · 阴影为 95% 区间"
+	];
+	if (series.compactionForecast.detected) parts.push("橙色标记为压缩点");
+	mainSub.textContent = parts.join(" · ");
+}
+async function renderForecastView() {
+	const token = ++renderToken;
+	let fullHist = [];
+	try {
+		fullHist = await repository.getAllHistory();
+	} catch {
+		fullHist = state$2.history || [];
+	}
+	if (token !== renderToken) return;
+	lastFullHistory = fullHist;
+	bindGlobalClose();
+	const effective = getEffectiveHist(fullHist);
+	lastEffectiveHistory = effective;
+	const modelOptions = getModelOptions(effective);
+	if (!selectedForecastModel || !modelOptions.some((option) => option.model === selectedForecastModel)) selectedForecastModel = modelOptions[0]?.model || null;
+	const model = selectedForecastModel;
+	const priceContext = model ? resolvePriceContext(effective, model) : null;
+	const ctxLimit = model ? ctxLimitForModel(model, (priceContext?.walletModel)?.contextLimit) : null;
+	const globalRate = computeGlobalHitRate(fullHist);
+	const modelRate = model ? computeModelHitRate(fullHist, model) : null;
+	const hitFallback = {
+		mode: hitMode,
+		globalRate,
+		modelRate,
+		manualRate: manualHitRate / 100
+	};
+	const options = {
+		horizon,
+		pricing: priceContext?.known && priceContext.trio ? priceContext.trio : null,
+		ctxLimit,
+		hitFallback,
+		compaction: compactionEnabled
+	};
+	const series = selectedForecastKey !== "__all__" && effective.length ? buildForecastSeries(effective, options) : null;
+	renderToolbar(fullHist, effective, modelOptions, model, priceContext, series, globalRate, modelRate);
+	if (!fullHist.length) {
+		renderNoSeries("暂无数据，发起一次对话后自动统计");
+		renderEfficiency(fullHist, "全部历史");
+		renderTop(fullHist);
+		return;
+	}
+	if (selectedForecastKey === "__all__") {
+		renderAllNotice();
+		renderEfficiency(efficiencyScope === "all" ? fullHist : getCurrentChatHist(fullHist), efficiencyScope === "all" ? "全部历史" : "当前对话");
+		renderTop(fullHist);
+		return;
+	}
+	if (!series) {
+		renderNoSeries(selectedForecastKey === "__current__" && !currentChatId() ? "未打开对话。请先进入一个聊天，或从上方选择一个具体对话。" : "当前对话暂无可用于预测的记录，继续对话后自动启用。");
+		renderEfficiency(efficiencyScope === "all" ? fullHist : effective, efficiencyScope === "all" ? "全部历史" : "当前对话");
+		renderTop(fullHist);
+		return;
+	}
+	renderMainSub(series);
+	renderKpis(series, priceContext, ctxLimit, options, balanceNum());
+	renderHealth(effective, model);
+	renderCompaction(series, options);
+	renderEfficiency(efficiencyScope === "all" ? fullHist : effective, efficiencyScope === "all" ? "全部历史" : "当前对话");
+	renderTop(fullHist);
+	try {
+		await renderForecastCharts({
+			series,
+			ctxLimit,
+			currency: currencyInfo(),
+			formatCost: (value, digits) => formatCost(value, digits ?? 4)
+		});
+	} catch (error) {
+		console.error("[Api-Usage] 趋势预测图表渲染失败", error);
 	}
 }
 function initForecastView() {
-	getDoc$3().addEventListener("click", (e) => {});
+	loadPreferences();
+	bindGlobalClose();
 }
 //#endregion
 //#region src/ui/wallet-view.ts
@@ -7148,7 +8997,7 @@ function bindWalletView(doc) {
 				wallet.balance.mode = input.checked ? "auto" : "manual";
 			});
 			try {
-				import("./balance-BQzxLpAs.js").then((n) => n.t).then((mod) => mod.restartBalanceTimer?.());
+				import("./balance-CwKDQcAf.js").then((n) => n.t).then((mod) => mod.restartBalanceTimer?.());
 			} catch {}
 			renderWalletView();
 		};
@@ -8071,7 +9920,7 @@ function renderHistory(doc, s) {
 	historyLoading = true;
 	(async () => {
 		try {
-			const mod = await import("./persistence-CrFXrRB_.js").then((n) => n.s);
+			const mod = await import("./persistence-BRxkRWyJ.js").then((n) => n.s);
 			if (!mod.getAllHistory) return;
 			const all = await mod.getAllHistory();
 			if (!all || !all.length) return;
@@ -8136,7 +9985,7 @@ function switchView(view) {
 	} catch {}
 	if (view === "stats" || view === "forecast") requestAnimationFrame(() => {
 		try {
-			const chartEl = doc.getElementById(view === "stats" ? "aus-stats-chart" : "aus-forecast-chart");
+			const chartEl = doc.getElementById(view === "stats" ? "aus-stats-chart" : "aus-forecast-main-chart");
 			if (chartEl && (chartEl.clientWidth === 0 || chartEl.clientHeight === 0)) {
 				if (view === "stats") renderStatsView();
 				else Promise.resolve(renderForecastView()).catch(() => {});
@@ -8156,7 +10005,10 @@ function positionPanel() {
 			"aus-chart-dur",
 			"aus-chart-pie",
 			"aus-chart-model-token",
-			"aus-chart-model-req"
+			"aus-chart-model-req",
+			"aus-forecast-main-chart",
+			"aus-forecast-hit-chart",
+			"aus-forecast-cost-chart"
 		]) {
 			const el = doc.getElementById(id);
 			if (el && el.__echarts_instance) try {
@@ -8328,17 +10180,84 @@ function createPanel() {
             </div>
           </div>
           <div data-view="forecast" style="display:none;">
-            <div style="display:grid;gap:12px;">
-              <div style="display:flex;align-items:center;gap:8px;position:relative;flex-wrap:wrap;">
-                <div id="aus-forecast-chat-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-base);cursor:pointer;"><span style="color:var(--ds-text-2);">对话</span><span id="aus-forecast-chat-label" style="font-weight:600;color:var(--ds-text);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">当前对话</span>${icon("chevron-down", 14)}</div>
-                <div id="aus-forecast-chat-dropdown" style="display:none;position:absolute;top:40px;left:0;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:220px;max-height:260px;overflow:auto;padding:8px;"></div>
-                <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);">切换对话以查看对应预测，能耗/趋势均随之更新</span>
+            <div id="aus-forecast-root" class="aus-forecast-root">
+              <div class="aus-forecast-toolbar">
+                <div class="aus-forecast-toolbar-main">
+                  <div class="aus-forecast-picker">
+                    <div id="aus-forecast-chat-btn" class="aus-forecast-pill" title="选择要预测的对话">
+                      <span class="aus-forecast-pill-label">对话</span><span id="aus-forecast-chat-label" class="aus-forecast-pill-value">当前对话</span>${icon("chevron-down", 14)}
+                    </div>
+                    <div id="aus-forecast-chat-dropdown" class="aus-forecast-dropdown"></div>
+                  </div>
+                  <div id="aus-forecast-model-wrap" class="aus-forecast-picker" style="display:none;">
+                    <div id="aus-forecast-model-btn" class="aus-forecast-pill" title="选择计价模型">
+                      <span class="aus-forecast-pill-label">计价模型</span><span id="aus-forecast-model-label" class="aus-forecast-pill-value">—</span>${icon("chevron-down", 14)}
+                    </div>
+                    <div id="aus-forecast-model-dropdown" class="aus-forecast-dropdown"></div>
+                  </div>
+                  <div class="aus-forecast-picker">
+                    <div id="aus-forecast-horizon-btn" class="aus-forecast-pill" title="选择未来预测轮数">
+                      <span class="aus-forecast-pill-label">视界</span><span id="aus-forecast-horizon-label" class="aus-forecast-pill-value">10 轮</span>${icon("chevron-down", 14)}
+                    </div>
+                    <div id="aus-forecast-horizon-dropdown" class="aus-forecast-dropdown"></div>
+                  </div>
+                  <div id="aus-forecast-hit-control" class="aus-forecast-hit-control"></div>
+                  <label class="aus-forecast-toggle">
+                    <input id="aus-forecast-compaction-toggle" type="checkbox" checked>
+                    <span id="aus-forecast-compaction-label">压缩情景</span>
+                  </label>
+                </div>
+                <div id="aus-forecast-sub" class="aus-forecast-sub"></div>
               </div>
-              <div id="aus-forecast-card" class="ds-card"></div>
-              <div class="ds-card"><div style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);margin-bottom:8px;">能耗标识（RP 能耗效率）</div><div id="aus-energy-badge"></div></div>
-              <div class="ds-card"><div style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);margin-bottom:8px;">预测趋势（输入 token 按轮次 + 拟合/置信带/上限）</div><div id="aus-forecast-chart" style="height:260px;"></div></div>
-              <div class="ds-card"><div style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);margin-bottom:8px;">敏感度 · 假设命中率</div><div id="aus-forecast-sensitivity"></div></div>
-              <div class="ds-card"><div style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);margin-bottom:8px;">对比 · 最耗对话 Top</div><div id="aus-forecast-compare"></div></div>
+              <div id="aus-forecast-kpis" class="aus-forecast-kpis"></div>
+              <div class="ds-card aus-forecast-chart-card">
+                <div class="aus-forecast-card-head">
+                  <div>
+                    <div class="aus-forecast-card-title">轮次趋势与预测</div>
+                    <div id="aus-forecast-main-sub" class="aus-forecast-card-sub"></div>
+                  </div>
+                </div>
+                <div id="aus-forecast-main-chart" class="aus-forecast-chart" style="height:300px;"></div>
+              </div>
+              <div class="aus-forecast-chart-grid">
+                <div class="ds-card aus-forecast-chart-card">
+                  <div class="aus-forecast-card-title">缓存命中率趋势</div>
+                  <div id="aus-forecast-hit-chart" class="aus-forecast-chart" style="height:220px;"></div>
+                </div>
+                <div class="ds-card aus-forecast-chart-card">
+                  <div class="aus-forecast-card-title">累计成本趋势</div>
+                  <div id="aus-forecast-cost-chart" class="aus-forecast-chart" style="height:220px;"></div>
+                </div>
+              </div>
+              <div class="aus-forecast-two-col">
+                <div class="ds-card">
+                  <div class="aus-forecast-card-title">对话健康</div>
+                  <div id="aus-forecast-health"></div>
+                </div>
+                <div class="ds-card">
+                  <div class="aus-forecast-card-title">上下文压缩</div>
+                  <div id="aus-forecast-compaction"></div>
+                </div>
+              </div>
+              <div class="ds-card" id="aus-forecast-efficiency-card">
+                <div class="aus-forecast-card-head">
+                  <div>
+                    <div class="aus-forecast-card-title">模型效率对比</div>
+                    <div id="aus-forecast-efficiency-sub" class="aus-forecast-card-sub"></div>
+                  </div>
+                  <div class="aus-forecast-picker">
+                    <div id="aus-forecast-scope-btn" class="aus-forecast-pill">
+                      <span class="aus-forecast-pill-label">范围</span><span class="aus-forecast-pill-value">全部历史</span>${icon("chevron-down", 14)}
+                    </div>
+                    <div id="aus-forecast-scope-dropdown" class="aus-forecast-dropdown"></div>
+                  </div>
+                </div>
+                <div id="aus-forecast-efficiency"></div>
+              </div>
+              <div class="ds-card">
+                <button id="aus-forecast-top-toggle" class="aus-forecast-top-toggle" type="button">▸ 最耗对话 Top</button>
+                <div id="aus-forecast-top" style="display:none;"></div>
+              </div>
             </div>
           </div>
           <div data-view="wallet" style="display:none;">
@@ -8565,7 +10484,7 @@ function createPanel() {
 		initForecastView();
 	} catch {}
 	try {
-		import("./update-A1-gVOsB.js").then((m) => {
+		import("./update-YGVRyKyT.js").then((m) => {
 			const branchBtn = doc.getElementById("aus-update-branch-btn");
 			const branchLabel = doc.getElementById("aus-update-branch-label");
 			const branchDrop = doc.getElementById("aus-update-branch-dropdown");
@@ -8604,7 +10523,7 @@ function createPanel() {
 		if (updBtn) updBtn.onclick = () => {
 			updBtn.textContent = "检查中…";
 			updBtn.setAttribute("disabled", "");
-			import("./update-A1-gVOsB.js").then((m) => m.checkUpdate(true).finally(() => {
+			import("./update-YGVRyKyT.js").then((m) => m.checkUpdate(true).finally(() => {
 				updBtn.textContent = "检查更新";
 				updBtn.removeAttribute("disabled");
 			}));
@@ -8614,7 +10533,7 @@ function createPanel() {
 			if (runUpdBtn.hasAttribute("disabled")) return;
 			runUpdBtn.textContent = "更新中…";
 			runUpdBtn.setAttribute("disabled", "");
-			import("./update-A1-gVOsB.js").then((m) => m.updateSelf()).then((res) => {
+			import("./update-YGVRyKyT.js").then((m) => m.updateSelf()).then((res) => {
 				if (res.ok && res.changed) {
 					const bannerEl = doc.getElementById("aus-update-banner");
 					if (bannerEl) {
@@ -8704,7 +10623,7 @@ function openPanel() {
 	panelOpen = true;
 	refreshUI();
 	try {
-		import("./update-A1-gVOsB.js").then((m) => m.maybeAutoCheck());
+		import("./update-YGVRyKyT.js").then((m) => m.maybeAutoCheck());
 	} catch {}
 }
 function closePanel() {
@@ -8731,7 +10650,7 @@ function togglePanel() {
 //#region src/ui/peak-dot.ts
 function isPeak(ts) {
 	const hours = state$2.settings.peakHours || [];
-	return isPeakHour(ts, hours, state$2.settings.extraOffDays);
+	return isPeakHour$1(ts, hours, state$2.settings.extraOffDays);
 }
 function getPeakStatus(now = Date.now()) {
 	const extraOffDays = state$2.settings.extraOffDays;
@@ -8873,7 +10792,7 @@ function onEscapeKey(e) {
 }
 function onPageHide() {
 	try {
-		import("./persistence-CrFXrRB_.js").then((n) => n.s).then((m) => m.flushSaveHot()).catch(() => {});
+		import("./persistence-BRxkRWyJ.js").then((n) => n.s).then((m) => m.flushSaveHot()).catch(() => {});
 	} catch {}
 }
 function cleanupRuntimeBindings() {
@@ -8921,7 +10840,7 @@ function onAppReady() {
 		refreshUI();
 	} catch {}
 	try {
-		import("./interception-CtyZNjCZ.js").then((n) => n.n).then((m) => m.installInterception()).catch(() => {});
+		import("./interception-PcvsLS03.js").then((n) => n.n).then((m) => m.installInterception()).catch(() => {});
 	} catch {}
 }
 function onAppInitialized() {
@@ -8929,7 +10848,7 @@ function onAppInitialized() {
 		ensureWandEntry();
 	} catch {}
 	try {
-		import("./interception-CtyZNjCZ.js").then((n) => n.n).then((m) => m.installInterception()).catch(() => {});
+		import("./interception-PcvsLS03.js").then((n) => n.n).then((m) => m.installInterception()).catch(() => {});
 	} catch {}
 }
 function onChatChanged() {
@@ -8992,7 +10911,7 @@ function ensureWandEntry() {
 async function onInstall() {
 	log.debug("installed");
 	try {
-		const { loadHot } = await import("./persistence-CrFXrRB_.js").then((n) => n.s);
+		const { loadHot } = await import("./persistence-BRxkRWyJ.js").then((n) => n.s);
 		await loadHot();
 	} catch {}
 }
@@ -9002,7 +10921,7 @@ async function onUpdate() {
 async function onDelete() {
 	log.debug("deleted");
 	try {
-		const { flushSaveHot } = await import("./persistence-CrFXrRB_.js").then((n) => n.s);
+		const { flushSaveHot } = await import("./persistence-BRxkRWyJ.js").then((n) => n.s);
 		flushSaveHot();
 	} catch {}
 	try {
@@ -9019,13 +10938,13 @@ async function onDelete() {
 		stopPeakDot();
 	} catch {}
 	try {
-		(await import("./balance-BQzxLpAs.js").then((n) => n.t)).stopBalanceTimer?.();
+		(await import("./balance-CwKDQcAf.js").then((n) => n.t)).stopBalanceTimer?.();
 	} catch {}
 	try {
-		(await import("./currency-IAtpC2X8.js").then((n) => n.t)).stopRateTimer?.();
+		(await import("./currency-CWUMnV7c.js").then((n) => n.t)).stopRateTimer?.();
 	} catch {}
 	try {
-		(await import("./pricing-sync-Cl187A8k.js").then((n) => n.i)).stopPricingSyncTimer?.();
+		(await import("./pricing-sync-tQAPVaum.js").then((n) => n.i)).stopPricingSyncTimer?.();
 	} catch {}
 	cleanupRuntimeBindings();
 	try {
@@ -9052,26 +10971,26 @@ async function onDelete() {
 function onEnable() {
 	log.debug("enabled");
 	try {
-		import("./interception-CtyZNjCZ.js").then((n) => n.n).then((m) => m.installInterception());
+		import("./interception-PcvsLS03.js").then((n) => n.n).then((m) => m.installInterception());
 	} catch {}
 	try {
-		import("./balance-BQzxLpAs.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
+		import("./balance-CwKDQcAf.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
 	} catch {}
 	try {
-		import("./currency-IAtpC2X8.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
+		import("./currency-CWUMnV7c.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
 	} catch {}
 	try {
-		import("./pricing-sync-Cl187A8k.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
+		import("./pricing-sync-tQAPVaum.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
 	} catch {}
 }
 async function onDisable() {
 	log.debug("disabled");
 	try {
-		const { flushSaveHot } = await import("./persistence-CrFXrRB_.js").then((n) => n.s);
+		const { flushSaveHot } = await import("./persistence-BRxkRWyJ.js").then((n) => n.s);
 		flushSaveHot();
 	} catch {}
 	try {
-		import("./interception-CtyZNjCZ.js").then((n) => n.n).then((m) => m.uninstallInterception?.());
+		import("./interception-PcvsLS03.js").then((n) => n.n).then((m) => m.uninstallInterception?.());
 	} catch {}
 	try {
 		const doc = getDoc();
@@ -9087,13 +11006,13 @@ async function onDisable() {
 		stopPeakDot();
 	} catch {}
 	try {
-		(await import("./balance-BQzxLpAs.js").then((n) => n.t)).stopBalanceTimer?.();
+		(await import("./balance-CwKDQcAf.js").then((n) => n.t)).stopBalanceTimer?.();
 	} catch {}
 	try {
-		(await import("./currency-IAtpC2X8.js").then((n) => n.t)).stopRateTimer?.();
+		(await import("./currency-CWUMnV7c.js").then((n) => n.t)).stopRateTimer?.();
 	} catch {}
 	try {
-		(await import("./pricing-sync-Cl187A8k.js").then((n) => n.i)).stopPricingSyncTimer?.();
+		(await import("./pricing-sync-tQAPVaum.js").then((n) => n.i)).stopPricingSyncTimer?.();
 	} catch {}
 	cleanupRuntimeBindings();
 }
@@ -9121,13 +11040,13 @@ async function init() {
 		initTelemetry();
 	} catch {}
 	try {
-		(await import("./balance-BQzxLpAs.js").then((n) => n.t)).restartBalanceTimer?.();
+		(await import("./balance-CwKDQcAf.js").then((n) => n.t)).restartBalanceTimer?.();
 	} catch {}
 	try {
-		(await import("./currency-IAtpC2X8.js").then((n) => n.t)).restartRateTimer?.();
+		(await import("./currency-CWUMnV7c.js").then((n) => n.t)).restartRateTimer?.();
 	} catch {}
 	try {
-		(await import("./pricing-sync-Cl187A8k.js").then((n) => n.i)).restartPricingSyncTimer?.();
+		(await import("./pricing-sync-tQAPVaum.js").then((n) => n.i)).restartPricingSyncTimer?.();
 	} catch {}
 	try {
 		installInterception();
@@ -9149,7 +11068,7 @@ async function init() {
 			refreshUI();
 		} catch {}
 		try {
-			import("./pricing-sync-Cl187A8k.js").then((n) => n.i).then((m) => m.markLegacySyncedModels?.()).catch(() => {});
+			import("./pricing-sync-tQAPVaum.js").then((n) => n.i).then((m) => m.markLegacySyncedModels?.()).catch(() => {});
 		} catch {}
 	};
 	if (globalThis.SillyTavern?.getContext) mount();
