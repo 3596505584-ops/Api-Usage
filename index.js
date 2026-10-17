@@ -52,7 +52,7 @@ async function exportHistory() {
 		path: "",
 		proxy: ""
 	};
-	const _appVer = "3.1.4";
+	const _appVer = "3.1.5";
 	let fullHist = [];
 	try {
 		fullHist = await repository.getAllHistory();
@@ -919,7 +919,7 @@ var inFlight = false;
 var bound = false;
 function appVersion() {
 	try {
-		return String("3.1.4");
+		return String("3.1.5");
 	} catch {
 		return "";
 	}
@@ -10053,7 +10053,7 @@ function createPanel() {
           <span class="aus-brand-icon" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--ds-orange);">${icon("brand", 20)}</span>
           <div style="display:flex;flex-direction:column;min-width:0;">
             <span style="font-size:15px;font-weight:700;color:var(--ds-text);white-space:nowrap;">API用量统计</span>
-            <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);white-space:nowrap;">v3.1.4</span>
+            <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);white-space:nowrap;">v3.1.5</span>
           </div>
         </div>
         <button id="aus-sidebar-toggle" style="width:30px;height:30px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);color:var(--ds-text-2);cursor:pointer;flex-shrink:0;font-size:var(--aus-fs-base);padding:0;line-height:1;">${icon("chevron-left", 14)}</button>
@@ -10321,7 +10321,7 @@ function createPanel() {
                   </div>
                   <button id="aus-check-update" class="ds-btn-pill" style="padding:6px 14px;font-size:var(--aus-fs-sm);">检查更新</button>
                   <button id="aus-run-update" class="ds-btn-pill" style="display:none;padding:6px 14px;font-size:var(--aus-fs-sm);">立即更新</button>
-                  <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);">当前 v3.1.4 · 每 1 小时自动检查</span>
+                  <span style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);">当前 v3.1.5 · 每 1 小时自动检查</span>
                 </div>
                 <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);">可选择 main 或 dev 分支直接更新，默认 main；更新完成后自动刷新网页。非 Git 安装请使用“管理扩展程序”。</div>
               </div>
@@ -10484,7 +10484,7 @@ function createPanel() {
 		initForecastView();
 	} catch {}
 	try {
-		import("./update-YGVRyKyT.js").then((m) => {
+		import("./update-Ca6URPP_.js").then((m) => {
 			const branchBtn = doc.getElementById("aus-update-branch-btn");
 			const branchLabel = doc.getElementById("aus-update-branch-label");
 			const branchDrop = doc.getElementById("aus-update-branch-dropdown");
@@ -10523,7 +10523,7 @@ function createPanel() {
 		if (updBtn) updBtn.onclick = () => {
 			updBtn.textContent = "检查中…";
 			updBtn.setAttribute("disabled", "");
-			import("./update-YGVRyKyT.js").then((m) => m.checkUpdate(true).finally(() => {
+			import("./update-Ca6URPP_.js").then((m) => m.checkUpdate(true).finally(() => {
 				updBtn.textContent = "检查更新";
 				updBtn.removeAttribute("disabled");
 			}));
@@ -10533,7 +10533,7 @@ function createPanel() {
 			if (runUpdBtn.hasAttribute("disabled")) return;
 			runUpdBtn.textContent = "更新中…";
 			runUpdBtn.setAttribute("disabled", "");
-			import("./update-YGVRyKyT.js").then((m) => m.updateSelf()).then((res) => {
+			import("./update-Ca6URPP_.js").then((m) => m.updateSelf()).then((res) => {
 				if (res.ok && res.changed) {
 					const bannerEl = doc.getElementById("aus-update-banner");
 					if (bannerEl) {
@@ -10623,7 +10623,7 @@ function openPanel() {
 	panelOpen = true;
 	refreshUI();
 	try {
-		import("./update-YGVRyKyT.js").then((m) => m.maybeAutoCheck());
+		import("./update-Ca6URPP_.js").then((m) => m.maybeAutoCheck());
 	} catch {}
 }
 function closePanel() {

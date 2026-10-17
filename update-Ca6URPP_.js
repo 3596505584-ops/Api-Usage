@@ -1,7 +1,7 @@
 import { r as toast, t as log } from "./logger-8RGXnvfI.js";
 import { t as esc } from "./date-BJI2m6dS.js";
 //#region src/services/update.ts
-var CURRENT_VERSION = "3.1.4";
+var CURRENT_VERSION = "3.1.5";
 var REPO = "janmk1453/Api-Usage";
 var EXTENSION_FOLDER = "Api-Usage";
 var INTERVAL_MS = 36e5;
