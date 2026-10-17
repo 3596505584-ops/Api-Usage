@@ -1,14 +1,14 @@
 import { pn as __exportAll } from "./graphic-BAx7jeh4.js";
-import { n as getSelectedSave, r as state$2, t as getHistoryForDisplay } from "./store-D78Joj4J.js";
-import { d as WEBDAV_SYNC_FILE, i as HIDDEN_PRICING_MODELS, n as DEFAULT_PEAK_HOURS, s as PRICING } from "./pricing-bcKQQNo6.js";
-import { c as saveExtensionSettings, d as historyRecordKey, i as getExtensionSettings, u as saveHot } from "./persistence-BRxkRWyJ.js";
+import { n as getSelectedSave, r as state$2, t as getHistoryForDisplay } from "./store-Cc2SGj8q.js";
+import { a as HIDDEN_PRICING_MODELS, l as PRICING, p as WEBDAV_SYNC_FILE, r as DEFAULT_PEAK_HOURS, t as DEFAULT_CONTEXT_LIMIT } from "./pricing-Bc-qEvy8.js";
+import { c as saveExtensionSettings, d as historyRecordKey, i as getExtensionSettings, u as saveHot } from "./persistence-BNuHASx4.js";
 import { r as toast, t as log } from "./logger-8RGXnvfI.js";
-import { C as walletBalanceToCny, D as DEEPSEEK_WALLET_ID, O as WALLET_CATALOG_PROVIDERS, S as mergeWalletCollections, _ as normalizeModel, a as decryptKey, b as findWalletForHistory, c as isTruncatedFinish, d as calcCost, f as calcSavings, g as isWalletPeakHour, h as isPeakHour, i as saveWalletApiKey, l as DataEvents, m as isDeepSeekOfficialModel, o as encryptKey, p as getPricing$1, r as getWalletApiKey, s as sanitizeHistoryTiming, t as repository, u as on, w as walletPendingModelCount, x as findWalletModel } from "./repository-D0fbhj3j.js";
+import { C as mergeWalletCollections, O as DEEPSEEK_WALLET_ID, S as findWalletModel, T as walletPendingModelCount, _ as normalizeModel, a as decryptKey, b as defaultContextLimitForModel, c as isTruncatedFinish, d as calcCost, f as calcSavings, g as isWalletPeakHour, h as isPeakHour, i as saveWalletApiKey, k as WALLET_CATALOG_PROVIDERS, l as DataEvents, m as isDeepSeekOfficialModel, o as encryptKey, p as getPricing$1, r as getWalletApiKey, s as sanitizeHistoryTiming, t as repository, u as on, w as walletBalanceToCny, x as findWalletForHistory } from "./repository-C_XhljCi.js";
 import { a as isUnsafeKey$1, c as localDay$1, i as isPeakHour$1, l as localTimeHM, n as isChinaHoliday, o as isValidDayKey, r as isExtraOffDay, s as isWeekendDay, t as esc$1, u as CN_HOLIDAY_COVERAGE_LABEL } from "./date-BJI2m6dS.js";
-import { a as getWalletExchangeRate, i as getDisplayCurrency, n as fetchLiveRate, r as formatMoney } from "./currency-CWUMnV7c.js";
-import { r as recalcAllCosts, t as installInterception } from "./interception-PcvsLS03.js";
-import { i as saveApiKey, n as queryBalance, r as queryWalletBalance } from "./balance-CwKDQcAf.js";
-import { a as removeSyncedModels, n as isSyncedCustomModel, o as syncPricingFromModelsDev, r as previewSync, t as fetchModelsDevCatalog } from "./pricing-sync-tQAPVaum.js";
+import { a as getWalletExchangeRate, i as getDisplayCurrency, n as fetchLiveRate, r as formatMoney } from "./currency-t4zSPSKg.js";
+import { r as recalcAllCosts, t as installInterception } from "./interception-D5x43GWt.js";
+import { i as saveApiKey, n as queryBalance, r as queryWalletBalance } from "./balance-CybZ7bHi.js";
+import { a as removeSyncedModels, n as isSyncedCustomModel, o as syncPricingFromModelsDev, r as previewSync, t as fetchModelsDevCatalog } from "./pricing-sync-CP0UaEYe.js";
 //#region src/services/import-export.ts
 function isUnsafeKey(k) {
 	return k === "__proto__" || k === "constructor" || k === "prototype";
@@ -1817,14 +1817,14 @@ function renderSettings(doc) {
 		doc.getElementById("aus-auto-balance-interval").style.display = autoCb.checked ? "block" : "none";
 		saveHot({ settings: state$2.settings });
 		try {
-			import("./balance-CwKDQcAf.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
+			import("./balance-CybZ7bHi.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
 		} catch {}
 	};
 	doc.getElementById("aus-balance-interval").onchange = (e) => {
 		state$2.settings.balanceInterval = parseInt(e.target.value) || 10;
 		saveHot({ settings: state$2.settings });
 		try {
-			import("./balance-CwKDQcAf.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
+			import("./balance-CybZ7bHi.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
 		} catch {}
 	};
 	if (dbgCb) dbgCb.onchange = () => {
@@ -1869,8 +1869,8 @@ function renderSettings(doc) {
 		const clearBtn = doc.getElementById("aus-btn-debug-clear");
 		if (clearBtn) clearBtn.onclick = async () => {
 			try {
-				const { repository } = await import("./repository-D0fbhj3j.js").then((n) => n.n);
-				const { state: st } = await import("./store-D78Joj4J.js").then((n) => n.i);
+				const { repository } = await import("./repository-C_XhljCi.js").then((n) => n.n);
+				const { state: st } = await import("./store-Cc2SGj8q.js").then((n) => n.i);
 				await repository.replaceAll({ history: (st.history || []).filter((h) => h._debug !== true) });
 				await repository.recalcAll();
 				await repository.rebuildAggregates();
@@ -2019,8 +2019,8 @@ function renderSettings(doc) {
 					intervalDrop.style.display = "none";
 					if (intervalLabel) intervalLabel.textContent = intervalMap[el.getAttribute("data-interval")] || el.getAttribute("data-interval");
 					try {
-						import("./pricing-sync-tQAPVaum.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
-						import("./currency-CWUMnV7c.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
+						import("./pricing-sync-CP0UaEYe.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
+						import("./currency-t4zSPSKg.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
 					} catch {}
 				};
 			});
@@ -2041,7 +2041,7 @@ function renderSettings(doc) {
 			if (panel) panel.style.display = enabledEl.checked ? "grid" : "none";
 			let removed = 0;
 			if (!enabledEl.checked) try {
-				const m = await import("./pricing-sync-tQAPVaum.js").then((n) => n.i);
+				const m = await import("./pricing-sync-CP0UaEYe.js").then((n) => n.i);
 				try {
 					await m.markLegacySyncedModels?.({ skipRerender: true });
 				} catch {}
@@ -2051,8 +2051,8 @@ function renderSettings(doc) {
 			}
 			saveHot({ settings: state$2.settings });
 			try {
-				import("./currency-CWUMnV7c.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
-				import("./pricing-sync-tQAPVaum.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
+				import("./currency-t4zSPSKg.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
+				import("./pricing-sync-CP0UaEYe.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
 			} catch {}
 			if (removed) {
 				renderModelsEditor(doc);
@@ -2082,7 +2082,7 @@ function renderSettings(doc) {
 			state$2.settings.pricingSync.useLiveRate = liveEl.checked;
 			saveHot({ settings: state$2.settings });
 			try {
-				import("./currency-CWUMnV7c.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
+				import("./currency-t4zSPSKg.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
 			} catch {}
 		};
 		if (recalcEl) recalcEl.onchange = () => {
@@ -4417,7 +4417,7 @@ function renderChatSummaryOverview(fullHistory) {
 	if (fullHistory) return;
 	(async () => {
 		try {
-			const mod = await import("./persistence-BRxkRWyJ.js").then((n) => n.s);
+			const mod = await import("./persistence-BNuHASx4.js").then((n) => n.s);
 			if (!mod.getAllHistory) return;
 			const all = await mod.getAllHistory();
 			if (!all || all.length <= (state$2.history?.length || 0)) return;
@@ -6505,7 +6505,7 @@ async function getHistoryForStats() {
 	if (allHistoryPromise) return allHistoryPromise;
 	allHistoryPromise = (async () => {
 		try {
-			const mod = await import("./persistence-BRxkRWyJ.js").then((n) => n.s);
+			const mod = await import("./persistence-BNuHASx4.js").then((n) => n.s);
 			if (mod.getAllHistory) {
 				const result = await mod.getAllHistory() || hot;
 				cachedAllHistory = result;
@@ -6820,11 +6820,10 @@ function finalize(seg, sorted, C0, delta, sigma, r2, model, segStart, extra) {
 function ctxLimitForModel(model, configuredLimit) {
 	if (configuredLimit != null && Number.isFinite(configuredLimit) && configuredLimit > 0) return Math.round(configuredLimit);
 	const m = (model || "").toLowerCase();
-	if (m.includes("deepseek")) return 128e3;
 	if (m.includes("128k")) return 128e3;
 	if (m.includes("64k")) return 64e3;
 	if (m.includes("32k")) return 32e3;
-	return null;
+	return DEFAULT_CONTEXT_LIMIT;
 }
 //#endregion
 //#region src/stats/energyScore.ts
@@ -8999,7 +8998,7 @@ function bindWalletView(doc) {
 				wallet.balance.mode = input.checked ? "auto" : "manual";
 			});
 			try {
-				import("./balance-CwKDQcAf.js").then((n) => n.t).then((mod) => mod.restartBalanceTimer?.());
+				import("./balance-CybZ7bHi.js").then((n) => n.t).then((mod) => mod.restartBalanceTimer?.());
 			} catch {}
 			renderWalletView();
 		};
@@ -9166,7 +9165,10 @@ function bindWalletView(doc) {
 			const contextLimit = Number.isFinite(value) && value > 0 ? Math.round(value) : null;
 			repository.updateWallet(walletId, (wallet) => {
 				const model = wallet.models.find((item) => item.id === modelId);
-				if (model) model.contextLimit = contextLimit;
+				if (model) {
+					model.contextLimit = contextLimit ?? defaultContextLimitForModel(model.sourceModel);
+					model.contextLimitManual = contextLimit != null;
+				}
 			});
 			renderWalletView();
 		};
@@ -9922,7 +9924,7 @@ function renderHistory(doc, s) {
 	historyLoading = true;
 	(async () => {
 		try {
-			const mod = await import("./persistence-BRxkRWyJ.js").then((n) => n.s);
+			const mod = await import("./persistence-BNuHASx4.js").then((n) => n.s);
 			if (!mod.getAllHistory) return;
 			const all = await mod.getAllHistory();
 			if (!all || !all.length) return;
@@ -10794,7 +10796,7 @@ function onEscapeKey(e) {
 }
 function onPageHide() {
 	try {
-		import("./persistence-BRxkRWyJ.js").then((n) => n.s).then((m) => m.flushSaveHot()).catch(() => {});
+		import("./persistence-BNuHASx4.js").then((n) => n.s).then((m) => m.flushSaveHot()).catch(() => {});
 	} catch {}
 }
 function cleanupRuntimeBindings() {
@@ -10842,7 +10844,7 @@ function onAppReady() {
 		refreshUI();
 	} catch {}
 	try {
-		import("./interception-PcvsLS03.js").then((n) => n.n).then((m) => m.installInterception()).catch(() => {});
+		import("./interception-D5x43GWt.js").then((n) => n.n).then((m) => m.installInterception()).catch(() => {});
 	} catch {}
 }
 function onAppInitialized() {
@@ -10850,7 +10852,7 @@ function onAppInitialized() {
 		ensureWandEntry();
 	} catch {}
 	try {
-		import("./interception-PcvsLS03.js").then((n) => n.n).then((m) => m.installInterception()).catch(() => {});
+		import("./interception-D5x43GWt.js").then((n) => n.n).then((m) => m.installInterception()).catch(() => {});
 	} catch {}
 }
 function onChatChanged() {
@@ -10913,7 +10915,7 @@ function ensureWandEntry() {
 async function onInstall() {
 	log.debug("installed");
 	try {
-		const { loadHot } = await import("./persistence-BRxkRWyJ.js").then((n) => n.s);
+		const { loadHot } = await import("./persistence-BNuHASx4.js").then((n) => n.s);
 		await loadHot();
 	} catch {}
 }
@@ -10923,7 +10925,7 @@ async function onUpdate() {
 async function onDelete() {
 	log.debug("deleted");
 	try {
-		const { flushSaveHot } = await import("./persistence-BRxkRWyJ.js").then((n) => n.s);
+		const { flushSaveHot } = await import("./persistence-BNuHASx4.js").then((n) => n.s);
 		flushSaveHot();
 	} catch {}
 	try {
@@ -10940,13 +10942,13 @@ async function onDelete() {
 		stopPeakDot();
 	} catch {}
 	try {
-		(await import("./balance-CwKDQcAf.js").then((n) => n.t)).stopBalanceTimer?.();
+		(await import("./balance-CybZ7bHi.js").then((n) => n.t)).stopBalanceTimer?.();
 	} catch {}
 	try {
-		(await import("./currency-CWUMnV7c.js").then((n) => n.t)).stopRateTimer?.();
+		(await import("./currency-t4zSPSKg.js").then((n) => n.t)).stopRateTimer?.();
 	} catch {}
 	try {
-		(await import("./pricing-sync-tQAPVaum.js").then((n) => n.i)).stopPricingSyncTimer?.();
+		(await import("./pricing-sync-CP0UaEYe.js").then((n) => n.i)).stopPricingSyncTimer?.();
 	} catch {}
 	cleanupRuntimeBindings();
 	try {
@@ -10973,26 +10975,26 @@ async function onDelete() {
 function onEnable() {
 	log.debug("enabled");
 	try {
-		import("./interception-PcvsLS03.js").then((n) => n.n).then((m) => m.installInterception());
+		import("./interception-D5x43GWt.js").then((n) => n.n).then((m) => m.installInterception());
 	} catch {}
 	try {
-		import("./balance-CwKDQcAf.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
+		import("./balance-CybZ7bHi.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
 	} catch {}
 	try {
-		import("./currency-CWUMnV7c.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
+		import("./currency-t4zSPSKg.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
 	} catch {}
 	try {
-		import("./pricing-sync-tQAPVaum.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
+		import("./pricing-sync-CP0UaEYe.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
 	} catch {}
 }
 async function onDisable() {
 	log.debug("disabled");
 	try {
-		const { flushSaveHot } = await import("./persistence-BRxkRWyJ.js").then((n) => n.s);
+		const { flushSaveHot } = await import("./persistence-BNuHASx4.js").then((n) => n.s);
 		flushSaveHot();
 	} catch {}
 	try {
-		import("./interception-PcvsLS03.js").then((n) => n.n).then((m) => m.uninstallInterception?.());
+		import("./interception-D5x43GWt.js").then((n) => n.n).then((m) => m.uninstallInterception?.());
 	} catch {}
 	try {
 		const doc = getDoc();
@@ -11008,13 +11010,13 @@ async function onDisable() {
 		stopPeakDot();
 	} catch {}
 	try {
-		(await import("./balance-CwKDQcAf.js").then((n) => n.t)).stopBalanceTimer?.();
+		(await import("./balance-CybZ7bHi.js").then((n) => n.t)).stopBalanceTimer?.();
 	} catch {}
 	try {
-		(await import("./currency-CWUMnV7c.js").then((n) => n.t)).stopRateTimer?.();
+		(await import("./currency-t4zSPSKg.js").then((n) => n.t)).stopRateTimer?.();
 	} catch {}
 	try {
-		(await import("./pricing-sync-tQAPVaum.js").then((n) => n.i)).stopPricingSyncTimer?.();
+		(await import("./pricing-sync-CP0UaEYe.js").then((n) => n.i)).stopPricingSyncTimer?.();
 	} catch {}
 	cleanupRuntimeBindings();
 }
@@ -11042,13 +11044,13 @@ async function init() {
 		initTelemetry();
 	} catch {}
 	try {
-		(await import("./balance-CwKDQcAf.js").then((n) => n.t)).restartBalanceTimer?.();
+		(await import("./balance-CybZ7bHi.js").then((n) => n.t)).restartBalanceTimer?.();
 	} catch {}
 	try {
-		(await import("./currency-CWUMnV7c.js").then((n) => n.t)).restartRateTimer?.();
+		(await import("./currency-t4zSPSKg.js").then((n) => n.t)).restartRateTimer?.();
 	} catch {}
 	try {
-		(await import("./pricing-sync-tQAPVaum.js").then((n) => n.i)).restartPricingSyncTimer?.();
+		(await import("./pricing-sync-CP0UaEYe.js").then((n) => n.i)).restartPricingSyncTimer?.();
 	} catch {}
 	try {
 		installInterception();
@@ -11070,7 +11072,7 @@ async function init() {
 			refreshUI();
 		} catch {}
 		try {
-			import("./pricing-sync-tQAPVaum.js").then((n) => n.i).then((m) => m.markLegacySyncedModels?.()).catch(() => {});
+			import("./pricing-sync-CP0UaEYe.js").then((n) => n.i).then((m) => m.markLegacySyncedModels?.()).catch(() => {});
 		} catch {}
 	};
 	if (globalThis.SillyTavern?.getContext) mount();

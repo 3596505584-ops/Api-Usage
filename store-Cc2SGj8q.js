@@ -1,5 +1,5 @@
 import { pn as __exportAll } from "./graphic-BAx7jeh4.js";
-import "./pricing-bcKQQNo6.js";
+import "./pricing-Bc-qEvy8.js";
 //#region src/types/settings.ts
 var defaultSettings = () => ({
 	theme: "light",

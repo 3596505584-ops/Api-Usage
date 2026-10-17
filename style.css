@@ -882,10 +882,10 @@
   box-sizing: border-box;
   appearance: auto;
   -webkit-appearance: checkbox;
-  accent-color: var(--ds-orange);
+  accent-color: var(--ds-text);
 }
 .aus-forecast-toggle input {
-  accent-color: var(--ds-orange);
+  accent-color: var(--ds-text);
 }
 .aus-forecast-hit-control {
   display: flex;

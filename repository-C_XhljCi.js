@@ -1,10 +1,10 @@
 import { pn as __exportAll } from "./graphic-BAx7jeh4.js";
-import { a as defaultSettings, n as getSelectedSave, r as state } from "./store-D78Joj4J.js";
-import { a as MAX_HISTORY, i as HIDDEN_PRICING_MODELS, n as DEFAULT_PEAK_HOURS, o as PRICE_HISTORY, s as PRICING } from "./pricing-bcKQQNo6.js";
-import { a as loadHistoryCold, c as saveExtensionSettings, d as historyRecordKey, i as getExtensionSettings, l as saveHistoryCold, n as clearHistoryCold, o as loadHot, r as getAllHistory, t as appendHistoryCold, u as saveHot } from "./persistence-BRxkRWyJ.js";
+import { a as defaultSettings, n as getSelectedSave, r as state } from "./store-Cc2SGj8q.js";
+import { a as HIDDEN_PRICING_MODELS, c as PRICE_HISTORY, l as PRICING, r as DEFAULT_PEAK_HOURS, s as MAX_HISTORY, t as DEFAULT_CONTEXT_LIMIT } from "./pricing-Bc-qEvy8.js";
+import { a as loadHistoryCold, c as saveExtensionSettings, d as historyRecordKey, i as getExtensionSettings, l as saveHistoryCold, n as clearHistoryCold, o as loadHot, r as getAllHistory, t as appendHistoryCold, u as saveHot } from "./persistence-BNuHASx4.js";
 import { r as toast, t as log } from "./logger-8RGXnvfI.js";
 import { a as isUnsafeKey, c as localDay, i as isPeakHour$1, n as isChinaHoliday, o as isValidDayKey, r as isExtraOffDay, s as isWeekendDay } from "./date-BJI2m6dS.js";
-import { a as getWalletExchangeRate } from "./currency-CWUMnV7c.js";
+import { a as getWalletExchangeRate } from "./currency-t4zSPSKg.js";
 //#region src/types/wallet.ts
 var DEEPSEEK_WALLET_ID = "wallet:deepseek-official";
 var WALLET_CATALOG_PROVIDERS = [
@@ -334,8 +334,16 @@ function positiveNumberOrNull(value) {
 	return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
 }
 function builtinContextLimit(model) {
-	if (String(model || "").toLowerCase().includes("deepseek")) return 128e3;
+	const key = String(model || "").toLowerCase();
+	if (key.includes("128k")) return 128e3;
+	if (key.includes("64k")) return 64e3;
+	if (key.includes("32k")) return 32e3;
+	if (key.includes("deepseek")) return DEFAULT_CONTEXT_LIMIT;
 	return null;
+}
+/** 钱包页清空手动上限后恢复的自动推断值 */
+function defaultContextLimitForModel(model) {
+	return builtinContextLimit(model);
 }
 function safeId(s) {
 	return s.replace(/[^a-zA-Z0-9:_-]/g, "-").slice(0, 100);
@@ -427,12 +435,16 @@ function normalizeWalletModel(raw, now = Date.now()) {
 		"discovered"
 	].includes(raw.source) ? raw.source : "discovered";
 	const discoveredAt = finiteNumber(raw.discoveredAt, now);
+	const contextLimitManual = raw.contextLimitManual === true;
+	const rawContextLimit = positiveNumberOrNull(raw.contextLimit);
+	const legacyDeepseekAuto = !contextLimitManual && rawContextLimit === 128e3 && sourceModel.toLowerCase().includes("deepseek");
 	return {
 		id: cleanText(raw.id) || `${sourceModel}:${discoveredAt}`,
 		sourceModel,
 		model,
 		aliases: normalizeAliases(raw.aliases, model),
-		contextLimit: positiveNumberOrNull(raw.contextLimit) ?? builtinContextLimit(sourceModel),
+		contextLimit: contextLimitManual ? rawContextLimit : legacyDeepseekAuto ? DEFAULT_CONTEXT_LIMIT : rawContextLimit ?? builtinContextLimit(sourceModel),
+		contextLimitManual,
 		price: normalizeWalletPriceRule(raw.price),
 		source,
 		locked: raw.locked === true,
@@ -537,6 +549,7 @@ function createDeepSeekWallet(settings, now = Date.now()) {
 		model,
 		aliases: [],
 		contextLimit: builtinContextLimit(model),
+		contextLimitManual: false,
 		price: currentBuiltinPrice(model, now),
 		source: "builtin",
 		locked: false,
@@ -696,6 +709,8 @@ function observeModel(wallet, modelName, now = Date.now()) {
 		sourceModel: name,
 		model: name,
 		aliases: [],
+		contextLimit: builtinContextLimit(name),
+		contextLimitManual: false,
 		price: emptyWalletPriceRule(),
 		source: "discovered",
 		locked: false,
@@ -2042,7 +2057,7 @@ var repository = {
 					const modelObservation = observeModel(wallet, model, nowTs);
 					if (modelObservation.changed) wallet.updatedAt = nowTs;
 					if (modelObservation.model?.source === "discovered" && modelObservation.model.price.priceConfigured !== true && state.settings.pricingSync?.enabled) try {
-						import("./pricing-sync-tQAPVaum.js").then((n) => n.i).then((module) => module.syncPricingFromModelsDev({ silent: true })).then(() => this.recalcWallet(wallet.id)).catch(() => {});
+						import("./pricing-sync-CP0UaEYe.js").then((n) => n.i).then((module) => module.syncPricingFromModelsDev({ silent: true })).then(() => this.recalcWallet(wallet.id)).catch(() => {});
 					} catch {}
 				}
 				wallet.lastUsedAt = nowTs;
@@ -2721,4 +2736,4 @@ var repository = {
 	}
 };
 //#endregion
-export { walletBalanceToCny as C, DEEPSEEK_WALLET_ID as D, resolveRuntimeConnectionContext as E, WALLET_CATALOG_PROVIDERS as O, mergeWalletCollections as S, initConnectionIdentity as T, normalizeModel as _, decryptKey as a, findWalletForHistory as b, isTruncatedFinish as c, calcCost as d, calcSavings as f, isWalletPeakHour as g, isPeakHour as h, saveWalletApiKey as i, DataEvents as l, isDeepSeekOfficialModel as m, repository_exports as n, encryptKey as o, getPricing as p, getWalletApiKey as r, sanitizeHistoryTiming as s, repository as t, on as u, DEEPSEEK_OFFICIAL_ENDPOINT_ID as v, walletPendingModelCount as w, findWalletModel as x, cloneWallet as y };
+export { mergeWalletCollections as C, resolveRuntimeConnectionContext as D, initConnectionIdentity as E, DEEPSEEK_WALLET_ID as O, findWalletModel as S, walletPendingModelCount as T, normalizeModel as _, decryptKey as a, defaultContextLimitForModel as b, isTruncatedFinish as c, calcCost as d, calcSavings as f, isWalletPeakHour as g, isPeakHour as h, saveWalletApiKey as i, WALLET_CATALOG_PROVIDERS as k, DataEvents as l, isDeepSeekOfficialModel as m, repository_exports as n, encryptKey as o, getPricing as p, getWalletApiKey as r, sanitizeHistoryTiming as s, repository as t, on as u, DEEPSEEK_OFFICIAL_ENDPOINT_ID as v, walletBalanceToCny as w, findWalletForHistory as x, cloneWallet as y };

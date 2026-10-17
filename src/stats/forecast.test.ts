@@ -104,10 +104,11 @@ describe('趋势预测核心', () => {
     expect(ctxLimitRounds(fit({ delta: 0 }), 3_100)).toBeNull();
   });
 
-  it('优先使用配置的上下文上限并避免数字猜测', () => {
-    expect(ctxLimitForModel('custom-64-model')).toBeNull();
+  it('优先使用配置的上下文上限，名称无法识别时按 1M 兜底', () => {
+    expect(ctxLimitForModel('custom-64-model')).toBe(1_000_000);
+    expect(ctxLimitForModel('custom-model')).toBe(1_000_000);
     expect(ctxLimitForModel('custom-64k-model')).toBe(64000);
-    expect(ctxLimitForModel('deepseek-flash')).toBe(128000);
+    expect(ctxLimitForModel('deepseek-flash')).toBe(1_000_000);
     expect(ctxLimitForModel('custom-model', 256000)).toBe(256000);
   });
 

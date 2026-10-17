@@ -1,4 +1,4 @@
-import { PRICING, HIDDEN_PRICING_MODELS, PRICE_HISTORY, DEFAULT_PEAK_HOURS } from '../constants/pricing';
+import { PRICING, HIDDEN_PRICING_MODELS, PRICE_HISTORY, DEFAULT_PEAK_HOURS, DEFAULT_CONTEXT_LIMIT, LEGACY_DEEPSEEK_CONTEXT_LIMIT } from '../constants/pricing';
 import { isDeepSeekOfficialEndpoint, officialEndpointId, type HistoryConnection } from '../services/connection-identity';
 import type { Settings } from '../types/settings';
 import {
@@ -34,8 +34,16 @@ function positiveNumberOrNull(value: unknown): number | null {
 
 function builtinContextLimit(model: string): number | null {
   const key = String(model || '').toLowerCase();
-  if (key.includes('deepseek')) return 128000;
+  if (key.includes('128k')) return 128000;
+  if (key.includes('64k')) return 64000;
+  if (key.includes('32k')) return 32000;
+  if (key.includes('deepseek')) return DEFAULT_CONTEXT_LIMIT;
   return null;
+}
+
+/** 钱包页清空手动上限后恢复的自动推断值 */
+export function defaultContextLimitForModel(model: string): number | null {
+  return builtinContextLimit(model);
 }
 
 function safeId(s: string): string {
@@ -154,12 +162,20 @@ export function normalizeWalletModel(raw: any, now = Date.now()): WalletModel | 
     ? raw.source as WalletModel['source']
     : 'discovered';
   const discoveredAt = finiteNumber(raw.discoveredAt, now);
+  const contextLimitManual = raw.contextLimitManual === true;
+  const rawContextLimit = positiveNumberOrNull(raw.contextLimit);
+  const legacyDeepseekAuto = !contextLimitManual
+    && rawContextLimit === LEGACY_DEEPSEEK_CONTEXT_LIMIT
+    && sourceModel.toLowerCase().includes('deepseek');
   return {
     id: cleanText(raw.id) || `${sourceModel}:${discoveredAt}`,
     sourceModel,
     model,
     aliases: normalizeAliases(raw.aliases, model),
-    contextLimit: positiveNumberOrNull(raw.contextLimit) ?? builtinContextLimit(sourceModel),
+    contextLimit: contextLimitManual
+      ? rawContextLimit
+      : (legacyDeepseekAuto ? DEFAULT_CONTEXT_LIMIT : (rawContextLimit ?? builtinContextLimit(sourceModel))),
+    contextLimitManual,
     price: normalizeWalletPriceRule(raw.price),
     source,
     locked: raw.locked === true,
@@ -275,6 +291,7 @@ export function createDeepSeekWallet(settings: Settings, now = Date.now()): Wall
     model,
     aliases: [],
     contextLimit: builtinContextLimit(model),
+    contextLimitManual: false,
     price: currentBuiltinPrice(model, now),
     source: 'builtin',
     locked: false,
@@ -452,6 +469,8 @@ export function observeModel(
     sourceModel: name,
     model: name,
     aliases: [],
+    contextLimit: builtinContextLimit(name),
+    contextLimitManual: false,
     price: emptyWalletPriceRule(),
     source: 'discovered',
     locked: false,
