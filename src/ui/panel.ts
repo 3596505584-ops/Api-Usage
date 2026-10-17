@@ -883,6 +883,7 @@ export function createPanel() {
                   <div id="aus-forecast-hit-control" class="aus-forecast-hit-control"></div>
                   <label class="aus-forecast-toggle">
                     <input id="aus-forecast-compaction-toggle" type="checkbox" checked>
+                    <span class="aus-forecast-checkbox" aria-hidden="true"></span>
                     <span id="aus-forecast-compaction-label">压缩情景</span>
                   </label>
                 </div>

@@ -862,6 +862,7 @@
   line-height: 1.5;
 }
 .aus-forecast-toggle {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -870,22 +871,50 @@
   cursor: pointer;
   white-space: nowrap;
 }
+/* 原生复选框只作为可访问与点击代理，视觉完全由 .aus-forecast-checkbox 绘制 */
 .aus-forecast-toggle input[type="checkbox"] {
-  flex: 0 0 auto;
-  width: 16px !important;
-  height: 16px !important;
-  min-width: 16px !important;
-  min-height: 16px !important;
-  margin: 0;
+  position: absolute;
+  width: 1px !important;
+  height: 1px !important;
+  margin: 0 !important;
   padding: 0 !important;
-  border-radius: 3px;
-  box-sizing: border-box;
-  appearance: auto;
-  -webkit-appearance: checkbox;
-  accent-color: var(--ds-text);
+  opacity: 0;
+  pointer-events: none;
 }
-.aus-forecast-toggle input {
-  accent-color: var(--ds-text);
+.aus-forecast-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 1px solid var(--ds-border);
+  border-radius: 4px;
+  background: var(--ds-card-inner);
+}
+.aus-forecast-checkbox::after {
+  content: '';
+  width: 4px;
+  height: 8px;
+  border: solid var(--ds-card-inner);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) translate(-1px, -1px);
+  opacity: 0;
+}
+.aus-forecast-toggle:hover .aus-forecast-checkbox {
+  border-color: var(--ds-text-3);
+}
+.aus-forecast-toggle input:checked + .aus-forecast-checkbox {
+  border-color: var(--ds-text);
+  background: var(--ds-text);
+}
+.aus-forecast-toggle input:checked + .aus-forecast-checkbox::after {
+  opacity: 1;
+}
+.aus-forecast-toggle input:focus-visible + .aus-forecast-checkbox {
+  outline: 2px solid var(--ds-text-3);
+  outline-offset: 2px;
 }
 .aus-forecast-hit-control {
   display: flex;
