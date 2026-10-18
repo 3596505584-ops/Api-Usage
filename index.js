@@ -6,7 +6,7 @@ import { r as toast, t as log } from "./logger-8RGXnvfI.js";
 import { C as mergeWalletCollections, O as DEEPSEEK_WALLET_ID, S as findWalletModel, T as walletPendingModelCount, _ as normalizeModel, a as decryptKey, b as defaultContextLimitForModel, c as isTruncatedFinish, d as calcCost, f as calcSavings, g as isWalletPeakHour, h as isPeakHour, i as saveWalletApiKey, k as WALLET_CATALOG_PROVIDERS, l as DataEvents, m as isDeepSeekOfficialModel, o as encryptKey, p as getPricing$1, r as getWalletApiKey, s as sanitizeHistoryTiming, t as repository, u as on, w as walletBalanceToCny, x as findWalletForHistory } from "./repository-C_XhljCi.js";
 import { a as isUnsafeKey$1, c as localDay$1, i as isPeakHour$1, l as localTimeHM, n as isChinaHoliday, o as isValidDayKey, r as isExtraOffDay, s as isWeekendDay, t as esc$1, u as CN_HOLIDAY_COVERAGE_LABEL } from "./date-BJI2m6dS.js";
 import { a as getWalletExchangeRate, i as getDisplayCurrency, n as fetchLiveRate, r as formatMoney } from "./currency-t4zSPSKg.js";
-import { r as recalcAllCosts, t as installInterception } from "./interception-D5x43GWt.js";
+import { r as recalcAllCosts, t as installInterception } from "./interception-DuVK9ian.js";
 import { i as saveApiKey, n as queryBalance, r as queryWalletBalance } from "./balance-CybZ7bHi.js";
 import { a as removeSyncedModels, n as isSyncedCustomModel, o as syncPricingFromModelsDev, r as previewSync, t as fetchModelsDevCatalog } from "./pricing-sync-CP0UaEYe.js";
 //#region src/services/import-export.ts
@@ -10845,7 +10845,7 @@ function onAppReady() {
 		refreshUI();
 	} catch {}
 	try {
-		import("./interception-D5x43GWt.js").then((n) => n.n).then((m) => m.installInterception()).catch(() => {});
+		import("./interception-DuVK9ian.js").then((n) => n.n).then((m) => m.installInterception()).catch(() => {});
 	} catch {}
 }
 function onAppInitialized() {
@@ -10853,7 +10853,7 @@ function onAppInitialized() {
 		ensureWandEntry();
 	} catch {}
 	try {
-		import("./interception-D5x43GWt.js").then((n) => n.n).then((m) => m.installInterception()).catch(() => {});
+		import("./interception-DuVK9ian.js").then((n) => n.n).then((m) => m.installInterception()).catch(() => {});
 	} catch {}
 }
 function onChatChanged() {
@@ -10976,7 +10976,7 @@ async function onDelete() {
 function onEnable() {
 	log.debug("enabled");
 	try {
-		import("./interception-D5x43GWt.js").then((n) => n.n).then((m) => m.installInterception());
+		import("./interception-DuVK9ian.js").then((n) => n.n).then((m) => m.installInterception());
 	} catch {}
 	try {
 		import("./balance-CybZ7bHi.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
@@ -10995,7 +10995,7 @@ async function onDisable() {
 		flushSaveHot();
 	} catch {}
 	try {
-		import("./interception-D5x43GWt.js").then((n) => n.n).then((m) => m.uninstallInterception?.());
+		import("./interception-DuVK9ian.js").then((n) => n.n).then((m) => m.uninstallInterception?.());
 	} catch {}
 	try {
 		const doc = getDoc();

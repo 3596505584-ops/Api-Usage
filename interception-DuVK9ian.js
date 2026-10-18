@@ -1,6 +1,93 @@
 import { pn as __exportAll } from "./graphic-BAx7jeh4.js";
 import { t as log } from "./logger-8RGXnvfI.js";
 import { D as resolveRuntimeConnectionContext, E as initConnectionIdentity, t as repository } from "./repository-C_XhljCi.js";
+//#region src/services/include-usage.ts
+/**
+* 流式 usage 注入的纯逻辑：把 stream_options.include_usage 合并进用户/预设自定义的请求体参数。
+*
+* 背景：酒馆只对 custom 源透传 custom_include_body（YAML 合并进上游请求体），
+* 且服务端 mergeObjectWithYaml 解析失败时会静默丢弃整段参数。
+* 因此这里不能做简单字符串拼接——预设完全可能把参数写成 JSON（如 `{"thinking":{"type":"disabled"}}`），
+* 在 JSON 后追加块状 YAML 会得到非法文档，导致预设自己的参数（例如关闭原生思考）一起失效。
+*
+* 规则：
+* - 空值直接写入 YAML；
+* - 顶层是 JSON/flow 对象时，用 JSON 解析后合并再序列化，保持合法；
+* - 无法安全解析的 flow 写法（非 JSON）、数组/列表、已有 stream_options、文档结束标记一律不介入；
+* - 顶层是块状映射时才允许追加 YAML 键。
+*/
+var INCLUDE_USAGE_YAML = "stream_options:\n  include_usage: true";
+var INCLUDE_USAGE_OBJECT = { include_usage: true };
+/** 跳过开头的空行、注释行与 YAML 文档起始标记，返回第一个内容字符的下标 */
+function contentStart(text) {
+	let offset = 0;
+	for (const line of text.split("\n")) {
+		const trimmed = line.trim();
+		if (trimmed === "" || trimmed.startsWith("#") || trimmed === "---") {
+			offset += line.length + 1;
+			continue;
+		}
+		return offset + (line.length - line.trimStart().length);
+	}
+	return text.length;
+}
+function hasOwn(obj, key) {
+	return !!obj && typeof obj === "object" && Object.prototype.hasOwnProperty.call(obj, key);
+}
+/**
+* 返回合并后的 custom_include_body 字符串。
+* changed=false 时调用方必须保持原值不变（宁可拿不到 usage，也不能破坏预设参数）。
+*/
+function mergeIncludeUsage(raw) {
+	const current = String(raw ?? "").trim();
+	if (!current) return {
+		changed: true,
+		value: `${INCLUDE_USAGE_YAML}\n`
+	};
+	const head = current.slice(contentStart(current));
+	if (!head) return {
+		changed: false,
+		value: current
+	};
+	if (head.startsWith("{")) try {
+		const parsed = JSON.parse(head);
+		if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {
+			changed: false,
+			value: current
+		};
+		if (hasOwn(parsed, "stream_options")) return {
+			changed: false,
+			value: current
+		};
+		parsed.stream_options = { ...INCLUDE_USAGE_OBJECT };
+		return {
+			changed: true,
+			value: JSON.stringify(parsed)
+		};
+	} catch {
+		return {
+			changed: false,
+			value: current
+		};
+	}
+	if (head.startsWith("[") || head.startsWith("-")) return {
+		changed: false,
+		value: current
+	};
+	if (/(^|\n)\s*stream_options\s*:/.test(current)) return {
+		changed: false,
+		value: current
+	};
+	if (/(^|\n)\s*\.\.\.\s*(\n|$)/.test(current)) return {
+		changed: false,
+		value: current
+	};
+	return {
+		changed: true,
+		value: `${current}\n${INCLUDE_USAGE_YAML}\n`
+	};
+}
+//#endregion
 //#region src/services/interception.ts
 var interception_exports = /* @__PURE__ */ __exportAll({
 	installInterception: () => installInterception,
@@ -25,7 +112,6 @@ function setLastRequest(messages, start) {
 }
 var TARGET_API = "/api/backends/chat-completions/generate";
 var STREAM_TEXT_LIMIT = 1e6;
-var INCLUDE_USAGE_YAML = "stream_options:\n  include_usage: true";
 /** 应急逃生阀：控制台执行 localStorage.setItem('ds_include_usage','0') 可整体关闭该注入 */
 function includeUsageSwitchOn() {
 	try {
@@ -41,10 +127,9 @@ function injectIncludeUsage(reqBody, source) {
 		if (reqBody.stream !== true) return false;
 		if (!includeUsageSwitchOn()) return false;
 		if (source !== "custom") return false;
-		const current = String(reqBody.custom_include_body ?? "").trim();
-		if (/(^|\n)\s*stream_options\s*:/.test(current)) return false;
-		if (current.startsWith("-") || current.startsWith("[")) return false;
-		reqBody.custom_include_body = current ? `${current}\n${INCLUDE_USAGE_YAML}\n` : `${INCLUDE_USAGE_YAML}\n`;
+		const merged = mergeIncludeUsage(reqBody.custom_include_body);
+		if (!merged.changed) return false;
+		reqBody.custom_include_body = merged.value;
 		return true;
 	} catch {
 		return false;
