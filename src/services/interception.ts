@@ -2,6 +2,7 @@ import { state } from '../store/index';
 import { repository } from '../data/repository';
 import { log } from '../utils/logger';
 import { initConnectionIdentity, resolveRuntimeConnectionContext, type HistoryConnection } from './connection-identity';
+import { mergeIncludeUsage } from './include-usage';
 
 let lastMessages: any[] = [];
 let lastStart = 0;
@@ -25,8 +26,7 @@ const STREAM_TEXT_LIMIT = 1_000_000;
 // 多数上游在流式响应里默认不返回 usage，必须显式声明 stream_options.include_usage。
 // 酒馆自身不发送该参数，服务端也只对 custom 源透传 custom_include_body（YAML 合并进上游请求体），
 // 因此这里借该通道补上 include_usage，换取可计费的真实用量；
-// 上游若不认这个参数（400/422），调用侧会按原始请求重试。
-const INCLUDE_USAGE_YAML = 'stream_options:\n  include_usage: true';
+// 合并逻辑见 include-usage.ts：预设可能把参数写成 JSON，直接字符串追加会让整段 YAML 失效。
 
 /** 应急逃生阀：控制台执行 localStorage.setItem('ds_include_usage','0') 可整体关闭该注入 */
 function includeUsageSwitchOn(): boolean {
@@ -44,11 +44,10 @@ function injectIncludeUsage(reqBody: any, source: string | null): boolean {
     if (reqBody.stream !== true) return false;
     if (!includeUsageSwitchOn()) return false;
     if (source !== 'custom') return false;
-    const current = String(reqBody.custom_include_body ?? '').trim();
-    // 用户已自行配置 stream_options，或用的是 YAML 列表写法（追加会破坏结构）时不介入
-    if (/(^|\n)\s*stream_options\s*:/.test(current)) return false;
-    if (current.startsWith('-') || current.startsWith('[')) return false;
-    reqBody.custom_include_body = current ? `${current}\n${INCLUDE_USAGE_YAML}\n` : `${INCLUDE_USAGE_YAML}\n`;
+    const merged = mergeIncludeUsage(reqBody.custom_include_body);
+    // 无法安全合并时保持原值：宁可拿不到 usage，也不能破坏预设的请求体参数
+    if (!merged.changed) return false;
+    reqBody.custom_include_body = merged.value;
     return true;
   } catch {
     return false;
