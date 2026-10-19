@@ -12,15 +12,27 @@
 
 <p align="center"><sub>用量概览 · 余额与消费、Token 构成、8 项指标、近两年热力图与按对话统计</sub></p>
 
-| 用量统计 · 汇总 | 用量统计 · 图表 |
-| :---: | :---: |
-| [![用量统计 · 汇总](docs/images/stats-summary.png)](docs/images/stats-summary.png) | [![用量统计 · 图表](docs/images/stats-charts.png)](docs/images/stats-charts.png) |
-| <sub>五维筛选、模型汇总与自定义图表</sub> | <sub>缓存命中、请求数、耗时/速率与模型占比</sub> |
+<table width="100%">
+  <tr>
+    <td width="50%" align="center"><a href="docs/images/stats-summary.png"><img src="docs/images/stats-summary.png" alt="用量统计 · 汇总" width="100%"></a></td>
+    <td width="50%" align="center"><a href="docs/images/stats-charts.png"><img src="docs/images/stats-charts.png" alt="用量统计 · 图表" width="100%"></a></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center"><sub><b>用量统计 · 汇总</b><br>五维筛选、模型汇总与自定义图表</sub></td>
+    <td width="50%" align="center"><sub><b>用量统计 · 图表</b><br>缓存命中、请求数、耗时/速率与模型占比</sub></td>
+  </tr>
+</table>
 
-| 历史记录 | 趋势预测 |
-| :---: | :---: |
-| [![历史记录](docs/images/history.png)](docs/images/history.png) | [![趋势预测](docs/images/forecast.png)](docs/images/forecast.png) |
-| <sub>逐次调用明细、缓存断点对比与四类原始数据详情</sub> | <sub>下一轮用量与成本、压缩点、余额与上下文可支撑轮数</sub> |
+<table width="100%">
+  <tr>
+    <td width="50%" align="center"><a href="docs/images/history.png"><img src="docs/images/history.png" alt="历史记录" width="100%"></a></td>
+    <td width="50%" align="center"><a href="docs/images/forecast.png"><img src="docs/images/forecast.png" alt="趋势预测" width="100%"></a></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center"><sub><b>历史记录</b><br>逐次调用明细、缓存断点对比与四类原始数据详情</sub></td>
+    <td width="50%" align="center"><sub><b>趋势预测</b><br>下一轮用量与成本、压缩点、余额与上下文可支撑轮数</sub></td>
+  </tr>
+</table>
 
 ## 核心功能
 
