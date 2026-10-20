@@ -42,6 +42,19 @@
 - **趋势预测**：以单个对话为单位拟合输入、输出、成本与命中率，给出下一轮预估与 95% 区间、上下文压缩点、余额/上下文可支撑轮数、模型效率与能耗评分。
 - **多钱包**：按接入地址自动建立钱包，分别管理余额、密钥标识、模型价格与峰谷规则；支持手工余额和 DeepSeek 官方余额自动校准。
 - **计价与数据**：内置 DeepSeek 官方峰谷价与 2024–2026 中国法定节假日；支持 models.dev 价格同步、历史/钱包导入导出与 WebDAV 合并同步。
+- **Agent 模式（TauriTavern）**：在 [TauriTavern](https://github.com/Darkatse/TauriTavern) 下自动采集 Agent 模式的模型用量，一次运行记一条历史，并在历史行标注来源为 `Agent` 或 `常规`。
+
+## TauriTavern Agent 模式
+
+扩展会自动识别 [TauriTavern](https://github.com/Darkatse/TauriTavern) 宿主（`window.__TAURITAVERN__`），并额外采集 Agent 模式的用量：
+
+- **数据来源**：Agent 的模型调用发生在宿主后端，前端没有请求可拦，因此改用宿主公开 ABI `api.agent.readModelTurn().provider.usage` 逐回合读取用量，再用 `listRuns` / `readEvents` 对账补采。
+- **记录口径**：一次 Run 记一条历史，跨 Invocation（主 Agent 与子 Agent）与多轮模型调用聚合；Token 与费用是各回合之和，耗时是各回合模型净耗时之和。
+- **来源标注**：历史记录的模型名前显示 `Agent` 或 `常规` 徽标，鼠标悬停可看到 Agent 运行的模型回合数与终态；不新增任何面板、页签或设置项。
+- **隐私边界**：只读取用量数值与模型名，不采集提示词正文、工具参数或工具结果。
+- **降级行为**：上游原版 SillyTavern 没有该接口，扩展不安装 Agent 通道，记录方式与本扩展之前完全一致。
+
+如需临时关闭 Agent 采集，可在控制台执行 `localStorage.setItem('aus_agent_capture','0')`，恢复时执行 `localStorage.removeItem('aus_agent_capture')`。
 
 ## 安装
 
@@ -62,7 +75,7 @@
 
 本扩展是纯前端、本地运行的开源项目（MIT）。历史、设置、钱包配置保存在本机；钱包校准密钥与 WebDAV 密码仅经 XOR 混淆后本地保存，不参与导出与云同步。
 
-默认开启的匿名使用统计只上报匿名标识、扩展/酒馆版本、浏览器环境分桶、页面使用次数、会话时长与渲染耗时分桶，**不含对话内容、模型名、密钥、余额、费用与接口地址**，可在「设置 → 匿名使用统计」随时关闭并重置匿名标识。完整字段、请求域名与保留期见[隐私声明](https://janmk1453.github.io/Api-Usage/#privacy)。
+默认开启的匿名使用统计只上报匿名标识、扩展版本、酒馆版本（TauriTavern 宿主下另含 TauriTavern 版本号）、浏览器环境分桶、页面使用次数、会话时长与渲染耗时分桶，**不含对话内容、模型名、密钥、余额、费用与接口地址**，可在「设置 → 匿名使用统计」随时关闭并重置匿名标识。完整字段、请求域名与保留期见[隐私声明](https://janmk1453.github.io/Api-Usage/#privacy)。
 
 ## 构建
 

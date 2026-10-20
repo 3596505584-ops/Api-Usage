@@ -20,7 +20,7 @@ function goodPayload(overrides = {}) {
     app: '3.1.1',
     env: {
       b: 'Chrome', bv: '141', os: 'Windows', arch: 'x86_64', lang: 'zh-CN',
-      w: 'gt1024', dark: true, standalone: false, touch: false, stv: '1.13.5',
+      w: 'gt1024', dark: true, standalone: false, touch: false, stv: '1.13.5', ttv: '2.3.0',
     },
     s: {
       opens: 2,
@@ -74,7 +74,7 @@ describe('上报体归一', () => {
     expect(result.value.app).toBe('3.1.1');
     expect(result.value.env).toEqual({
       b: 'Chrome', bv: '141', os: 'Windows', arch: 'x86_64', lang: 'zh-CN',
-      w: 'gt1024', dark: 1, standalone: 0, touch: 0, stv: '1.13.5',
+      w: 'gt1024', dark: 1, standalone: 0, touch: 0, stv: '1.13.5', ttv: '2.3.0',
     });
     expect(result.value.counters.opens).toBe(2);
     expect(result.value.counters.pages).toEqual({
@@ -184,14 +184,40 @@ describe('上报体归一', () => {
     expect(dirty.value.env.stv).toBe('v1.13.5-beta');
 
     const missing = normalizePayload(goodPayload({
-      env: { ...goodPayload().env, stv: undefined },
+      env: { ...goodPayload().env, stv: undefined, ttv: undefined },
     }), NOW);
     expect(missing.value.env.stv).toBe('');
+    expect(missing.value.env.ttv).toBe('');
 
     const huge = normalizePayload(goodPayload({
       env: { ...goodPayload().env, stv: '1'.repeat(64) },
     }), NOW);
     expect(huge.value.env.stv.length).toBe(16);
+  });
+
+  it('TauriTavern 版本号与酒馆版本号分列上报并同样清洗', () => {
+    const normal = normalizePayload(goodPayload({
+      env: { ...goodPayload().env, stv: '1.18.0', ttv: '2.3.0' },
+    }), NOW);
+    expect(normal.value.env.stv).toBe('1.18.0');
+    expect(normal.value.env.ttv).toBe('2.3.0');
+
+    const dirty = normalizePayload(goodPayload({
+      env: { ...goodPayload().env, ttv: 'v2.3.0-rc1/恶意' },
+    }), NOW);
+    expect(dirty.value.env.ttv).toBe('v2.3.0-rc1');
+
+    const huge = normalizePayload(goodPayload({
+      env: { ...goodPayload().env, ttv: '9'.repeat(64) },
+    }), NOW);
+    expect(huge.value.env.ttv.length).toBe(16);
+
+    // 上游 SillyTavern 不报 ttv：留空，不影响 stv
+    const stOnly = normalizePayload(goodPayload({
+      env: { ...goodPayload().env, ttv: undefined },
+    }), NOW);
+    expect(stOnly.value.env.ttv).toBe('');
+    expect(stOnly.value.env.stv).toBe('1.13.5');
   });
 
   it('字符串超长会被截断', () => {

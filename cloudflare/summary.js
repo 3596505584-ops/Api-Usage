@@ -312,6 +312,8 @@ export function envBreakdown(rows) {
     browser: tally(list.map((row) => row?.browser)),
     browserVersion: tally(browserVersion),
     stVersion: tally(list.map((row) => row?.st_version), { limit: 12 }),
+    // TauriTavern 版本只统计真正上报过该字段的设备，避免上游 SillyTavern 用户把分布刷成「未知」
+    ttVersion: tally(list.map((row) => row?.tt_version).filter((value) => value !== null && value !== undefined && value !== ''), { limit: 12 }),
     os: tally(list.map((row) => row?.os)),
     arch: tally(list.map((row) => row?.arch)),
     lang: tally(list.map((row) => row?.lang)),

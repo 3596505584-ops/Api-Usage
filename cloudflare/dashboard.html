@@ -228,7 +228,8 @@
     { grid: 'grid-usage', id: 'pages', title: '面板累计打开次数', note: '全部时间累计', kind: 'bar' },
     { grid: 'grid-usage', id: 'history-count', title: '历史记录条数分布', note: 'X 轴分段分组（1–499 每 10 条、500–999 每 50 条，不含 0 条），Y 轴为该组设备数，取每台设备最新上报值', kind: 'line' },
     { grid: 'grid-profile', id: 'versions', title: '扩展版本分布', note: '每台设备最近一次上报的版本', kind: 'bar' },
-    { grid: 'grid-profile', id: 'env-st-version', title: '酒馆版本', note: '每台设备最近一次上报', kind: 'bar' },
+    { grid: 'grid-profile', id: 'env-st-version', title: '酒馆版本', note: 'SillyTavern 前端版本，每台设备最近一次上报', kind: 'bar' },
+    { grid: 'grid-profile', id: 'env-tt-version', title: 'TauriTavern 版本', note: '仅 TauriTavern 宿主上报，其余记为未上报', kind: 'bar' },
     { grid: 'grid-profile', id: 'arch', title: 'CPU 架构占比', note: '每台设备最近一次上报', kind: 'pie' },
     { grid: 'grid-profile', id: 'os', title: '操作系统占比', note: '每台设备最近一次上报', kind: 'pie' },
     { grid: 'grid-profile', id: 'env-browser', title: '浏览器', note: '每台设备最近一次上报', kind: 'bar' },
@@ -1005,6 +1006,7 @@
     // 版本类横条按版本号从高到低展示（drawBar 反转后数组首项显示在最顶）
     drawBar('versions', sortByVersionDesc(data.versions), { color: themeColors().orange });
     drawBar('env-st-version', sortByVersionDesc(env.stVersion), { color: PIE_COLORS[3] });
+    drawBar('env-tt-version', sortByVersionDesc(env.ttVersion), { color: PIE_COLORS[0] });
     drawPie('arch', env.arch || []);
     drawPie('os', env.os || []);
     drawBar('env-browser', env.browser || [], { color: themeColors().blue });

@@ -219,12 +219,12 @@ describe('环境画像聚合', () => {
       {
         browser: 'Chrome', browser_major: '141', os: 'Windows', arch: 'x86_64',
         lang: 'zh-CN', width_bucket: 'gt1024', dark: 1, standalone: 0, touch: 0, tz_offset: 8,
-        st_version: '1.13.5',
+        st_version: '1.13.5', tt_version: '2.3.0',
       },
       {
         browser: 'Chrome', browser_major: '141', os: 'Windows', arch: 'x86_64',
         lang: 'zh-CN', width_bucket: 'le480', dark: 0, standalone: 0, touch: 0, tz_offset: 8,
-        st_version: '1.13.5',
+        st_version: '1.13.5', tt_version: '2.3.0',
       },
       {
         browser: 'Firefox', browser_major: '128', os: 'Android', arch: 'arm64',
@@ -255,6 +255,8 @@ describe('环境画像聚合', () => {
       { label: 'UTC+5.5', count: 1 },
     ]);
     expect(env.stVersion).toEqual([{ label: '1.13.5', count: 3 }]);
+    // TauriTavern 版本只统计真正上报过的设备，未上报的（上游 SillyTavern）不计入「未知」
+    expect(env.ttVersion).toEqual([{ label: '2.3.0', count: 2 }]);
   });
 
   it('历史记录条数按设备最新值分段分组（1–499 每 10 条，500–999 每 50 条）', () => {

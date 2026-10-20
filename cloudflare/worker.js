@@ -83,11 +83,28 @@ const DEVICE_BASE_VALUES = `?1, ?2, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?1
   ?14, ?15, ?16, ?17`;
 
 /**
- * 设备维度汇总上行（含酒馆版本号）：
+ * 设备维度汇总上行（含酒馆版本号与 TauriTavern 版本号）：
  * `WHERE excluded.last_seq > device.last_seq` 保证重复/重发上报不重复累加，
  * 与 device_daily / device_hourly 的幂等判据一致。
  */
 const DEVICE_UPSERT_SQL = `
+INSERT INTO device (
+  ${DEVICE_BASE_COLUMNS},
+  ${TOTAL_COLUMNS.join(', ')}, st_version, tt_version, history_count, telemetry_off
+) VALUES (
+  ${DEVICE_BASE_VALUES},
+  ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28, ?29
+)
+${DEVICE_UPSERT_SET},
+  st_version = COALESCE(NULLIF(excluded.st_version, ''), device.st_version),
+  tt_version = COALESCE(NULLIF(excluded.tt_version, ''), device.tt_version),
+  history_count = excluded.history_count,
+  telemetry_off = excluded.telemetry_off
+WHERE excluded.last_seq > device.last_seq
+`;
+
+/** 仅执行到 migrate-st-version.sql、尚未执行 migrate-tt-version.sql 的库：保留酒馆版本，跳过 tt_version */
+const DEVICE_UPSERT_ST_ONLY_SQL = `
 INSERT INTO device (
   ${DEVICE_BASE_COLUMNS},
   ${TOTAL_COLUMNS.join(', ')}, st_version, history_count, telemetry_off
@@ -355,7 +372,8 @@ async function writeRow(db, payload, now) {
     counters.pages.overview, counters.pages.stats, counters.pages.history, counters.pages.forecast,
     counters.pages.wallet, counters.pages.settings, counters.pages.help, counters.pages.about,
   ];
-  const extendedDeviceArgs = [...deviceArgs, env.stv, historyCount, offFlag];
+  const ttArgs = [...deviceArgs, env.stv, historyCount, offFlag];
+  const extendedDeviceArgs = [...deviceArgs, env.stv, env.ttv, historyCount, offFlag];
   const dailyArgs = [
     payload.day, payload.id,
     counters.opens, counters.dur_ms,
@@ -367,26 +385,33 @@ async function writeRow(db, payload, now) {
   const hourlyArgs = [hour, ...dailyArgs.slice(1)];
 
   // 每次重试重新 prepare：batch 事务失败会整体回滚，last_seq 判据保证重放不会重复累加
-  const buildDevice = (withExtras) => db
-    .prepare(withExtras ? DEVICE_UPSERT_SQL : DEVICE_UPSERT_LEGACY_SQL)
-    .bind(...(withExtras ? extendedDeviceArgs : deviceArgs));
+  const buildDevice = (mode) => {
+    if (mode === 'tt') return db.prepare(DEVICE_UPSERT_SQL).bind(...extendedDeviceArgs);
+    if (mode === 'st') return db.prepare(DEVICE_UPSERT_ST_ONLY_SQL).bind(...ttArgs);
+    return db.prepare(DEVICE_UPSERT_LEGACY_SQL).bind(...deviceArgs);
+  };
   const buildDaily = () => db.prepare(DEVICE_DAILY_UPSERT_SQL).bind(...dailyArgs);
   const buildHourly = () => db.prepare(DEVICE_HOURLY_UPSERT_SQL).bind(...hourlyArgs);
 
   try {
-    await db.batch([buildDevice(true), buildDaily(), buildHourly()]);
+    await db.batch([buildDevice('tt'), buildDaily(), buildHourly()]);
     return;
   } catch {
     // 继续走降级链：可能是 device_hourly 表缺失，也可能是 device 扩展列缺失
   }
   try {
     // 小时表尚未迁移（migrate-hourly.sql）：保留原有的设备 + 日两条写入
-    await db.batch([buildDevice(true), buildDaily()]);
+    await db.batch([buildDevice('tt'), buildDaily()]);
+    return;
+  } catch {}
+  try {
+    // tt_version 列尚未迁移（migrate-tt-version.sql）：保留 st_version 等扩展列
+    await db.batch([buildDevice('st'), buildDaily()]);
     return;
   } catch {}
   // 设备扩展列（st_version/history_count/telemetry_off）尚未迁移：回退旧列集合。
   // 这一步保证未迁移的既有库与旧版本扩展照常上报，/collect 始终返回 204。
-  await db.batch([buildDevice(false), buildDaily()]);
+  await db.batch([buildDevice('legacy'), buildDaily()]);
 }
 
 /* ---------------------------------- 看板接口 ---------------------------------- */

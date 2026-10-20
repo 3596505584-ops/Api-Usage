@@ -5,7 +5,8 @@ import { formatMoney, getDisplayCurrency } from '../services/currency';
 type ChartId = 'token'|'cost'|'hit'|'req'|'dur'|'pie';
 type XKey = 'round'|'hour'|'day'|'week'|'month';
 
-const CHART_DEFS: Record<ChartId, {title:string, yOpts: typeof Y_OPTIONS, hasX:boolean}> = {
+type ChartDef = { title:string; yOpts: Array<{ key:any; label:string; unit:string; kind:any; color:string }>; hasX:boolean };
+const CHART_DEFS: Record<ChartId, ChartDef> = {
   token: { title:'Token 趋势', yOpts: Y_OPTIONS.filter(o=>o.kind==='token'), hasX:true },
   cost: { title:'费用 趋势', yOpts: Y_OPTIONS.filter(o=>o.kind==='cost'), hasX:true },
   hit: { title:'缓存命中 趋势', yOpts: [{key:'hit_rate' as any,label:'命中率',unit:'%',kind:'cost' as any,color:'#0BA25E'}], hasX:true },

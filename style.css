@@ -1408,3 +1408,96 @@
     min-width: 600px;
   }
 }
+
+/* 存储占用：条目行与配额条 —— 宽屏保持紧凑两列，窄容器下名称可断行、数值不换行 */
+#aus-storage-card .aus-storage-row:last-child {
+  border-bottom: none;
+}
+#aus-storage-card .aus-storage-quota-bar {
+  height: 5px;
+  border-radius: 3px;
+  /* 用文本色 12% 兑出轨道：浅色/深色下都能看清，不依赖 --ds-border 的对比度 */
+  background: color-mix(in srgb, var(--ds-text) 12%, transparent);
+  overflow: hidden;
+}
+#aus-storage-card .aus-storage-quota-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--ds-orange);
+  transition: width 0.25s ease;
+}
+@container ausbody (max-width: 760px) {
+  #aus-storage-card .aus-storage-row {
+    gap: 8px !important;
+    padding: 6px 0 !important;
+  }
+  #aus-storage-card .ds-card-val {
+    font-size: 20px !important;
+  }
+}
+@container ausbody (max-width: 420px) {
+  #aus-storage-card .aus-storage-row {
+    align-items: flex-start !important;
+  }
+  #aus-storage-card .aus-storage-row-label {
+    font-size: var(--aus-fs-sm) !important;
+  }
+}
+
+/* 窄屏钱包卡：固定四区网格（标识 / 名称+副标题 / 余额·模型 / 操作按钮），
+   避免长域名或待定价徽标把右侧指标和按钮挤到独立行，导致按钮跑到左下角 */
+@container ausbody (max-width: 760px) {
+  #aus-wallet .aus-wallet-header {
+    display: grid !important;
+    grid-template-columns: 36px minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 6px 10px !important;
+  }
+  #aus-wallet .aus-wallet-avatar { grid-column: 1; grid-row: 1; }
+  #aus-wallet .aus-wallet-identity { grid-column: 2; grid-row: 1; min-width: 0; }
+  #aus-wallet .aus-wallet-metrics {
+    grid-column: 3;
+    grid-row: 1;
+    gap: 8px 10px !important;
+    justify-content: end !important;
+  }
+  #aus-wallet .aus-wallet-actions {
+    grid-column: 4;
+    grid-row: 1;
+    flex-wrap: nowrap !important;
+  }
+  #aus-wallet .aus-wallet-name-row {
+    flex-wrap: nowrap !important;
+    min-width: 0;
+  }
+  #aus-wallet .aus-wallet-name-row [data-wallet-name] {
+    flex: 1 1 auto;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    text-overflow: ellipsis;
+  }
+  #aus-wallet .aus-wallet-name-row > span { flex: 0 0 auto; }
+  #aus-wallet .aus-wallet-sub {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+/* 超窄容器（≤ 400px）：余额/模型移到第二行，名称与按钮保持第一行 */
+@container ausbody (max-width: 400px) {
+  #aus-wallet .aus-wallet-header {
+    grid-template-columns: 36px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "avatar identity actions"
+      "metrics metrics metrics";
+    row-gap: 4px !important;
+  }
+  #aus-wallet .aus-wallet-avatar { grid-area: avatar; }
+  #aus-wallet .aus-wallet-identity { grid-area: identity; }
+  #aus-wallet .aus-wallet-actions { grid-area: actions; }
+  #aus-wallet .aus-wallet-metrics {
+    grid-area: metrics;
+    justify-content: start !important;
+  }
+}
+
