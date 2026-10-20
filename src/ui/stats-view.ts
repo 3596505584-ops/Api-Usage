@@ -1,7 +1,7 @@
 import { icon } from './icons';
 import { getSelectedSave, state } from '../store/index';
 import { localDay, esc } from '../utils/date';
-import { Y_OPTIONS, X_OPTIONS, getYSelected, getXSelected, toggleY, setXSelected, aggregateForChart } from './chart-config';
+import { Y_OPTIONS, Y_GROUPS, X_OPTIONS, getYSelected, getXSelected, getChartType, setChartType, toggleY, setXSelected, aggregateForChart } from './chart-config';
 import { renderExtraCharts } from './extra-charts';
 import { renderModelTrends, initModelTrends } from './model-trends';
 import { DataEvents, on as onDataEvent } from '../data/events';
@@ -516,18 +516,34 @@ function renderChartSelectors() {
   const yLabel = doc.getElementById('aus-chart-y-label');
   const xLabel = doc.getElementById('aus-chart-x-label');
   if (!yBtn || !xBtn || !yDrop || !xDrop) return;
-  // Y 多选
+  // Y 多选（按 Token / 费用 / 性能 / 比率分组）
   const ySel: string[] = getYSelected() as any;
   if (yLabel) yLabel.textContent = ySel.length ? `${ySel.length} 项` : '选择';
   let yHtml = '';
-  for (const opt of Y_OPTIONS) {
-    const checked = ySel.includes(opt.key);
-    yHtml += `<label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:var(--aus-fs-sm);${checked?'background:var(--ds-card);':''}"><input type="checkbox" data-ykey="${opt.key}" ${checked?'checked':''} style="accent-color:var(--ds-text);" /><span style="display:inline-block;width:8px;height:8px;background:${opt.color};border-radius:2px;"></span>${opt.label}<span style="margin-left:auto;color:var(--ds-text-3);font-size:var(--aus-fs-sm);">${opt.unit}</span></label>`;
+  for (const group of Y_GROUPS) {
+    const opts = Y_OPTIONS.filter(o => o.group === group.key);
+    if (!opts.length) continue;
+    yHtml += `<div style="padding:6px 8px 2px;font-size:var(--aus-fs-xs);color:var(--ds-text-3);font-weight:600;">${group.label}</div>`;
+    for (const opt of opts) {
+      const checked = ySel.includes(opt.key);
+      yHtml += `<label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:var(--aus-fs-sm);${checked?'background:var(--ds-card);':''}"><input type="checkbox" data-ykey="${opt.key}" ${checked?'checked':''} style="accent-color:var(--ds-text);" /><span style="display:inline-block;width:8px;height:8px;background:${opt.color};border-radius:2px;"></span>${opt.label}<span style="margin-left:auto;color:var(--ds-text-3);font-size:var(--aus-fs-sm);">${opt.unit}</span></label>`;
+    }
   }
+  const typeSel = getChartType();
+  const typeOpts = [ { v:'auto', l:'自动' }, { v:'bar', l:'柱状' }, { v:'line', l:'曲线' }, { v:'area', l:'面积' } ];
+  yHtml += `<div style="margin-top:4px;border-top:1px solid var(--ds-border);padding:6px 8px 2px;font-size:var(--aus-fs-xs);color:var(--ds-text-3);font-weight:600;">展示方式</div>`;
+  yHtml += `<div style="display:flex;gap:4px;flex-wrap:wrap;padding:2px 6px 8px;">${typeOpts.map(t => `<div data-chart-type="${t.v}" style="padding:4px 9px;border-radius:999px;border:1px solid var(--ds-border);font-size:var(--aus-fs-sm);cursor:pointer;${typeSel===t.v?'background:var(--ds-card);font-weight:600;':''}">${t.l}</div>`).join('')}</div>`;
   yDrop.innerHTML = yHtml;
   yDrop.querySelectorAll('input[data-ykey]').forEach((el: any)=>{
     el.onchange = () => {
       toggleY(el.getAttribute('data-ykey') as any);
+      renderChartSelectors();
+      renderStatsView();
+    };
+  });
+  yDrop.querySelectorAll('[data-chart-type]').forEach((el: any)=>{
+    el.onclick = () => {
+      setChartType(el.getAttribute('data-chart-type') as any);
       renderChartSelectors();
       renderStatsView();
     };
@@ -631,8 +647,14 @@ async function renderChart(filteredRaw: any[]) {
   } else {
     try { chart.resize(); } catch {}
   }
-  const hasToken = series.some(s=>s.kind==='token');
-  const hasCost = series.some(s=>s.kind==='cost');
+  const kinds = new Set(series.map(s => s.kind));
+  const hasToken = kinds.has('token');
+  const hasCost = kinds.has('cost');
+  const hasCount = kinds.has('count');
+  const hasDuration = kinds.has('duration');
+  const hasRate = kinds.has('rate');
+  const hasPercent = kinds.has('percent');
+  const chartType = getChartType();
   const cBorder = themeColor('--ds-border', '#E5E7EB');
   const cCard = themeColor('--ds-card', '#F6F7F8');
   const cText3 = themeColor('--ds-text-3', '#9CA3AF');
@@ -641,47 +663,58 @@ async function renderChart(filteredRaw: any[]) {
     // 费用单位动态换算：CNY→USD 时图表数据需除以汇率
     for (const s of series) if (s.kind==='cost') s.data = s.data.map((v:any)=> curCur.code==='USD' ? Number((Number(v)/curCur.rate).toFixed(4)) : v);
   }
+  // 多轴：左轴 token（无 token 时放请求数），其余按类型依次挂右侧并偏移，避免互相压线
   const yAxis: any[] = [];
-  if (hasToken) yAxis.push({ type:'value', name:'tokens', position:'left', axisLine:{show:false}, splitLine:{lineStyle:{color:cCard}}, axisLabel:{color:cText3,fontSize: 12} });
-  if (hasCost) yAxis.push({ type:'value', name:curCur.code, position: hasToken?'right':'left', axisLine:{show:false}, splitLine:{show:false}, axisLabel:{color:cText3,fontSize: 12,formatter:(v:number)=> curCur.symbol + (curCur.code==='USD' ? (Number(v)).toFixed(4) : Number(v).toFixed(4))} });
-  // 堆叠柱仅最顶段圆角，其余直角无缝衔接（修复紫/橙/绿段间缝隙）
-  const lastBarIdx = (() => {
-    const indices = series.map((_, i) => i).filter(i => series[i].kind !== 'cost'); // 仅 token 堆叠取最后，深色同理；cost 单轴不在此堆
-    const target = indices.length ? indices : series.map((_, i)=>i);
-    return target.length ? target[target.length - 1] : -1;
-  })();
+  const axisIndex: Record<string, number> = {};
+  let rightOffset = 0;
+  const labelStyle = { color: cText3, fontSize: 12 };
+  const addAxis = (key: string, cfg: any, left = false) => {
+    const axis: any = { type:'value', ...cfg };
+    if (left) axis.position = 'left';
+    else { axis.position = 'right'; axis.offset = rightOffset; rightOffset += 46; }
+    axisIndex[key] = yAxis.length;
+    yAxis.push(axis);
+  };
+  if (hasToken) addAxis('token', { name:'tokens', axisLine:{show:false}, splitLine:{lineStyle:{color:cCard}}, axisLabel: labelStyle }, true);
+  if (hasCount) addAxis('count', { name:'次', minInterval:1, axisLine:{show:false}, splitLine:{show:false}, axisLabel: labelStyle }, !hasToken);
+  if (hasCost) addAxis('cost', { name: curCur.code, axisLine:{show:false}, splitLine:{show:false}, axisLabel:{ ...labelStyle, formatter:(v:number)=> curCur.symbol + Number(v).toFixed(4) } });
+  if (hasDuration) addAxis('duration', { name:'耗时 s', axisLine:{show:false}, splitLine:{show:false}, axisLabel:{ ...labelStyle, formatter:(v:number)=> Number(v).toFixed(1) } });
+  if (hasRate) addAxis('rate', { name:'速率 t/s', axisLine:{show:false}, splitLine:{show:false}, axisLabel:{ ...labelStyle, formatter:(v:number)=> Math.round(v) } });
+  if (hasPercent) addAxis('percent', { name:'%', min:0, max:100, axisLine:{show:false}, splitLine:{show:false}, axisLabel:{ ...labelStyle, formatter:(v:number)=> v + '%' } });
+  const tokenSeries = series.filter(s => s.kind === 'token');
+  const lastTokenIdx = tokenSeries.length ? series.indexOf(tokenSeries[tokenSeries.length - 1]) : -1;
   const seriesOpt = series.map((s, idx)=>{
-    const isCost = s.kind==='cost';
-    const yIndex = hasToken && hasCost ? (isCost?1:0) : 0;
-    const isTop = idx === lastBarIdx;
-    // 深色下 total_token 颜色同步主题
+    const kind = s.kind;
+    let type: 'bar' | 'line';
+    if (chartType === 'bar') type = 'bar';
+    else if (chartType === 'line' || chartType === 'area') type = 'line';
+    else type = (kind === 'token' || kind === 'count') ? 'bar' : 'line';
+    const isStack = kind === 'token' && type === 'bar';
+    const isTop = idx === lastTokenIdx;
     let col = s.color;
     if (col === '#111827' || (typeof col === 'string' && col.indexOf('var(')===0)) col = themeColor('--ds-text', '#111827');
-    if (isCost) {
-      return {
-        name: s.name,
-        type: 'line',
-        yAxisIndex: yIndex,
-        data: s.data,
-        smooth: true,
-        symbol: 'circle',
-        symbolSize: 4,
-        lineStyle: { color: col, width: 2 },
-        itemStyle: { color: col },
-        emphasis: { focus: 'series' },
-      };
-    }
-    return {
+    const base: any = {
       name: s.name,
-      type: 'bar',
-      yAxisIndex: yIndex,
+      type,
+      yAxisIndex: axisIndex[kind] ?? 0,
       data: s.data,
-      stack: 'total',
-      itemStyle: { color: col, borderRadius: isTop ? [4,4,0,0] as any : [0,0,0,0] as any },
-      barMaxWidth: 18,
-      barGap: '-100%' as any,
       emphasis: { focus: 'series' },
+      itemStyle: { color: col },
     };
+    if (type === 'bar') {
+      base.barMaxWidth = 18;
+      if (isStack) { base.stack = 'token'; base.barGap = '-100%'; }
+      base.itemStyle.borderRadius = isStack ? (isTop ? [4,4,0,0] : [0,0,0,0]) : [4,4,0,0];
+    } else {
+      base.smooth = true;
+      base.symbol = 'circle';
+      base.symbolSize = 4;
+      base.lineStyle = { color: col, width: kind === 'percent' ? 1.6 : 2, type: kind === 'percent' ? 'dashed' : 'solid' };
+      if (chartType === 'area' || (chartType === 'auto' && kind === 'percent')) {
+        base.areaStyle = { color: col, opacity: 0.08 };
+      }
+    }
+    return base;
   });
   const cCardInner = themeColor('--ds-card-inner', '#FFFFFF');
   const cText = themeColor('--ds-text', '#111827');
@@ -706,15 +739,21 @@ async function renderChart(filteredRaw: any[]) {
         let html = `<div style="font-weight:600;margin-bottom:6px;">${esc(label)}</div>`;
         for (const p of params) {
           const v = p.value;
-          const unit = Y_OPTIONS.find((o:any)=>o.label===p.seriesName)?.unit || '';
-          const isCost = unit==='CNY';
-          const disp = isCost ? (curCur.symbol + Number(v).toFixed(4) + ' ' + curCur.code) : (Number(v).toLocaleString()+' '+unit);
+          const meta = Y_OPTIONS.find((o:any)=>o.label===p.seriesName);
+          const kind = meta?.kind;
+          let disp: string;
+          if (kind === 'cost') disp = curCur.symbol + Number(v).toFixed(4) + ' ' + curCur.code;
+          else if (kind === 'percent') disp = Number(v).toFixed(1) + ' %';
+          else if (kind === 'duration') disp = Number(v).toFixed(2) + ' s';
+          else if (kind === 'rate') disp = Math.round(Number(v)) + ' t/s';
+          else if (kind === 'count') disp = Number(v).toLocaleString() + ' 次';
+          else disp = Number(v).toLocaleString() + ' ' + (meta?.unit || '');
           html += `<div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:8px;height:8px;background:${p.color};border-radius:2px;"></span>${esc(p.seriesName)}<span style="margin-left:auto;font-weight:600;">${disp}</span></div>`;
         }
         return `<div style="padding:4px 2px;min-width:180px;">${html}</div>`;
       }
     },
-    grid: { left: 50, right: hasToken&&hasCost?50:20, top: 8, bottom: 28 },
+    grid: { left: 50, right: 20 + rightOffset, top: 8, bottom: 28 },
     dataZoom: needZoom ? [{ type:'inside', xAxisIndex:0, start: Math.max(0, (labels.length - maxLabels) / labels.length * 100), end: 100, zoomOnMouseWheel: false, moveOnMouseMove: true }] : undefined,
     xAxis: { type:'category', data: labels, axisLine:{lineStyle:{color:cBorder}}, axisLabel:{color:cText3,fontSize: 12,interval: xInterval,rotate: labels.length>12?30:0, hideOverlap: false} },
     yAxis: yAxis.length?yAxis:{ type:'value', axisLabel:{color:cText3,fontSize: 12} },

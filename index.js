@@ -5003,6 +5003,8 @@ var Y_OPTIONS = [
 		label: "输入(命中) token",
 		unit: "tokens",
 		kind: "token",
+		agg: "sum",
+		group: "token",
 		color: "#0BA25E"
 	},
 	{
@@ -5010,6 +5012,8 @@ var Y_OPTIONS = [
 		label: "输入(未命中) token",
 		unit: "tokens",
 		kind: "token",
+		agg: "sum",
+		group: "token",
 		color: "#F87171"
 	},
 	{
@@ -5017,6 +5021,8 @@ var Y_OPTIONS = [
 		label: "输出 token",
 		unit: "tokens",
 		kind: "token",
+		agg: "sum",
+		group: "token",
 		color: "#6366F1"
 	},
 	{
@@ -5024,13 +5030,26 @@ var Y_OPTIONS = [
 		label: "总 Token",
 		unit: "tokens",
 		kind: "token",
+		agg: "sum",
+		group: "token",
 		color: "#111827"
+	},
+	{
+		key: "avg_tokens",
+		label: "平均每轮 Token",
+		unit: "tokens",
+		kind: "token",
+		agg: "avg",
+		group: "token",
+		color: "#0EA5E9"
 	},
 	{
 		key: "input_hit_cost",
 		label: "输入(命中)费用",
 		unit: "CNY",
 		kind: "cost",
+		agg: "sum",
+		group: "cost",
 		color: "#10B981"
 	},
 	{
@@ -5038,6 +5057,8 @@ var Y_OPTIONS = [
 		label: "输入(未命中)费用",
 		unit: "CNY",
 		kind: "cost",
+		agg: "sum",
+		group: "cost",
 		color: "#F59E0B"
 	},
 	{
@@ -5045,6 +5066,8 @@ var Y_OPTIONS = [
 		label: "输出费用",
 		unit: "CNY",
 		kind: "cost",
+		agg: "sum",
+		group: "cost",
 		color: "#8B5CF6"
 	},
 	{
@@ -5052,7 +5075,99 @@ var Y_OPTIONS = [
 		label: "总费用",
 		unit: "CNY",
 		kind: "cost",
+		agg: "sum",
+		group: "cost",
 		color: "#FF6A00"
+	},
+	{
+		key: "avg_cost",
+		label: "平均每轮成本",
+		unit: "CNY",
+		kind: "cost",
+		agg: "avg",
+		group: "cost",
+		color: "#EA580C"
+	},
+	{
+		key: "request_count",
+		label: "请求数",
+		unit: "次",
+		kind: "count",
+		agg: "sum",
+		group: "perf",
+		color: "#64748B"
+	},
+	{
+		key: "avg_ttft",
+		label: "平均首字延迟",
+		unit: "s",
+		kind: "duration",
+		agg: "avg",
+		group: "perf",
+		color: "#06B6D4"
+	},
+	{
+		key: "avg_duration",
+		label: "平均耗时",
+		unit: "s",
+		kind: "duration",
+		agg: "avg",
+		group: "perf",
+		color: "#0EA5E9"
+	},
+	{
+		key: "avg_rate",
+		label: "平均速率",
+		unit: "t/s",
+		kind: "rate",
+		agg: "avg",
+		group: "perf",
+		color: "#14B8A6"
+	},
+	{
+		key: "hit_rate",
+		label: "缓存命中率",
+		unit: "%",
+		kind: "percent",
+		agg: "ratio",
+		group: "ratio",
+		color: "#22C55E"
+	},
+	{
+		key: "think_ratio",
+		label: "思维链占比",
+		unit: "%",
+		kind: "percent",
+		agg: "ratio",
+		group: "ratio",
+		color: "#A855F7"
+	},
+	{
+		key: "truncation_rate",
+		label: "截断率",
+		unit: "%",
+		kind: "percent",
+		agg: "ratio",
+		group: "ratio",
+		color: "#EF4444"
+	}
+];
+var Y_GROUPS = [
+	{
+		key: "token",
+		label: "Token"
+	},
+	{
+		key: "cost",
+		label: "费用"
+	},
+	{
+		key: "perf",
+		label: "请求与性能"
+	},
+	{
+		key: "ratio",
+		label: "比率"
 	}
 ];
 var X_OPTIONS = [
@@ -5078,25 +5193,33 @@ var X_OPTIONS = [
 	}
 ];
 var X_OPTIONS_WITHOUT_ROUND = X_OPTIONS.filter((option) => option.key !== "round");
-/** 自定义图表的默认选中项：缓存命中 + 缓存未命中 + 输出 Token 三段拆分，配总费用曲线 */
+/** 默认组合：缓存命中/未命中/输出三段 Token + 总费用曲线 + 命中率曲线，一屏内同时看用量、成本与缓存效果 */
 var DEFAULT_Y_KEYS = [
 	"input_hit_token",
 	"input_miss_token",
 	"output_token",
-	"total_cost"
+	"total_cost",
+	"hit_rate"
 ];
-/** 自定义图表的默认横轴：按轮次逐条展示 */
 var DEFAULT_X_KEY = "round";
+var DEFAULT_CHART_TYPE = "auto";
 var ySelected = new Set(DEFAULT_Y_KEYS);
 var xSelected = DEFAULT_X_KEY;
+var chartType = DEFAULT_CHART_TYPE;
 function getYSelected() {
 	return Array.from(ySelected);
 }
 function getXSelected() {
 	return xSelected;
 }
+function getChartType() {
+	return chartType;
+}
 function setXSelected(k) {
 	xSelected = k;
+}
+function setChartType(t) {
+	chartType = t === "bar" || t === "line" || t === "area" ? t : "auto";
 }
 function toggleY(key) {
 	if (ySelected.has(key)) {
@@ -5128,12 +5251,14 @@ function getBucketKey(e, x, idx) {
 	if (x === "month") return toMonthKey(e.timestamp);
 	return localDay$1(e.timestamp);
 }
+/** 单条记录对应的数值（比率类返回 0-100） */
 function getYValue$1(e, y) {
 	switch (y) {
 		case "input_hit_token": return e.cache_hit_tokens || 0;
 		case "input_miss_token": return e.cache_miss_tokens || 0;
 		case "output_token": return e.completion_tokens || 0;
 		case "total_token": return e.total_tokens || 0;
+		case "avg_tokens": return e.total_tokens || 0;
 		case "input_hit_cost": {
 			const hit = e.cache_hit_tokens || 0, tot = hit + (e.cache_miss_tokens || 0);
 			const ic = e.input_cost || 0;
@@ -5146,52 +5271,106 @@ function getYValue$1(e, y) {
 		}
 		case "output_cost": return e.output_cost || 0;
 		case "total_cost": return e.cost || 0;
+		case "avg_cost": return e.cost || 0;
+		case "request_count": return 1;
+		case "avg_ttft": return e.ttft ? e.ttft / 1e3 : 0;
+		case "avg_duration": return e.duration ? e.duration / 1e3 : 0;
+		case "avg_rate": return e.tokenRate || 0;
+		case "hit_rate": {
+			const hit = e.cache_hit_tokens || 0;
+			const tot = hit + (e.cache_miss_tokens || 0);
+			return tot ? hit / tot * 100 : 0;
+		}
+		case "think_ratio": {
+			const out = e.completion_tokens || 0, think = e.thinkTokens || 0;
+			return out ? think / out * 100 : 0;
+		}
+		case "truncation_rate": return e.isTruncated ? 100 : 0;
 	}
 	return 0;
 }
+function bucketValue(arr, opt) {
+	if (opt.agg === "sum") {
+		let sum = 0;
+		for (const e of arr) sum += getYValue$1(e, opt.key);
+		return sum;
+	}
+	if (opt.agg === "avg") {
+		let sum = 0, n = 0;
+		for (const e of arr) {
+			const v = getYValue$1(e, opt.key);
+			if (v > 0) {
+				sum += v;
+				n++;
+			}
+		}
+		return n ? sum / n : 0;
+	}
+	if (opt.key === "hit_rate") {
+		let hit = 0, miss = 0;
+		for (const e of arr) {
+			hit += e.cache_hit_tokens || 0;
+			miss += e.cache_miss_tokens || 0;
+		}
+		const tot = hit + miss;
+		return tot ? hit / tot * 100 : 0;
+	}
+	if (opt.key === "think_ratio") {
+		let think = 0, out = 0;
+		for (const e of arr) {
+			think += e.thinkTokens || 0;
+			out += e.completion_tokens || 0;
+		}
+		return out ? think / out * 100 : 0;
+	}
+	if (opt.key === "truncation_rate") {
+		let n = 0;
+		for (const e of arr) if (e.isTruncated) n++;
+		return arr.length ? n / arr.length * 100 : 0;
+	}
+	return 0;
+}
+function precisionFor(kind) {
+	if (kind === "cost") return 4;
+	if (kind === "percent" || kind === "duration") return 2;
+	if (kind === "rate") return 1;
+	return 0;
+}
 function aggregateForChart(entries, yKeys, xKey) {
-	const yMeta = new Map(Y_OPTIONS.map((o) => [o.key, o]));
+	const meta = new Map(Y_OPTIONS.map((o) => [o.key, o]));
 	if (!yKeys.length) yKeys = DEFAULT_Y_KEYS;
-	if (xKey === "round") return {
-		labels: entries.map((_, i) => `#${i + 1}`),
-		series: yKeys.map((k) => {
-			const meta = yMeta.get(k);
-			return {
-				name: meta.label,
-				data: entries.map((e) => Number(getYValue$1(e, k).toFixed(String(k).includes("cost") ? 6 : 0))),
-				kind: meta.kind,
-				color: meta.color
-			};
-		})
-	};
-	const buckets = /* @__PURE__ */ new Map();
-	entries.forEach((e) => {
-		const key = getBucketKey(e, xKey, 0);
-		if (!buckets.has(key)) buckets.set(key, []);
-		buckets.get(key).push(e);
-	});
-	const sortedKeys = Array.from(buckets.keys()).sort();
-	return {
-		labels: sortedKeys.map((k) => {
+	const round = xKey === "round";
+	const labels = [];
+	let buckets = null;
+	let sortedKeys = [];
+	if (round) labels.push(...entries.map((_, i) => `#${i + 1}`));
+	else {
+		buckets = /* @__PURE__ */ new Map();
+		for (const e of entries) {
+			const key = getBucketKey(e, xKey, 0);
+			if (!buckets.has(key)) buckets.set(key, []);
+			buckets.get(key).push(e);
+		}
+		sortedKeys = Array.from(buckets.keys()).sort();
+		labels.push(...sortedKeys.map((k) => {
 			if (xKey === "hour") return k.slice(5);
 			if (xKey === "day") return k.slice(5).replace("-", "/");
-			if (xKey === "week") return k;
-			if (xKey === "month") return k;
 			return k;
-		}),
+		}));
+	}
+	return {
+		labels,
 		series: yKeys.map((k) => {
-			const meta = yMeta.get(k);
-			const data = sortedKeys.map((bucket) => {
-				const arr = buckets.get(bucket);
-				let sum = 0;
-				for (const e of arr) sum += getYValue$1(e, k);
-				return Number(sum.toFixed(String(k).includes("cost") ? 4 : 0));
-			});
+			const opt = meta.get(k);
+			const data = round ? entries.map((e) => Number(getYValue$1(e, k).toFixed(precisionFor(opt.kind)))) : sortedKeys.map((b) => Number(bucketValue(buckets.get(b), opt).toFixed(precisionFor(opt.kind))));
 			return {
-				name: meta.label,
+				name: opt.label,
 				data,
-				kind: meta.kind,
-				color: meta.color
+				kind: opt.kind,
+				agg: opt.agg,
+				unit: opt.unit,
+				group: opt.group,
+				color: opt.color
 			};
 		})
 	};
@@ -6661,14 +6840,47 @@ function renderChartSelectors() {
 	const ySel = getYSelected();
 	if (yLabel) yLabel.textContent = ySel.length ? `${ySel.length} 项` : "选择";
 	let yHtml = "";
-	for (const opt of Y_OPTIONS) {
-		const checked = ySel.includes(opt.key);
-		yHtml += `<label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:var(--aus-fs-sm);${checked ? "background:var(--ds-card);" : ""}"><input type="checkbox" data-ykey="${opt.key}" ${checked ? "checked" : ""} style="accent-color:var(--ds-text);" /><span style="display:inline-block;width:8px;height:8px;background:${opt.color};border-radius:2px;"></span>${opt.label}<span style="margin-left:auto;color:var(--ds-text-3);font-size:var(--aus-fs-sm);">${opt.unit}</span></label>`;
+	for (const group of Y_GROUPS) {
+		const opts = Y_OPTIONS.filter((o) => o.group === group.key);
+		if (!opts.length) continue;
+		yHtml += `<div style="padding:6px 8px 2px;font-size:var(--aus-fs-xs);color:var(--ds-text-3);font-weight:600;">${group.label}</div>`;
+		for (const opt of opts) {
+			const checked = ySel.includes(opt.key);
+			yHtml += `<label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:var(--aus-fs-sm);${checked ? "background:var(--ds-card);" : ""}"><input type="checkbox" data-ykey="${opt.key}" ${checked ? "checked" : ""} style="accent-color:var(--ds-text);" /><span style="display:inline-block;width:8px;height:8px;background:${opt.color};border-radius:2px;"></span>${opt.label}<span style="margin-left:auto;color:var(--ds-text-3);font-size:var(--aus-fs-sm);">${opt.unit}</span></label>`;
+		}
 	}
+	const typeSel = getChartType();
+	const typeOpts = [
+		{
+			v: "auto",
+			l: "自动"
+		},
+		{
+			v: "bar",
+			l: "柱状"
+		},
+		{
+			v: "line",
+			l: "曲线"
+		},
+		{
+			v: "area",
+			l: "面积"
+		}
+	];
+	yHtml += `<div style="margin-top:4px;border-top:1px solid var(--ds-border);padding:6px 8px 2px;font-size:var(--aus-fs-xs);color:var(--ds-text-3);font-weight:600;">展示方式</div>`;
+	yHtml += `<div style="display:flex;gap:4px;flex-wrap:wrap;padding:2px 6px 8px;">${typeOpts.map((t) => `<div data-chart-type="${t.v}" style="padding:4px 9px;border-radius:999px;border:1px solid var(--ds-border);font-size:var(--aus-fs-sm);cursor:pointer;${typeSel === t.v ? "background:var(--ds-card);font-weight:600;" : ""}">${t.l}</div>`).join("")}</div>`;
 	yDrop.innerHTML = yHtml;
 	yDrop.querySelectorAll("input[data-ykey]").forEach((el) => {
 		el.onchange = () => {
 			toggleY(el.getAttribute("data-ykey"));
+			renderChartSelectors();
+			renderStatsView();
+		};
+	});
+	yDrop.querySelectorAll("[data-chart-type]").forEach((el) => {
+		el.onclick = () => {
+			setChartType(el.getAttribute("data-chart-type"));
 			renderChartSelectors();
 			renderStatsView();
 		};
@@ -6802,8 +7014,14 @@ async function renderChart(filteredRaw) {
 	else try {
 		chart.resize();
 	} catch {}
-	const hasToken = series.some((s) => s.kind === "token");
-	const hasCost = series.some((s) => s.kind === "cost");
+	const kinds = new Set(series.map((s) => s.kind));
+	const hasToken = kinds.has("token");
+	const hasCost = kinds.has("cost");
+	const hasCount = kinds.has("count");
+	const hasDuration = kinds.has("duration");
+	const hasRate = kinds.has("rate");
+	const hasPercent = kinds.has("percent");
+	const chartType = getChartType();
 	const cBorder = themeColor$1("--ds-border", "#E5E7EB");
 	const cCard = themeColor$1("--ds-card", "#F6F7F8");
 	const cText3 = themeColor$1("--ds-text-3", "#9CA3AF");
@@ -6822,79 +7040,134 @@ async function renderChart(filteredRaw) {
 		for (const s of series) if (s.kind === "cost") s.data = s.data.map((v) => curCur.code === "USD" ? Number((Number(v) / curCur.rate).toFixed(4)) : v);
 	}
 	const yAxis = [];
-	if (hasToken) yAxis.push({
-		type: "value",
+	const axisIndex = {};
+	let rightOffset = 0;
+	const labelStyle = {
+		color: cText3,
+		fontSize: 12
+	};
+	const addAxis = (key, cfg, left = false) => {
+		const axis = {
+			type: "value",
+			...cfg
+		};
+		if (left) axis.position = "left";
+		else {
+			axis.position = "right";
+			axis.offset = rightOffset;
+			rightOffset += 46;
+		}
+		axisIndex[key] = yAxis.length;
+		yAxis.push(axis);
+	};
+	if (hasToken) addAxis("token", {
 		name: "tokens",
-		position: "left",
 		axisLine: { show: false },
 		splitLine: { lineStyle: { color: cCard } },
-		axisLabel: {
-			color: cText3,
-			fontSize: 12
-		}
-	});
-	if (hasCost) yAxis.push({
-		type: "value",
+		axisLabel: labelStyle
+	}, true);
+	if (hasCount) addAxis("count", {
+		name: "次",
+		minInterval: 1,
+		axisLine: { show: false },
+		splitLine: { show: false },
+		axisLabel: labelStyle
+	}, !hasToken);
+	if (hasCost) addAxis("cost", {
 		name: curCur.code,
-		position: hasToken ? "right" : "left",
 		axisLine: { show: false },
 		splitLine: { show: false },
 		axisLabel: {
-			color: cText3,
-			fontSize: 12,
-			formatter: (v) => curCur.symbol + (curCur.code === "USD" ? Number(v).toFixed(4) : Number(v).toFixed(4))
+			...labelStyle,
+			formatter: (v) => curCur.symbol + Number(v).toFixed(4)
 		}
 	});
-	const lastBarIdx = (() => {
-		const indices = series.map((_, i) => i).filter((i) => series[i].kind !== "cost");
-		const target = indices.length ? indices : series.map((_, i) => i);
-		return target.length ? target[target.length - 1] : -1;
-	})();
+	if (hasDuration) addAxis("duration", {
+		name: "耗时 s",
+		axisLine: { show: false },
+		splitLine: { show: false },
+		axisLabel: {
+			...labelStyle,
+			formatter: (v) => Number(v).toFixed(1)
+		}
+	});
+	if (hasRate) addAxis("rate", {
+		name: "速率 t/s",
+		axisLine: { show: false },
+		splitLine: { show: false },
+		axisLabel: {
+			...labelStyle,
+			formatter: (v) => Math.round(v)
+		}
+	});
+	if (hasPercent) addAxis("percent", {
+		name: "%",
+		min: 0,
+		max: 100,
+		axisLine: { show: false },
+		splitLine: { show: false },
+		axisLabel: {
+			...labelStyle,
+			formatter: (v) => v + "%"
+		}
+	});
+	const tokenSeries = series.filter((s) => s.kind === "token");
+	const lastTokenIdx = tokenSeries.length ? series.indexOf(tokenSeries[tokenSeries.length - 1]) : -1;
 	const seriesOpt = series.map((s, idx) => {
-		const isCost = s.kind === "cost";
-		const yIndex = hasToken && hasCost ? isCost ? 1 : 0 : 0;
-		const isTop = idx === lastBarIdx;
+		const kind = s.kind;
+		let type;
+		if (chartType === "bar") type = "bar";
+		else if (chartType === "line" || chartType === "area") type = "line";
+		else type = kind === "token" || kind === "count" ? "bar" : "line";
+		const isStack = kind === "token" && type === "bar";
+		const isTop = idx === lastTokenIdx;
 		let col = s.color;
 		if (col === "#111827" || typeof col === "string" && col.indexOf("var(") === 0) col = themeColor$1("--ds-text", "#111827");
-		if (isCost) return {
+		const base = {
 			name: s.name,
-			type: "line",
-			yAxisIndex: yIndex,
+			type,
+			yAxisIndex: axisIndex[kind] ?? 0,
 			data: s.data,
-			smooth: true,
-			symbol: "circle",
-			symbolSize: 4,
-			lineStyle: {
-				color: col,
-				width: 2
-			},
-			itemStyle: { color: col },
-			emphasis: { focus: "series" }
+			emphasis: { focus: "series" },
+			itemStyle: { color: col }
 		};
-		return {
-			name: s.name,
-			type: "bar",
-			yAxisIndex: yIndex,
-			data: s.data,
-			stack: "total",
-			itemStyle: {
+		if (type === "bar") {
+			base.barMaxWidth = 18;
+			if (isStack) {
+				base.stack = "token";
+				base.barGap = "-100%";
+			}
+			base.itemStyle.borderRadius = isStack ? isTop ? [
+				4,
+				4,
+				0,
+				0
+			] : [
+				0,
+				0,
+				0,
+				0
+			] : [
+				4,
+				4,
+				0,
+				0
+			];
+		} else {
+			base.smooth = true;
+			base.symbol = "circle";
+			base.symbolSize = 4;
+			base.lineStyle = {
 				color: col,
-				borderRadius: isTop ? [
-					4,
-					4,
-					0,
-					0
-				] : [
-					0,
-					0,
-					0,
-					0
-				]
-			},
-			barMaxWidth: 18,
-			barGap: "-100%",
-			emphasis: { focus: "series" }
-		};
+				width: kind === "percent" ? 1.6 : 2,
+				type: kind === "percent" ? "dashed" : "solid"
+			};
+			if (chartType === "area" || chartType === "auto" && kind === "percent") base.areaStyle = {
+				color: col,
+				opacity: .08
+			};
+		}
+		return base;
 	});
 	const cCardInner = themeColor$1("--ds-card-inner", "#FFFFFF");
 	const cText = themeColor$1("--ds-text", "#111827");
@@ -6920,8 +7193,15 @@ async function renderChart(filteredRaw) {
 				let html = `<div style="font-weight:600;margin-bottom:6px;">${esc$2(label)}</div>`;
 				for (const p of params) {
 					const v = p.value;
-					const unit = Y_OPTIONS.find((o) => o.label === p.seriesName)?.unit || "";
-					const disp = unit === "CNY" ? curCur.symbol + Number(v).toFixed(4) + " " + curCur.code : Number(v).toLocaleString() + " " + unit;
+					const meta = Y_OPTIONS.find((o) => o.label === p.seriesName);
+					const kind = meta?.kind;
+					let disp;
+					if (kind === "cost") disp = curCur.symbol + Number(v).toFixed(4) + " " + curCur.code;
+					else if (kind === "percent") disp = Number(v).toFixed(1) + " %";
+					else if (kind === "duration") disp = Number(v).toFixed(2) + " s";
+					else if (kind === "rate") disp = Math.round(Number(v)) + " t/s";
+					else if (kind === "count") disp = Number(v).toLocaleString() + " 次";
+					else disp = Number(v).toLocaleString() + " " + (meta?.unit || "");
 					html += `<div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:8px;height:8px;background:${p.color};border-radius:2px;"></span>${esc$2(p.seriesName)}<span style="margin-left:auto;font-weight:600;">${disp}</span></div>`;
 				}
 				return `<div style="padding:4px 2px;min-width:180px;">${html}</div>`;
@@ -6929,7 +7209,7 @@ async function renderChart(filteredRaw) {
 		},
 		grid: {
 			left: 50,
-			right: hasToken && hasCost ? 50 : 20,
+			right: 20 + rightOffset,
 			top: 8,
 			bottom: 28
 		},
