@@ -5,6 +5,7 @@ import { saveApiKey } from '../services/balance';
 import { doSyncNow, saveWebdavPass } from '../services/sync';
 import { decryptKey } from '../utils/crypto';
 import { applyTheme, resolveTheme, syncThemeWatcher } from '../services/theme';
+import { renderStorageUsageCard, bindStorageUsageCard, refreshStorageUsage } from './storage-usage-card';
 import { PRICING, DEFAULT_PEAK_HOURS, HIDDEN_PRICING_MODELS } from '../constants/pricing';
 import { CN_HOLIDAY_COVERAGE_LABEL } from '../constants/holidays';
 import { isValidDayKey } from '../utils/date';
@@ -246,6 +247,9 @@ export function renderSettings(doc: Document) {
         <div id="aus-delete-status" style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-top:8px;"></div>
       </div>
 
+      <!-- 存储占用 -->
+      ${renderStorageUsageCard(doc)}
+
       <!-- WebDAV -->
       <div class="ds-card"><div style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);margin-bottom:6px;">WebDAV 云同步</div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-bottom:8px;">双向合并，仅同步统计/设置/余额，不含聊天内容与密钥。强制 https。</div>
         <div style="display:grid;gap:8px;">
@@ -389,6 +393,8 @@ export function renderSettings(doc: Document) {
     });
   }
   renderScopePicker();
+  bindStorageUsageCard(doc);
+  void refreshStorageUsage(doc);
   const scopeBtn = doc.getElementById('aus-history-scope-btn');
   const scopeDropdown = doc.getElementById('aus-history-scope-dropdown');
   if (scopeBtn && scopeDropdown) {
