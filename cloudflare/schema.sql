@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS device (
   last_seen INTEGER NOT NULL,
   app_version TEXT,
   st_version TEXT,
+  tt_version TEXT,
   history_count INTEGER NOT NULL DEFAULT 0,
   telemetry_off INTEGER NOT NULL DEFAULT 0,
   browser TEXT,

@@ -16,6 +16,7 @@
 | `migrate-backfill-device-totals.sql` | 只做累计列回填与校验（可安全重复执行），用于「列已存在」或需要重新回填时 |
 | `migrate-hourly.sql` | 已有库升级到小时粒度趋势（新增 `device_hourly` 表与索引，不改动既有表，可安全重复执行） |
 | `migrate-st-version.sql` | 已有库补充 `device.st_version` 酒馆版本号列（不改动既有数据，重复执行会提示列已存在） |
+| `migrate-tt-version.sql` | 已有库补充 `device.tt_version` TauriTavern 版本号列（不改动既有数据，未执行时 Worker 自动降级并保留 `st_version`） |
 | `migrate-device-metrics.sql` | 已有库补充 `device.history_count` 与 `device.telemetry_off` 两列（未执行时 Worker 自动回退旧列集合，不影响上报） |
 | `wrangler.toml` | Worker 配置模板（D1 绑定、Cron、文本模块规则）；`database_id` 保持占位符，真实值放本地 `wrangler.local.toml` |
 | `dashboard.html` | 看板页模板，作为文本模块打包进 Worker |
@@ -86,6 +87,18 @@ npx wrangler d1 execute api_usage_stat --remote --file cloudflare/migrate-st-ver
 - 只新增一列，不改动既有数据；重复执行会提示 `duplicate column name`，正常忽略即可。
 - **未执行迁移也不会影响上报**：Worker 会先尝试带该列的写入，失败后自动回退到旧列集合，`/collect` 仍返回 `204`；只是酒馆版本分布暂时为空。
 
+### 已有库升级（新增 TauriTavern 版本号列）
+
+看板「用户与设备画像」中的 TauriTavern 版本分布依赖 `device.tt_version`：
+
+```bash
+npx wrangler d1 execute api_usage_stat --remote --file cloudflare/migrate-tt-version.sql
+```
+
+- 该列只在 TauriTavern 宿主下由客户端上报（取宿主 `/version` 的 `tauriVersion`），上游 SillyTavern 不产生该字段，因此分布只统计真正上报过的设备。
+- **未执行迁移也不会影响上报**：Worker 的降级链为「完整列 → 无 `tt_version` 但保留 `st_version` → 旧列集合」，`/collect` 始终返回 `204`。
+- 历史行保持 `NULL` 直到该设备下次上报，无法回溯补采。
+
 > 仓库内的 `wrangler.toml` 只保留占位符，请不要把真实的 `database_id`、账号 ID、API Token 等信息写进任何被提交的文件；`wrangler.local.toml` 与 `.dev.vars` 已在 `.gitignore` 中忽略。
 
 部署成功后会输出访问地址：
@@ -111,7 +124,7 @@ npx wrangler d1 execute api_usage_stat --remote --file cloudflare/migrate-st-ver
 | 总计速览 | 不重复累计用户、累计打开面板、累计使用时长、人均使用时长；当日新增用户 / 打开 / 时长 / 不重复用户（按北京时间） |
 | 增长与活跃趋势 | 累计用户趋势、每日打开面板次数、每日不重复用户数、每日面板打开占比（8 条线，按面板固定配色） |
 | 面板使用构成 | 各面板全部时间累计打开次数（横向长条） |
-| 用户与设备画像 | 扩展版本分布、酒馆版本分布、CPU 架构饼图、操作系统饼图、浏览器 / 浏览器主版本 / 语言 / 宽度分桶 / 深浅色 / 显示形态 / 指针类型 / 时区（横向长条） |
+| 用户与设备画像 | 扩展版本分布、酒馆版本分布、TauriTavern 版本分布、CPU 架构饼图、操作系统饼图、浏览器 / 浏览器主版本 / 语言 / 宽度分桶 / 深浅色 / 显示形态 / 指针类型 / 时区（横向长条） |
 | 使用时长与渲染性能 | 每设备累计使用时长分布（直方图）、按扩展版本区分的渲染耗时（横向长条） |
 
 交互与口径：
@@ -200,7 +213,7 @@ Cloudflare 免费额度（2026 年 4 月官方文档）：Workers **10 万请求
 
 ## 隐私边界
 
-采集字段严格限定为：匿名随机标识、上报序号、客户端本地日期、**上报时刻（时间戳，服务端归一为分钟精度）**、时区偏移、扩展版本、**酒馆版本号**、浏览器名与主版本、操作系统、CPU 架构、语言、窄屏分桶、深色偏好、standalone、触屏标记、8 个页面使用次数、打开面板次数、会话时长、面板渲染耗时分桶。分钟级时间戳仅用于按小时聚合趋势，旧版本扩展不含该字段时由服务端接收时间兜底，不影响上报。
+采集字段严格限定为：匿名随机标识、上报序号、客户端本地日期、**上报时刻（时间戳，服务端归一为分钟精度）**、时区偏移、扩展版本、**酒馆版本号**、**TauriTavern 版本号（仅该宿主有值）**、浏览器名与主版本、操作系统、CPU 架构、语言、窄屏分桶、深色偏好、standalone、触屏标记、8 个页面使用次数、打开面板次数、会话时长、面板渲染耗时分桶。分钟级时间戳仅用于按小时聚合趋势，旧版本扩展不含该字段时由服务端接收时间兜底，不影响上报。
 
 服务端存储：
 

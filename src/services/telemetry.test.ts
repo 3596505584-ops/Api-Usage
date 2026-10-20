@@ -28,6 +28,7 @@ import {
   mergeCounters,
   parseBrowser,
   parseOs,
+  parseTavernVersionPayload,
   probeEnv,
   renderBucketIndex,
   resetIdentity,
@@ -198,7 +199,7 @@ describe('环境探测', () => {
     expect(env.dark).toBe(true);
     expect(env.touch).toBe(true);
     expect(env.arch).toBe('unknown');
-    expect(Object.keys(env).sort()).toEqual(['arch', 'b', 'bv', 'dark', 'lang', 'os', 'standalone', 'stv', 'touch', 'w']);
+    expect(Object.keys(env).sort()).toEqual(['arch', 'b', 'bv', 'dark', 'lang', 'os', 'standalone', 'stv', 'touch', 'ttv', 'w']);
   });
 
   it('从酒馆上下文读取版本号并清洗非法字符', () => {
@@ -210,6 +211,47 @@ describe('环境探测', () => {
     vi.stubGlobal('SillyTavern', { getContext: () => ({ version: '1.13.5' }) });
     expect(probeEnv().stv).toBe('1.13.5');
     vi.stubGlobal('SillyTavern', undefined);
+  });
+
+  it('解析 /version 响应：SillyTavern 与 TauriTavern 都用 pkgVersion', () => {
+    // 上游 SillyTavern：只有 pkgVersion，没有 version 字段
+    expect(parseTavernVersionPayload(JSON.stringify({
+      agent: 'SillyTavern:1.19.0:Cohee#1207',
+      pkgVersion: '1.19.0',
+      gitRevision: 'abc1234',
+      gitBranch: 'release',
+      commitDate: '2026-09-01',
+      isLatest: true,
+    }))).toEqual({ stv: '1.19.0', ttv: '' });
+
+    // TauriTavern：pkgVersion 是内嵌前端基线版本，tauriVersion 才是 TT 自身版本
+    expect(parseTavernVersionPayload(JSON.stringify({
+      agent: 'SillyTavern:1.18.0:TauriTavern',
+      pkgVersion: '1.18.0',
+      tauriVersion: '2.3.0',
+      gitRevision: 'def5678',
+      gitBranch: 'main',
+      defaultUpdateChannel: 'stable',
+    }))).toEqual({ stv: '1.18.0', ttv: '2.3.0' });
+
+    // 兼容旧的 version 字段与纯文本响应
+    expect(parseTavernVersionPayload(JSON.stringify({ version: '1.12.14' }))).toEqual({ stv: '1.12.14', ttv: '' });
+    expect(parseTavernVersionPayload('1.12.14')).toEqual({ stv: '1.12.14', ttv: '' });
+  });
+
+  it('解析 /version 响应：脏数据与非版本内容一律丢弃', () => {
+    // 登录页/错误页 HTML 不能被当成版本号
+    expect(parseTavernVersionPayload('<html><body>login</body></html>')).toEqual({ stv: '', ttv: '' });
+    expect(parseTavernVersionPayload('')).toEqual({ stv: '', ttv: '' });
+    expect(parseTavernVersionPayload('SillyTavern')).toEqual({ stv: '', ttv: '' });
+    // 非法字符被清洗，超长被截断
+    expect(parseTavernVersionPayload(JSON.stringify({ pkgVersion: 'v1.13.5-beta/恶意' }))).toEqual({ stv: 'v1.13.5-beta', ttv: '' });
+    const huge = parseTavernVersionPayload(JSON.stringify({ pkgVersion: '1'.repeat(40), tauriVersion: '2'.repeat(40) }));
+    expect(huge.stv.length).toBeLessThanOrEqual(16);
+    expect(huge.ttv.length).toBeLessThanOrEqual(16);
+    // 非对象 JSON
+    expect(parseTavernVersionPayload('123')).toEqual({ stv: '', ttv: '' });
+    expect(parseTavernVersionPayload('null')).toEqual({ stv: '', ttv: '' });
   });
 
   it('优先使用 UA-CH 品牌信息', () => {

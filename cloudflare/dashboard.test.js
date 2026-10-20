@@ -47,6 +47,7 @@ const summaryData = {
     browser: [{ label: 'Chrome', count: 30 }, { label: 'Firefox', count: 12 }],
     browserVersion: [{ label: 'Firefox 128', count: 30 }, { label: 'Chrome 141', count: 12 }],
     stVersion: [{ label: '1.13.4', count: 30 }, { label: '1.13.5', count: 12 }],
+    ttVersion: [{ label: '2.3.0', count: 9 }, { label: '2.2.1', count: 4 }],
     os: [{ label: 'Windows', count: 30 }, { label: 'Android', count: 12 }],
     arch: [{ label: 'x86_64', count: 33 }, { label: 'arm64', count: 9 }],
     lang: [{ label: 'zh-CN', count: 40 }, { label: 'en-US', count: 2 }],
@@ -356,6 +357,11 @@ describe('看板页渲染（图表库可用）', () => {
     const stVersionLabels = option('env-st-version').yAxis.data;
     expect(stVersionLabels[stVersionLabels.length - 1]).toBe('1.13.5');
     expect(stVersionLabels[0]).toBe('1.13.4');
+
+    // TauriTavern 版本分布：同样按版本号降序
+    const ttVersionLabels = option('env-tt-version').yAxis.data;
+    expect(ttVersionLabels[ttVersionLabels.length - 1]).toBe('2.3.0');
+    expect(ttVersionLabels[0]).toBe('2.2.1');
 
     expect(harness.localGetEl('lib-banner').hidden).toBe(true);
     expect(harness.localGetEl('fallback-pages').hidden).toBe(true);

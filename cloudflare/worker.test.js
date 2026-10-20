@@ -50,6 +50,10 @@ function createDb(fixtures, options) {
       });
       // 模拟既有库尚未执行 migrate-hourly.sql：带小时表的三条事务整体失败
       if (opts.failTripleBatch && stmts.length === 3) throw new Error('no such table: device_hourly');
+      // 模拟既有库尚未执行 migrate-tt-version.sql：含 tt_version 列的语句整体失败
+      if (opts.failTtColumn && stmts[0] && String(stmts[0].sql).includes('tt_version')) {
+        throw new Error('no such column: tt_version');
+      }
       // 模拟既有库尚未执行 migrate-st-version.sql：含 st_version 列的语句整体失败
       if (opts.failStvColumn && stmts[0] && String(stmts[0].sql).includes('st_version')) {
         throw new Error('no such column: st_version');
@@ -64,7 +68,7 @@ function deviceRow(overrides) {
     app_version: '3.1.2',
     browser: 'Chrome', browser_major: '141', os: 'Windows', arch: 'x86_64',
     lang: 'zh-CN', width_bucket: 'gt1024', dark: 0, standalone: 0, touch: 0,
-    tz_offset: 8, first_day: YESTERDAY, first_seen: 1000, st_version: '1.13.5',
+    tz_offset: 8, first_day: YESTERDAY, first_seen: 1000, st_version: '1.13.5', tt_version: null,
     history_count: 128, telemetry_off: 0,
     opens_total: 5, dur_ms_total: 8 * MIN,
   };
@@ -236,10 +240,12 @@ describe('/collect 写入契约保持不变', () => {
     expect(batch.sqls[0]).toContain('INSERT INTO device');
     expect(batch.sqls[1]).toContain('INSERT INTO device_daily');
     expect(batch.sqls[2]).toContain('INSERT INTO device_hourly');
-    // 酒馆版本号列在设备语句末位；小时桶为北京时间小时键；时间戳为分钟精度
+    // 设备语句末位依次为 st_version / tt_version / history_count / telemetry_off；
+    // 小时桶为北京时间小时键；时间戳为分钟精度
     expect(batch.params[0][25]).toBe('1.13.5');
-    expect(batch.params[0][26]).toBe(0);
+    expect(batch.params[0][26]).toBe('');
     expect(batch.params[0][27]).toBe(0);
+    expect(batch.params[0][28]).toBe(0);
     expect(batch.params[2][0]).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}$/);
     expect(batch.params[2][19] % 60000).toBe(0);
   });
@@ -278,8 +284,9 @@ describe('/collect 写入契约保持不变', () => {
     expect(res.status).toBe(204);
     const batch = db.calls.find((call) => call.batch);
     expect(batch.batch).toBe(3);
-    expect(batch.params[0][26]).toBe(7);
-    expect(batch.params[0][27]).toBe(1);
+    // 参数尾部依次为 st_version / tt_version / history_count / telemetry_off
+    expect(batch.params[0][27]).toBe(7);
+    expect(batch.params[0][28]).toBe(1);
   });
 
   it('酒馆版本列尚未迁移时回退旧列集合，上报仍返回 204', async () => {
@@ -291,8 +298,23 @@ describe('/collect 写入契约保持不变', () => {
     }), env, { waitUntil() {} });
     expect(res.status).toBe(204);
     const batches = db.calls.filter((call) => call.batch);
+    expect(batches.map((call) => call.batch)).toEqual([3, 2, 2, 2]);
+    expect(batches[3].sqls[0]).not.toContain('st_version');
+  });
+
+  it('TauriTavern 版本列尚未迁移时保留酒馆版本列写入', async () => {
+    const { env, db } = makeEnv({}, { failTtColumn: true });
+    const res = await worker.fetch(new Request('https://stat.example.com/collect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+      body: legacyBody(),
+    }), env, { waitUntil() {} });
+    expect(res.status).toBe(204);
+    const batches = db.calls.filter((call) => call.batch);
+    // 前两次（含 tt_version）失败，第三次落到只含 st_version 的语句并成功
     expect(batches.map((call) => call.batch)).toEqual([3, 2, 2]);
-    expect(batches[2].sqls[0]).not.toContain('st_version');
+    expect(batches[2].sqls[0]).toContain('st_version');
+    expect(batches[2].sqls[0]).not.toContain('tt_version');
   });
 
   it('非法上报返回 400 且不写库', async () => {

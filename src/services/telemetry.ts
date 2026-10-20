@@ -59,8 +59,10 @@ export type TelemetryEnv = {
   standalone: boolean;
   /** 是否粗指针/触屏设备 */
   touch: boolean;
-  /** 酒馆版本号（无法探测时为空字符串） */
+  /** 酒馆版本号（SillyTavern 前端版本；TauriTavern 下为内嵌 ST 基线版本，无法探测时为空字符串） */
   stv: string;
+  /** TauriTavern 自身版本号（仅 TauriTavern 宿主有值，上游 SillyTavern 为空字符串） */
+  ttv: string;
 };
 
 export type TelemetryCounters = {
@@ -356,6 +358,7 @@ export function probeEnv(): TelemetryEnv {
     standalone: mediaMatches('(display-mode: standalone)') || n?.standalone === true,
     touch: mediaMatches('(pointer: coarse)') || Number(n?.maxTouchPoints || 0) > 0,
     stv: tavernVersionFromContext(),
+    ttv: '',
   };
 }
 
@@ -387,29 +390,73 @@ function tavernVersionFromContext(): string {
   return '';
 }
 
+/** 版本探测是否已经成功拿到需要的信息，成功前按下面的间隔重试 */
+let tavernVersionSettled = false;
+let tavernVersionAttempts = 0;
+/** 首次失败后的重试间隔：覆盖酒馆/宿主启动较慢、路由尚未就绪的情况 */
+const TAVERN_VERSION_RETRY_DELAYS_MS = [4000, 15000, 60000, 180000];
+const MAX_TAVERN_VERSION_ATTEMPTS = TAVERN_VERSION_RETRY_DELAYS_MS.length + 1;
+
 /**
- * 异步兜底：上下文没有版本号时读一次酒馆同源 `/version` 接口并缓存。
- * 只发这一个本地请求，不携带任何统计内容；失败静默忽略。
+ * 解析 `/version` 的响应体。
+ *
+ * 上游 SillyTavern 与 TauriTavern 都返回 `pkgVersion`（**不是** `version`）：
+ * - SillyTavern：`{ agent, pkgVersion, gitRevision, gitBranch, commitDate, isLatest }`
+ * - TauriTavern：`{ agent, pkgVersion, tauriVersion, gitRevision, gitBranch, defaultUpdateChannel }`，
+ *   其中 `pkgVersion` 保持与内嵌前端基线一致以兼容上游扩展，`tauriVersion` 才是 TauriTavern 自身版本。
+ *
+ * 同时兼容 `version` 字段与纯文本响应（早期版本或第三方宿主）。
  */
-async function refineTavernVersion(): Promise<void> {
+export function parseTavernVersionPayload(text: string): { stv: string; ttv: string } {
+  const raw = String(text ?? '');
+  const empty = { stv: '', ttv: '' };
+  if (!raw.trim()) return empty;
   try {
-    if (!envCache || envCache.stv) return;
+    const data: any = JSON.parse(raw);
+    if (!data || typeof data !== 'object') return empty;
+    return {
+      stv: sanitizeVersion(data.pkgVersion) || sanitizeVersion(data.version) || sanitizeVersion(data.stVersion),
+      ttv: sanitizeVersion(data.tauriVersion) || sanitizeVersion(data.ttVersion),
+    };
+  } catch {
+    // 非 JSON 响应只接受很短的文本，避免把登录页/错误页的 HTML 误当版本号
+    const trimmed = raw.trim();
+    return { stv: trimmed.length <= 16 ? sanitizeVersion(trimmed) : '', ttv: '' };
+  }
+}
+
+/**
+ * 异步读取酒馆同源 `/version` 接口补充版本号（只发这一个本地请求，不携带任何统计内容）。
+ * 首次失败后按退避重试，最多 MAX_TAVERN_VERSION_ATTEMPTS 次；成功一次即停止。
+ */
+async function refineTavernVersion(force = false): Promise<void> {
+  if (!envCache) return;
+  if (tavernVersionSettled && !force) return;
+  if (!force && tavernVersionAttempts >= MAX_TAVERN_VERSION_ATTEMPTS) return;
+  tavernVersionAttempts += 1;
+  let ok = false;
+  try {
     const g: any = globalThis as any;
     const ctx: any = g?.SillyTavern?.getContext?.();
     const headers = typeof ctx?.getRequestHeaders === 'function' ? ctx.getRequestHeaders() : undefined;
     const res = await fetch('/version', { headers, credentials: 'same-origin' });
-    if (!res?.ok) return;
-    const text = await res.text();
-    let version = '';
-    try {
-      const data: any = JSON.parse(text);
-      version = sanitizeVersion(data?.version);
-    } catch {
-      // 非 JSON 响应只接受很短的文本，避免把登录页/错误页的 HTML 误当版本号
-      version = text.trim().length <= 16 ? sanitizeVersion(text) : '';
+    if (res?.ok) {
+      const parsed = parseTavernVersionPayload(await res.text());
+      if (parsed.stv || parsed.ttv) {
+        if (!envCache.stv && parsed.stv) envCache.stv = parsed.stv;
+        if (!envCache.ttv && parsed.ttv) envCache.ttv = parsed.ttv;
+        ok = true;
+      }
     }
-    if (envCache && version) envCache.stv = version;
   } catch {}
+  if (ok) {
+    tavernVersionSettled = true;
+    return;
+  }
+  const nextDelay = TAVERN_VERSION_RETRY_DELAYS_MS[tavernVersionAttempts - 1];
+  if (!force && nextDelay != null) {
+    try { setTimeout(() => { void refineTavernVersion(); }, nextDelay); } catch {}
+  }
 }
 
 /** 尽力补充 CPU 架构（Chromium 高熵值，失败保持 unknown） */
@@ -610,6 +657,7 @@ function buildPayload(
   const env = envCache ?? probeEnv();
   // 异步补全可能还没回来，发送前再尝试一次同步来源，尽量让首报也带上酒馆版本号
   if (!env.stv) env.stv = tavernVersionFromContext();
+
   return {
     v: 1,
     id: identity.id,
@@ -804,6 +852,8 @@ export function __resetTelemetryStateForTest(): void {
   lastFlushAt = 0;
   inFlight = false;
   bound = false;
+  tavernVersionSettled = false;
+  tavernVersionAttempts = 0;
   if (retryTimer) {
     try { clearTimeout(retryTimer); } catch {}
     retryTimer = null;

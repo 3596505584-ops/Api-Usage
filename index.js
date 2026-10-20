@@ -1558,7 +1558,8 @@ function probeEnv() {
 		dark: mediaMatches("(prefers-color-scheme: dark)"),
 		standalone: mediaMatches("(display-mode: standalone)") || n?.standalone === true,
 		touch: mediaMatches("(pointer: coarse)") || Number(n?.maxTouchPoints || 0) > 0,
-		stv: tavernVersionFromContext()
+		stv: tavernVersionFromContext(),
+		ttv: ""
 	};
 }
 /** 版本号清洗：只保留数字、字母与 . + -，最长 16 字符；不含数字视为无效 */
@@ -1591,28 +1592,84 @@ function tavernVersionFromContext() {
 	} catch {}
 	return "";
 }
+/** 版本探测是否已经成功拿到需要的信息，成功前按下面的间隔重试 */
+var tavernVersionSettled = false;
+var tavernVersionAttempts = 0;
+/** 首次失败后的重试间隔：覆盖酒馆/宿主启动较慢、路由尚未就绪的情况 */
+var TAVERN_VERSION_RETRY_DELAYS_MS = [
+	4e3,
+	15e3,
+	6e4,
+	18e4
+];
+var MAX_TAVERN_VERSION_ATTEMPTS = TAVERN_VERSION_RETRY_DELAYS_MS.length + 1;
 /**
-* 异步兜底：上下文没有版本号时读一次酒馆同源 `/version` 接口并缓存。
-* 只发这一个本地请求，不携带任何统计内容；失败静默忽略。
+* 解析 `/version` 的响应体。
+*
+* 上游 SillyTavern 与 TauriTavern 都返回 `pkgVersion`（**不是** `version`）：
+* - SillyTavern：`{ agent, pkgVersion, gitRevision, gitBranch, commitDate, isLatest }`
+* - TauriTavern：`{ agent, pkgVersion, tauriVersion, gitRevision, gitBranch, defaultUpdateChannel }`，
+*   其中 `pkgVersion` 保持与内嵌前端基线一致以兼容上游扩展，`tauriVersion` 才是 TauriTavern 自身版本。
+*
+* 同时兼容 `version` 字段与纯文本响应（早期版本或第三方宿主）。
 */
-async function refineTavernVersion() {
+function parseTavernVersionPayload(text) {
+	const raw = String(text ?? "");
+	const empty = {
+		stv: "",
+		ttv: ""
+	};
+	if (!raw.trim()) return empty;
 	try {
-		if (!envCache || envCache.stv) return;
+		const data = JSON.parse(raw);
+		if (!data || typeof data !== "object") return empty;
+		return {
+			stv: sanitizeVersion(data.pkgVersion) || sanitizeVersion(data.version) || sanitizeVersion(data.stVersion),
+			ttv: sanitizeVersion(data.tauriVersion) || sanitizeVersion(data.ttVersion)
+		};
+	} catch {
+		const trimmed = raw.trim();
+		return {
+			stv: trimmed.length <= 16 ? sanitizeVersion(trimmed) : "",
+			ttv: ""
+		};
+	}
+}
+/**
+* 异步读取酒馆同源 `/version` 接口补充版本号（只发这一个本地请求，不携带任何统计内容）。
+* 首次失败后按退避重试，最多 MAX_TAVERN_VERSION_ATTEMPTS 次；成功一次即停止。
+*/
+async function refineTavernVersion(force = false) {
+	if (!envCache) return;
+	if (tavernVersionSettled && !force) return;
+	if (!force && tavernVersionAttempts >= MAX_TAVERN_VERSION_ATTEMPTS) return;
+	tavernVersionAttempts += 1;
+	let ok = false;
+	try {
 		const ctx = globalThis?.SillyTavern?.getContext?.();
 		const headers = typeof ctx?.getRequestHeaders === "function" ? ctx.getRequestHeaders() : void 0;
 		const res = await fetch("/version", {
 			headers,
 			credentials: "same-origin"
 		});
-		if (!res?.ok) return;
-		const text = await res.text();
-		let version = "";
-		try {
-			version = sanitizeVersion(JSON.parse(text)?.version);
-		} catch {
-			version = text.trim().length <= 16 ? sanitizeVersion(text) : "";
+		if (res?.ok) {
+			const parsed = parseTavernVersionPayload(await res.text());
+			if (parsed.stv || parsed.ttv) {
+				if (!envCache.stv && parsed.stv) envCache.stv = parsed.stv;
+				if (!envCache.ttv && parsed.ttv) envCache.ttv = parsed.ttv;
+				ok = true;
+			}
 		}
-		if (envCache && version) envCache.stv = version;
+	} catch {}
+	if (ok) {
+		tavernVersionSettled = true;
+		return;
+	}
+	const nextDelay = TAVERN_VERSION_RETRY_DELAYS_MS[tavernVersionAttempts - 1];
+	if (!force && nextDelay != null) try {
+		setTimeout(() => {
+			refineTavernVersion();
+		}, nextDelay);
 	} catch {}
 }
 /** 尽力补充 CPU 架构（Chromium 高熵值，失败保持 unknown） */

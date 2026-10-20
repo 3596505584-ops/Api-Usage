@@ -118,6 +118,7 @@ export function normalizePayload(raw, now = Date.now()) {
     standalone: envRaw.standalone === true ? 1 : 0,
     touch: envRaw.touch === true ? 1 : 0,
     stv: toVersion(envRaw.stv, 16),
+  ttv: toVersion(envRaw.ttv, 16),
   };
 
   const pages = {};
