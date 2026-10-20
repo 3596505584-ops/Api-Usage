@@ -663,24 +663,35 @@ async function renderChart(filteredRaw: any[]) {
     // 费用单位动态换算：CNY→USD 时图表数据需除以汇率
     for (const s of series) if (s.kind==='cost') s.data = s.data.map((v:any)=> curCur.code==='USD' ? Number((Number(v)/curCur.rate).toFixed(4)) : v);
   }
+  // 窄屏（手机竖屏）压缩轴占位：隐藏轴名、缩小字号、Token 用 万/k 缩写，避免左右轴挤掉绘图区
+  const narrow = w < 560;
+  const labelSize = narrow ? 10 : 12;
+  const axisGap = narrow ? 40 : 46;
+  const compactNum = (v: number) => {
+    const n = Number(v);
+    if (!isFinite(n)) return '0';
+    if (Math.abs(n) >= 10000) return (n / 10000).toFixed(Math.abs(n) % 10000 ? 1 : 0) + '万';
+    if (Math.abs(n) >= 1000) return (n / 1000).toFixed(Math.abs(n) % 1000 ? 1 : 0) + 'k';
+    return String(Math.round(n));
+  };
   // 多轴：左轴 token（无 token 时放请求数），其余按类型依次挂右侧并偏移，避免互相压线
   const yAxis: any[] = [];
   const axisIndex: Record<string, number> = {};
   let rightOffset = 0;
-  const labelStyle = { color: cText3, fontSize: 12 };
-  const addAxis = (key: string, cfg: any, left = false) => {
+  const labelStyle = { color: cText3, fontSize: labelSize };
+  const addAxis = (key: string, cfg: any, left = false, gap = axisGap) => {
     const axis: any = { type:'value', ...cfg };
     if (left) axis.position = 'left';
-    else { axis.position = 'right'; axis.offset = rightOffset; rightOffset += 46; }
+    else { axis.position = 'right'; axis.offset = rightOffset; rightOffset += gap; }
     axisIndex[key] = yAxis.length;
     yAxis.push(axis);
   };
-  if (hasToken) addAxis('token', { name:'tokens', axisLine:{show:false}, splitLine:{lineStyle:{color:cCard}}, axisLabel: labelStyle }, true);
-  if (hasCount) addAxis('count', { name:'次', minInterval:1, axisLine:{show:false}, splitLine:{show:false}, axisLabel: labelStyle }, !hasToken);
-  if (hasCost) addAxis('cost', { name: curCur.code, axisLine:{show:false}, splitLine:{show:false}, axisLabel:{ ...labelStyle, formatter:(v:number)=> curCur.symbol + Number(v).toFixed(4) } });
-  if (hasDuration) addAxis('duration', { name:'耗时 s', axisLine:{show:false}, splitLine:{show:false}, axisLabel:{ ...labelStyle, formatter:(v:number)=> Number(v).toFixed(1) } });
-  if (hasRate) addAxis('rate', { name:'速率 t/s', axisLine:{show:false}, splitLine:{show:false}, axisLabel:{ ...labelStyle, formatter:(v:number)=> Math.round(v) } });
-  if (hasPercent) addAxis('percent', { name:'%', min:0, max:100, axisLine:{show:false}, splitLine:{show:false}, axisLabel:{ ...labelStyle, formatter:(v:number)=> v + '%' } });
+  if (hasToken) addAxis('token', { name: narrow ? '' : 'tokens', axisLine:{show:false}, splitLine:{lineStyle:{color:cCard}}, axisLabel: { ...labelStyle, formatter: compactNum } }, true);
+  if (hasCount) addAxis('count', { name: narrow ? '' : '次', minInterval:1, axisLine:{show:false}, splitLine:{show:false}, axisLabel: narrow ? { show:false } : labelStyle }, !hasToken, narrow ? 12 : axisGap);
+  if (hasCost) addAxis('cost', { name: narrow ? '' : curCur.code, axisLine:{show:false}, splitLine:{show:false}, axisLabel:{ ...labelStyle, formatter:(v:number)=> curCur.symbol + Number(v).toFixed(narrow ? 3 : 4) } });
+  if (hasDuration) addAxis('duration', { name: narrow ? '' : '耗时 s', axisLine:{show:false}, splitLine:{show:false}, axisLabel:{ ...labelStyle, formatter:(v:number)=> Number(v).toFixed(1) } });
+  if (hasRate) addAxis('rate', { name: narrow ? '' : '速率 t/s', axisLine:{show:false}, splitLine:{show:false}, axisLabel:{ ...labelStyle, formatter:(v:number)=> Math.round(v) } });
+  if (hasPercent) addAxis('percent', { name: narrow ? '' : '%', min:0, max:100, axisLine:{show:false}, splitLine:{show:false}, axisLabel:{ ...labelStyle, formatter:(v:number)=> v + '%' } });
   const tokenSeries = series.filter(s => s.kind === 'token');
   const lastTokenIdx = tokenSeries.length ? series.indexOf(tokenSeries[tokenSeries.length - 1]) : -1;
   const seriesOpt = series.map((s, idx)=>{
@@ -753,7 +764,7 @@ async function renderChart(filteredRaw: any[]) {
         return `<div style="padding:4px 2px;min-width:180px;">${html}</div>`;
       }
     },
-    grid: { left: 50, right: 20 + rightOffset, top: 8, bottom: 28 },
+    grid: { left: narrow ? 40 : 50, right: 12 + rightOffset, top: 8, bottom: 28 },
     dataZoom: needZoom ? [{ type:'inside', xAxisIndex:0, start: Math.max(0, (labels.length - maxLabels) / labels.length * 100), end: 100, zoomOnMouseWheel: false, moveOnMouseMove: true }] : undefined,
     xAxis: { type:'category', data: labels, axisLine:{lineStyle:{color:cBorder}}, axisLabel:{color:cText3,fontSize: 12,interval: xInterval,rotate: labels.length>12?30:0, hideOverlap: false} },
     yAxis: yAxis.length?yAxis:{ type:'value', axisLabel:{color:cText3,fontSize: 12} },

@@ -7039,14 +7039,24 @@ async function renderChart(filteredRaw) {
 	if (hasCost) {
 		for (const s of series) if (s.kind === "cost") s.data = s.data.map((v) => curCur.code === "USD" ? Number((Number(v) / curCur.rate).toFixed(4)) : v);
 	}
+	const narrow = w < 560;
+	const labelSize = narrow ? 10 : 12;
+	const axisGap = narrow ? 40 : 46;
+	const compactNum = (v) => {
+		const n = Number(v);
+		if (!isFinite(n)) return "0";
+		if (Math.abs(n) >= 1e4) return (n / 1e4).toFixed(Math.abs(n) % 1e4 ? 1 : 0) + "万";
+		if (Math.abs(n) >= 1e3) return (n / 1e3).toFixed(Math.abs(n) % 1e3 ? 1 : 0) + "k";
+		return String(Math.round(n));
+	};
 	const yAxis = [];
 	const axisIndex = {};
 	let rightOffset = 0;
 	const labelStyle = {
 		color: cText3,
-		fontSize: 12
+		fontSize: labelSize
 	};
-	const addAxis = (key, cfg, left = false) => {
+	const addAxis = (key, cfg, left = false, gap = axisGap) => {
 		const axis = {
 			type: "value",
 			...cfg
@@ -7055,35 +7065,38 @@ async function renderChart(filteredRaw) {
 		else {
 			axis.position = "right";
 			axis.offset = rightOffset;
-			rightOffset += 46;
+			rightOffset += gap;
 		}
 		axisIndex[key] = yAxis.length;
 		yAxis.push(axis);
 	};
 	if (hasToken) addAxis("token", {
-		name: "tokens",
+		name: narrow ? "" : "tokens",
 		axisLine: { show: false },
 		splitLine: { lineStyle: { color: cCard } },
-		axisLabel: labelStyle
+		axisLabel: {
+			...labelStyle,
+			formatter: compactNum
+		}
 	}, true);
 	if (hasCount) addAxis("count", {
-		name: "次",
+		name: narrow ? "" : "次",
 		minInterval: 1,
 		axisLine: { show: false },
 		splitLine: { show: false },
-		axisLabel: labelStyle
-	}, !hasToken);
+		axisLabel: narrow ? { show: false } : labelStyle
+	}, !hasToken, narrow ? 12 : axisGap);
 	if (hasCost) addAxis("cost", {
-		name: curCur.code,
+		name: narrow ? "" : curCur.code,
 		axisLine: { show: false },
 		splitLine: { show: false },
 		axisLabel: {
 			...labelStyle,
-			formatter: (v) => curCur.symbol + Number(v).toFixed(4)
+			formatter: (v) => curCur.symbol + Number(v).toFixed(narrow ? 3 : 4)
 		}
 	});
 	if (hasDuration) addAxis("duration", {
-		name: "耗时 s",
+		name: narrow ? "" : "耗时 s",
 		axisLine: { show: false },
 		splitLine: { show: false },
 		axisLabel: {
@@ -7092,7 +7105,7 @@ async function renderChart(filteredRaw) {
 		}
 	});
 	if (hasRate) addAxis("rate", {
-		name: "速率 t/s",
+		name: narrow ? "" : "速率 t/s",
 		axisLine: { show: false },
 		splitLine: { show: false },
 		axisLabel: {
@@ -7101,7 +7114,7 @@ async function renderChart(filteredRaw) {
 		}
 	});
 	if (hasPercent) addAxis("percent", {
-		name: "%",
+		name: narrow ? "" : "%",
 		min: 0,
 		max: 100,
 		axisLine: { show: false },
@@ -7208,8 +7221,8 @@ async function renderChart(filteredRaw) {
 			}
 		},
 		grid: {
-			left: 50,
-			right: 20 + rightOffset,
+			left: narrow ? 40 : 50,
+			right: 12 + rightOffset,
 			top: 8,
 			bottom: 28
 		},
