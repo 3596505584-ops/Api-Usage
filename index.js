@@ -614,16 +614,61 @@ function saveWebdavPass(pass) {
 }
 //#endregion
 //#region src/services/theme.ts
-function applyTheme(theme) {
-	const mode = (theme || state$2.settings.theme || "light") === "dark" ? "dark" : "light";
+var DARK_QUERY = "(prefers-color-scheme: dark)";
+/** 归一化用户设置值，非法值一律视为 light（保持旧版本行为） */
+function normalizeThemeMode(v) {
+	return v === "dark" || v === "auto" ? v : "light";
+}
+/** 取宿主窗口：面板可能运行在 iframe 中，优先 parent */
+function hostWindow() {
 	try {
-		const doc = window.parent?.document ?? document;
+		const p = window?.parent;
+		if (p && typeof p.matchMedia === "function") return p;
+	} catch {}
+	try {
+		if (typeof window !== "undefined" && typeof window.matchMedia === "function") return window;
+	} catch {}
+	return null;
+}
+/** 系统是否处于深色（不支持 prefers-color-scheme 时返回 false） */
+function systemPrefersDark(win) {
+	const w = win ?? hostWindow();
+	try {
+		if (!w || typeof w.matchMedia !== "function") return false;
+		return !!w.matchMedia(DARK_QUERY).matches;
+	} catch {
+		return false;
+	}
+}
+/** 把设置值解析为真正生效的 light / dark */
+function resolveTheme(mode, win) {
+	const m = normalizeThemeMode(mode);
+	if (m === "dark") return "dark";
+	if (m === "auto") return systemPrefersDark(win) ? "dark" : "light";
+	return "light";
+}
+function getDoc$11() {
+	try {
+		const parentDoc = window.parent?.document;
+		if (parentDoc) return parentDoc;
+	} catch {}
+	try {
+		return document;
+	} catch {
+		return {};
+	}
+}
+/** 仅同步 DOM 属性，不读设置、不落盘 */
+function paintTheme(mode, resolved) {
+	const r = resolved ?? resolveTheme(mode);
+	try {
+		const doc = getDoc$11();
 		const panel = doc.getElementById("aus-panel");
-		if (panel) panel.setAttribute("data-ds-theme", mode);
+		if (panel) panel.setAttribute("data-ds-theme", r);
 		const overlay = doc.getElementById("aus-overlay");
 		if (overlay) {
 			overlay.setAttribute("data-extension", "api-usage-stat");
-			overlay.setAttribute("data-ds-theme", mode);
+			overlay.setAttribute("data-ds-theme", r);
 		}
 		try {
 			document.documentElement.removeAttribute("data-ds-theme");
@@ -636,6 +681,61 @@ function applyTheme(theme) {
 			}
 		} catch {}
 	} catch {}
+}
+function applyTheme(theme) {
+	const t = normalizeThemeMode(theme ?? state$2.settings?.theme);
+	paintTheme(t);
+	if (t === "auto") try {
+		watchSystemTheme();
+	} catch {}
+}
+var boundWin = null;
+var boundHandler = null;
+/**
+* 主题实际变化后需要重绘的动态内容。
+* ECharts 的配色在绘制时就已固化进 option，不随 CSS 变量更新，必须重建实例再重绘；
+* 热力图等内联色值同理。refreshUI 会在面板打开时重绘 概览/统计/预测/钱包 四个视图。
+*/
+function repaintDynamic() {
+	try {
+		globalThis.ApiUsageStat?.refreshTheme?.();
+	} catch {}
+}
+/**
+* 监听系统配色变化：仅在 auto 模式下响应。
+* 同一 window 只绑一次；宿主不支持 addEventListener 时静默降级（不抛错）。
+*/
+function watchSystemTheme(win) {
+	const w = win ?? hostWindow();
+	if (!w || typeof w.matchMedia !== "function") return;
+	if (boundWin === w) return;
+	try {
+		const mql = w.matchMedia(DARK_QUERY);
+		if (!mql || typeof mql.addEventListener !== "function") return;
+		boundHandler = (e) => {
+			if (normalizeThemeMode(state$2.settings?.theme) !== "auto") return;
+			paintTheme("auto", e?.matches ? "dark" : "light");
+			let hasPanel = false;
+			try {
+				hasPanel = !!getDoc$11().getElementById("aus-panel");
+			} catch {}
+			if (hasPanel) repaintDynamic();
+		};
+		mql.addEventListener("change", boundHandler);
+		boundWin = w;
+	} catch {}
+}
+/** 解除监听（扩展禁用时调用，避免热重载后重复触发） */
+function unwatchSystemTheme() {
+	try {
+		if (boundWin && boundHandler) boundWin.matchMedia(DARK_QUERY).removeEventListener("change", boundHandler);
+	} catch {}
+	boundWin = null;
+	boundHandler = null;
+}
+/** 设置切换后调用：auto 时确保监听已建立 */
+function syncThemeWatcher() {
+	if (normalizeThemeMode(state$2.settings?.theme) === "auto") watchSystemTheme();
 }
 //#endregion
 //#region src/services/debug.ts
@@ -1561,7 +1661,7 @@ function renderSettings(doc) {
         <div id="aus-telemetry-status" style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);margin-top:6px;"></div>
       </div>
       <!-- 颜色模式（与用量统计·模型选择一致的胶囊下拉） -->
-      <div class="ds-card" style="position:relative;"><div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);">颜色模式</span><div id="aus-theme-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);cursor:pointer;"><span style="color:var(--ds-text-2);">模式</span><span id="aus-theme-label" style="font-weight:600;color:var(--ds-text);">浅色</span>${icon("chevron-down", 14)}</div></div><div id="aus-theme-dropdown" style="display:none;position:absolute;top:44px;right:12px;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:140px;padding:8px;"></div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-top:6px;">切换后立即生效，深色模式针对夜间可读性优化</div></div>
+      <div class="ds-card" style="position:relative;"><div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);">颜色模式</span><div id="aus-theme-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);cursor:pointer;"><span style="color:var(--ds-text-2);">模式</span><span id="aus-theme-label" style="font-weight:600;color:var(--ds-text);">浅色</span>${icon("chevron-down", 14)}</div></div><div id="aus-theme-dropdown" style="display:none;position:absolute;top:44px;right:12px;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:140px;padding:8px;"></div><div id="aus-theme-hint" style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-top:6px;">切换后立即生效，深色模式针对夜间可读性优化</div></div>
 
       <!-- 历史显示范围 -->
       <div class="ds-card" style="position:relative;"><div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);">历史显示范围</span><div id="aus-history-scope-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);cursor:pointer;"><span style="color:var(--ds-text-2);">范围</span><span id="aus-history-scope-label" style="font-weight:600;color:var(--ds-text);">全部历史</span>${icon("chevron-down", 14)}</div></div><div id="aus-history-scope-dropdown" style="display:none;position:absolute;top:44px;right:12px;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:160px;padding:8px;"></div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-top:6px;">全部历史展示所有对话的记录，当前对话仅展示与当前聊天文件关联的记录</div></div>
@@ -1699,15 +1799,27 @@ function renderSettings(doc) {
 		const label = doc.getElementById("aus-theme-label");
 		if (!label) return;
 		const cur = state$2.settings.theme || "light";
-		label.textContent = cur === "dark" ? "深色" : "浅色";
+		label.textContent = cur === "dark" ? "深色" : cur === "auto" ? "跟随系统" : "浅色";
+		const hint = doc.getElementById("aus-theme-hint");
+		if (hint) {
+			const sysDark = resolveTheme("auto") === "dark";
+			hint.textContent = cur === "auto" ? `跟随系统：当前系统为${sysDark ? "深色" : "浅色"}，系统切换后自动同步` : "切换后立即生效，深色模式针对夜间可读性优化";
+		}
 		if (!dropdown) return;
-		dropdown.innerHTML = [{
-			v: "light",
-			l: "浅色"
-		}, {
-			v: "dark",
-			l: "深色"
-		}].map((o) => {
+		dropdown.innerHTML = [
+			{
+				v: "light",
+				l: "浅色"
+			},
+			{
+				v: "dark",
+				l: "深色"
+			},
+			{
+				v: "auto",
+				l: "跟随系统"
+			}
+		].map((o) => {
 			const active = o.v === cur ? "background:var(--ds-card);font-weight:600;" : "";
 			return `<div data-theme="${o.v}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${active}">${o.l}</div>`;
 		}).join("");
@@ -1717,6 +1829,7 @@ function renderSettings(doc) {
 				state$2.settings.theme = v;
 				saveHot({ settings: state$2.settings });
 				applyTheme(v);
+				syncThemeWatcher();
 				dropdown.style.display = "none";
 				renderThemePicker();
 				try {
@@ -4798,6 +4911,19 @@ async function getEcharts$1() {
 	return ec;
 }
 var charts$1 = {};
+/**
+* 主题重绘：ECharts 实例在跨主题切换时复用，option 中的颜色是绘制时取值的，
+* 不会随 CSS 变量自动更新，因此「跟随系统」实时切换后需要主动重绘。
+* 仅释放本模块内部持有的实例，实例容器留在 DOM 中，各视图自身的 render 会重新 init 并取新配色。
+*/
+function resetChartThemeCache() {
+	for (const id of Object.keys(charts$1)) {
+		try {
+			charts$1[id]?.dispose?.();
+		} catch {}
+		charts$1[id] = null;
+	}
+}
 var lastFiltered$1 = [];
 function renderExtraCharts(filtered) {
 	lastFiltered$1 = filtered || [];
@@ -9390,6 +9516,22 @@ function refreshUI() {
 		} catch {}
 	} catch {}
 }
+/**
+* 主题切换后的整体重绘（跟随系统时由 prefers-color-scheme 变化触发）。
+* 面板关闭时无需处理：下次打开由 createPanel/refreshUI 重新取色。
+*/
+function refreshTheme() {
+	try {
+		if (!panelOpen) return;
+		try {
+			resetChartThemeCache();
+		} catch {}
+		try {
+			disposeForecastCharts();
+		} catch {}
+		refreshUI();
+	} catch {}
+}
 var historyPage = 1;
 var HISTORY_PAGE_SIZE = 30;
 var historyFullCache = null;
@@ -11011,6 +11153,9 @@ async function onDisable() {
 		stopPeakDot();
 	} catch {}
 	try {
+		unwatchSystemTheme();
+	} catch {}
+	try {
 		(await import("./balance-CybZ7bHi.js").then((n) => n.t)).stopBalanceTimer?.();
 	} catch {}
 	try {
@@ -11061,6 +11206,9 @@ async function init() {
 			applyTheme(state$2.settings.theme);
 		} catch {}
 		try {
+			watchSystemTheme();
+		} catch {}
+		try {
 			createPanel();
 		} catch {}
 		try {
@@ -11109,6 +11257,7 @@ async function init() {
 	globalThis.ApiUsageStat = {
 		MODULE,
 		refreshUI,
+		refreshTheme,
 		updatePeakDot,
 		openPanel,
 		closePanel,

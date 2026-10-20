@@ -70,6 +70,18 @@ async function getEcharts(){
 }
 
 const charts: Record<string, any> = {};
+
+/**
+ * 主题重绘：ECharts 实例在跨主题切换时复用，option 中的颜色是绘制时取值的，
+ * 不会随 CSS 变量自动更新，因此「跟随系统」实时切换后需要主动重绘。
+ * 仅释放本模块内部持有的实例，实例容器留在 DOM 中，各视图自身的 render 会重新 init 并取新配色。
+ */
+export function resetChartThemeCache(): void {
+  for (const id of Object.keys(charts) as ChartId[]) {
+    try { charts[id]?.dispose?.(); } catch {}
+    charts[id] = null as any;
+  }
+}
 let lastFiltered: any[] = [];
 
 export function renderExtraCharts(filtered:any[]){
