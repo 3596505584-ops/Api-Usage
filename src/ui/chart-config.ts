@@ -66,8 +66,11 @@ export const X_OPTIONS_WITHOUT_ROUND: Array<{ key: XKey; label: string }> = X_OP
 export const DEFAULT_Y_KEYS: YKey[] = ['input_hit_token', 'input_miss_token', 'output_token', 'total_cost', 'hit_rate'];
 export const DEFAULT_X_KEY: XKey = 'round';
 export const DEFAULT_CHART_TYPE: ChartType = 'auto';
+export type AxisLabelMode = 'auto' | 'all' | 'hide';
+export const DEFAULT_AXIS_LABEL_MODE: AxisLabelMode = 'auto';
 
 let ySelected: Set<YKey> = new Set<YKey>(DEFAULT_Y_KEYS);
+let axisLabelMode: AxisLabelMode = DEFAULT_AXIS_LABEL_MODE;
 let xSelected: XKey = DEFAULT_X_KEY;
 let chartType: ChartType = DEFAULT_CHART_TYPE;
 
@@ -78,6 +81,10 @@ export function setYSelected(keys: YKey[]) { ySelected = new Set(keys.length ? k
 export function setXSelected(k: XKey) { xSelected = k; }
 export function setChartType(t: ChartType) {
   chartType = (t === 'bar' || t === 'line' || t === 'area') ? t : 'auto';
+}
+export function getAxisLabelMode(): AxisLabelMode { return axisLabelMode; }
+export function setAxisLabelMode(m: AxisLabelMode) {
+  axisLabelMode = (m === 'all' || m === 'hide') ? m : 'auto';
 }
 export function toggleY(key: YKey) {
   if (ySelected.has(key)) { if (ySelected.size > 1) ySelected.delete(key); }

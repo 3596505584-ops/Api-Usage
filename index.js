@@ -5203,7 +5203,9 @@ var DEFAULT_Y_KEYS = [
 ];
 var DEFAULT_X_KEY = "round";
 var DEFAULT_CHART_TYPE = "auto";
+var DEFAULT_AXIS_LABEL_MODE = "auto";
 var ySelected = new Set(DEFAULT_Y_KEYS);
+var axisLabelMode = DEFAULT_AXIS_LABEL_MODE;
 var xSelected = DEFAULT_X_KEY;
 var chartType = DEFAULT_CHART_TYPE;
 function getYSelected() {
@@ -5220,6 +5222,12 @@ function setXSelected(k) {
 }
 function setChartType(t) {
 	chartType = t === "bar" || t === "line" || t === "area" ? t : "auto";
+}
+function getAxisLabelMode() {
+	return axisLabelMode;
+}
+function setAxisLabelMode(m) {
+	axisLabelMode = m === "all" || m === "hide" ? m : "auto";
 }
 function toggleY(key) {
 	if (ySelected.has(key)) {
@@ -6869,7 +6877,24 @@ function renderChartSelectors() {
 		}
 	];
 	yHtml += `<div style="margin-top:4px;border-top:1px solid var(--ds-border);padding:6px 8px 2px;font-size:var(--aus-fs-xs);color:var(--ds-text-3);font-weight:600;">展示方式</div>`;
-	yHtml += `<div style="display:flex;gap:4px;flex-wrap:wrap;padding:2px 6px 8px;">${typeOpts.map((t) => `<div data-chart-type="${t.v}" style="padding:4px 9px;border-radius:999px;border:1px solid var(--ds-border);font-size:var(--aus-fs-sm);cursor:pointer;${typeSel === t.v ? "background:var(--ds-card);font-weight:600;" : ""}">${t.l}</div>`).join("")}</div>`;
+	yHtml += `<div style="display:flex;gap:4px;flex-wrap:wrap;padding:2px 6px 6px;">${typeOpts.map((t) => `<div data-chart-type="${t.v}" style="padding:4px 9px;border-radius:999px;border:1px solid var(--ds-border);font-size:var(--aus-fs-sm);cursor:pointer;${typeSel === t.v ? "background:var(--ds-card);font-weight:600;" : ""}">${t.l}</div>`).join("")}</div>`;
+	const axisSel = getAxisLabelMode();
+	const axisOpts = [
+		{
+			v: "auto",
+			l: "自动"
+		},
+		{
+			v: "all",
+			l: "全部"
+		},
+		{
+			v: "hide",
+			l: "隐藏"
+		}
+	];
+	yHtml += `<div style="padding:2px 8px 2px;font-size:var(--aus-fs-xs);color:var(--ds-text-3);font-weight:600;">轴标签</div>`;
+	yHtml += `<div style="display:flex;gap:4px;flex-wrap:wrap;padding:2px 6px 8px;align-items:center;"><span style="font-size:var(--aus-fs-xs);color:var(--ds-text-3);">左右轴合计 &gt; 2 时默认隐藏叠加</span>${axisOpts.map((a) => `<div data-axis-label="${a.v}" style="padding:4px 9px;border-radius:999px;border:1px solid var(--ds-border);font-size:var(--aus-fs-sm);cursor:pointer;${axisSel === a.v ? "background:var(--ds-card);font-weight:600;" : ""}">${a.l}</div>`).join("")}</div>`;
 	yDrop.innerHTML = yHtml;
 	yDrop.querySelectorAll("input[data-ykey]").forEach((el) => {
 		el.onchange = () => {
@@ -6881,6 +6906,13 @@ function renderChartSelectors() {
 	yDrop.querySelectorAll("[data-chart-type]").forEach((el) => {
 		el.onclick = () => {
 			setChartType(el.getAttribute("data-chart-type"));
+			renderChartSelectors();
+			renderStatsView();
+		};
+	});
+	yDrop.querySelectorAll("[data-axis-label]").forEach((el) => {
+		el.onclick = () => {
+			setAxisLabelMode(el.getAttribute("data-axis-label"));
 			renderChartSelectors();
 			renderStatsView();
 		};
@@ -7124,6 +7156,22 @@ async function renderChart(filteredRaw) {
 			formatter: (v) => v + "%"
 		}
 	});
+	const axisMode = getAxisLabelMode();
+	const totalAxisCount = yAxis.length;
+	if (axisMode === "hide" || axisMode === "auto" && totalAxisCount > 2) {
+		for (const axis of yAxis) {
+			if (axis.position !== "right") continue;
+			axis.name = "";
+			axis.axisLabel = {
+				...axis.axisLabel || {},
+				show: false
+			};
+			axis.axisLine = { show: false };
+			axis.axisTick = { show: false };
+			axis.offset = 0;
+		}
+		rightOffset = 0;
+	}
 	const tokenSeries = series.filter((s) => s.kind === "token");
 	const lastTokenIdx = tokenSeries.length ? series.indexOf(tokenSeries[tokenSeries.length - 1]) : -1;
 	const seriesOpt = series.map((s, idx) => {

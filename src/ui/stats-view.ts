@@ -1,7 +1,7 @@
 import { icon } from './icons';
 import { getSelectedSave, state } from '../store/index';
 import { localDay, esc } from '../utils/date';
-import { Y_OPTIONS, Y_GROUPS, X_OPTIONS, getYSelected, getXSelected, getChartType, setChartType, toggleY, setXSelected, aggregateForChart } from './chart-config';
+import { Y_OPTIONS, Y_GROUPS, X_OPTIONS, getYSelected, getXSelected, getChartType, setChartType, getAxisLabelMode, setAxisLabelMode, toggleY, setXSelected, aggregateForChart } from './chart-config';
 import { renderExtraCharts } from './extra-charts';
 import { renderModelTrends, initModelTrends } from './model-trends';
 import { DataEvents, on as onDataEvent } from '../data/events';
@@ -532,7 +532,11 @@ function renderChartSelectors() {
   const typeSel = getChartType();
   const typeOpts = [ { v:'auto', l:'自动' }, { v:'bar', l:'柱状' }, { v:'line', l:'曲线' }, { v:'area', l:'面积' } ];
   yHtml += `<div style="margin-top:4px;border-top:1px solid var(--ds-border);padding:6px 8px 2px;font-size:var(--aus-fs-xs);color:var(--ds-text-3);font-weight:600;">展示方式</div>`;
-  yHtml += `<div style="display:flex;gap:4px;flex-wrap:wrap;padding:2px 6px 8px;">${typeOpts.map(t => `<div data-chart-type="${t.v}" style="padding:4px 9px;border-radius:999px;border:1px solid var(--ds-border);font-size:var(--aus-fs-sm);cursor:pointer;${typeSel===t.v?'background:var(--ds-card);font-weight:600;':''}">${t.l}</div>`).join('')}</div>`;
+  yHtml += `<div style="display:flex;gap:4px;flex-wrap:wrap;padding:2px 6px 6px;">${typeOpts.map(t => `<div data-chart-type="${t.v}" style="padding:4px 9px;border-radius:999px;border:1px solid var(--ds-border);font-size:var(--aus-fs-sm);cursor:pointer;${typeSel===t.v?'background:var(--ds-card);font-weight:600;':''}">${t.l}</div>`).join('')}</div>`;
+  const axisSel = getAxisLabelMode();
+  const axisOpts = [ { v:'auto', l:'自动' }, { v:'all', l:'全部' }, { v:'hide', l:'隐藏' } ];
+  yHtml += `<div style="padding:2px 8px 2px;font-size:var(--aus-fs-xs);color:var(--ds-text-3);font-weight:600;">轴标签</div>`;
+  yHtml += `<div style="display:flex;gap:4px;flex-wrap:wrap;padding:2px 6px 8px;align-items:center;"><span style="font-size:var(--aus-fs-xs);color:var(--ds-text-3);">左右轴合计 &gt; 2 时默认隐藏叠加</span>${axisOpts.map(a => `<div data-axis-label="${a.v}" style="padding:4px 9px;border-radius:999px;border:1px solid var(--ds-border);font-size:var(--aus-fs-sm);cursor:pointer;${axisSel===a.v?'background:var(--ds-card);font-weight:600;':''}">${a.l}</div>`).join('')}</div>`;
   yDrop.innerHTML = yHtml;
   yDrop.querySelectorAll('input[data-ykey]').forEach((el: any)=>{
     el.onchange = () => {
@@ -544,6 +548,13 @@ function renderChartSelectors() {
   yDrop.querySelectorAll('[data-chart-type]').forEach((el: any)=>{
     el.onclick = () => {
       setChartType(el.getAttribute('data-chart-type') as any);
+      renderChartSelectors();
+      renderStatsView();
+    };
+  });
+  yDrop.querySelectorAll('[data-axis-label]').forEach((el: any)=>{
+    el.onclick = () => {
+      setAxisLabelMode(el.getAttribute('data-axis-label') as any);
       renderChartSelectors();
       renderStatsView();
     };
@@ -692,6 +703,21 @@ async function renderChart(filteredRaw: any[]) {
   if (hasDuration) addAxis('duration', { name: narrow ? '' : '耗时 s', axisLine:{show:false}, splitLine:{show:false}, axisLabel:{ ...labelStyle, formatter:(v:number)=> Number(v).toFixed(1) } });
   if (hasRate) addAxis('rate', { name: narrow ? '' : '速率 t/s', axisLine:{show:false}, splitLine:{show:false}, axisLabel:{ ...labelStyle, formatter:(v:number)=> Math.round(v) } });
   if (hasPercent) addAxis('percent', { name: narrow ? '' : '%', min:0, max:100, axisLine:{show:false}, splitLine:{show:false}, axisLabel:{ ...labelStyle, formatter:(v:number)=> v + '%' } });
+  // 轴标签模式：auto 在左右轴合计 > 2 时只保留左轴，右轴标签隐藏并叠加到同一位置（tooltip 仍可看数值）
+  const axisMode = getAxisLabelMode();
+  const totalAxisCount = yAxis.length;
+  const hideRightLabels = axisMode === 'hide' || (axisMode === 'auto' && totalAxisCount > 2);
+  if (hideRightLabels) {
+    for (const axis of yAxis) {
+      if (axis.position !== 'right') continue;
+      axis.name = '';
+      axis.axisLabel = { ...(axis.axisLabel || {}), show: false };
+      axis.axisLine = { show: false };
+      axis.axisTick = { show: false };
+      axis.offset = 0;
+    }
+    rightOffset = 0;
+  }
   const tokenSeries = series.filter(s => s.kind === 'token');
   const lastTokenIdx = tokenSeries.length ? series.indexOf(tokenSeries[tokenSeries.length - 1]) : -1;
   const seriesOpt = series.map((s, idx)=>{
