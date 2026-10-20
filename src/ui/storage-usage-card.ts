@@ -137,6 +137,8 @@ export async function refreshStorageUsage(doc: Document): Promise<void> {
     const report = await collectStorageReport({ doc, hotSettings: hot });
     if (seq !== renderSeq) return; // 已有更新的请求，丢弃本次
     body.innerHTML = bodyHtml(report);
+    // 统计完成后才生成「其他」行，必须在这里重新绑定展开/收起（首次 bind 时元素还不存在）
+    bindStorageUsageCard(doc);
   } catch (e: any) {
     if (seq === renderSeq) {
       body.innerHTML = `<div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);padding:8px 0;">统计失败：${esc(e?.message || '未知错误')}</div>`;

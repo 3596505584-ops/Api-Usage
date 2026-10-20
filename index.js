@@ -902,7 +902,11 @@ function openDb(doc) {
 				req.onsuccess = (e) => done(e.target.result);
 				req.onerror = () => done(null);
 				req.onblocked = () => done(null);
-				req.onupgradeneeded = () => {};
+				req.onupgradeneeded = () => {
+					try {
+						req.result.createObjectStore(STORE_NAME);
+					} catch {}
+				};
 			} catch {
 				done(null);
 			}
@@ -913,10 +917,10 @@ function openDb(doc) {
 				if (settled) return;
 				if (Array.isArray(list) && list.some((d) => d && d.name === DB_NAME)) doOpen();
 				else done(null);
-			}).catch(() => doOpen());
+			}).catch(() => done(null));
 			return;
 		} catch {}
-		doOpen();
+		done(null);
 	});
 }
 async function readIndexedDb(doc) {
@@ -1000,11 +1004,18 @@ async function collectStorageReport(opts = {}) {
 		detail: "保存在酒馆设置文件中"
 	});
 	let idbItems = [];
+	let idbTimer = null;
 	try {
 		const timeout = opts.idbTimeoutMs ?? 1e3;
-		idbItems = await Promise.race([readIndexedDb(doc), new Promise((resolve) => setTimeout(() => resolve([]), timeout))]);
+		idbItems = await Promise.race([readIndexedDb(doc), new Promise((resolve) => {
+			idbTimer = setTimeout(() => resolve([]), timeout);
+		})]);
 	} catch {
 		idbItems = [];
+	} finally {
+		if (idbTimer) try {
+			clearTimeout(idbTimer);
+		} catch {}
 	}
 	items.push(...idbItems);
 	try {
@@ -1143,6 +1154,7 @@ async function refreshStorageUsage(doc) {
 		});
 		if (seq !== renderSeq) return;
 		body.innerHTML = bodyHtml(report);
+		bindStorageUsageCard(doc);
 	} catch (e) {
 		if (seq === renderSeq) body.innerHTML = `<div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);padding:8px 0;">统计失败：${esc$1(e?.message || "未知错误")}</div>`;
 	} finally {

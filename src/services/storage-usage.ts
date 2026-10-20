@@ -139,7 +139,9 @@ function openDb(doc: Document): Promise<IDBDatabase | null> {
         req.onerror = () => done(null);
         req.onblocked = () => done(null);
         req.onupgradeneeded = () => {
-          // 库不存在被创建：空库无数据，按 0 处理
+          // 库不存在被创建时：按 persistence 的 schema 建好 kv store，
+          // 避免留下 version 1 空库，导致后续冷历史读写找不到 store
+          try { (req.result as any).createObjectStore(STORE_NAME); } catch {}
         };
       } catch { done(null); }
     };
@@ -152,11 +154,14 @@ function openDb(doc: Document): Promise<IDBDatabase | null> {
           const exists = Array.isArray(list) && list.some(d => d && d.name === DB_NAME);
           if (exists) doOpen();
           else done(null);
-        }).catch(() => doOpen());
+        }).catch(() => done(null));
         return;
       } catch { /* 继续走 open */ }
     }
-    doOpen();
+    // 无法探测存在性时不 open：open() 会在库不存在时创建 version 1 空库，
+    // 而 persistence 的 open(DB_NAME, 1) 同版本不会再触发 upgradeneeded，
+    // 会让 kv store 缺失、冷历史读写失败。统计功能宁可跳过冷数据。
+    done(null);
   });
 }
 
@@ -228,13 +233,16 @@ export async function collectStorageReport(opts: CollectOptions = {}): Promise<S
 
   // 2. IndexedDB（带超时，避免个别浏览器卡住导致面板一直转圈）
   let idbItems: StorageItem[] = [];
+  let idbTimer: any = null;
   try {
     const timeout = opts.idbTimeoutMs ?? 1000;
     idbItems = await Promise.race([
       readIndexedDb(doc),
-      new Promise<StorageItem[]>(resolve => setTimeout(() => resolve([]), timeout)),
+      new Promise<StorageItem[]>(resolve => { idbTimer = setTimeout(() => resolve([]), timeout); }),
     ]);
-  } catch { idbItems = []; }
+  } catch { idbItems = []; } finally {
+    if (idbTimer) { try { clearTimeout(idbTimer); } catch {} }
+  }
   items.push(...idbItems);
 
   // 3. localStorage
