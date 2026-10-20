@@ -202,10 +202,11 @@ npm run verify:ci   # 版本单源、清单路径、引用链与孤立产物
 - **版本真源**：`manifest.json#version` 唯一来源，`vite.config.ts` 注入 `__APP_VERSION__`，侧边栏/关于/导出/检查更新均取此值，禁止硬编码 `v3.0.x`
 - **版本号推进管控（最高优先级，强制）**：没有用户当轮的**明确要求**，一律禁止推进版本号。禁止执行 `npm version`，禁止改动 `manifest.json#version` 与 `package.json#version`，禁止新建或移动 `vX.Y.Z` 标签，禁止合并到 `main`，禁止执行 `git push origin main --tags`。`dev` 上完成需求只做常规提交与 `git push origin dev`；版本推进、打标签、合并 `main` 与正式发布均属发布动作，必须等用户明确下达（一次明确要求只覆盖当轮那一次发布），未获要求时即使功能已通过 `typecheck + build + node --check` 也不得自行推进。
 - **合并 ≠ 授权推进版本（最高优先级，强制，2026-09-10 事故后追加）**：用户说“合并到主线 / 合并 main / 发布”**只授权合并本身**，不等于授权推进版本号或打标签。除非用户在同一轮**明确说出目标版本号**（如“推进到 3.0.8”）或明确要求“推进 patch/minor 版本号并打标签”，否则合并 `main` 时 `manifest.json#version`、`package.json#version`、`package-lock.json#version` 一律保持原值，禁止 `git tag`、禁止 `git push --tags`，只做 `git merge --no-ff dev` + 常规 `git push origin main`。授权范围按**字面最小化**解释：任何“看起来顺理成章”的配套动作都不构成授权，宁可少做一步、等用户补一句。
+- **PR 审查与合并边界（最高优先级，强制，2026-10-20 追加）**：审查 PR 时，**合并动作的目标只能是 `dev`**，禁止未经批准直接把 PR 合并到 `main`。即使 PR 的 base 是 `main`，也不得使用 GitHub “Merge pull request”、`gh pr merge` 或任何等价方式直接合入 `main`；应先把 PR 内容落到 `dev` 并推送，保持 PR 为 OPEN 或由用户另行批准。**任何准备进入 `main` 的内容，都必须先提交到 `dev` 并推送，再由用户在当轮明确批准后，才允许合并到 `main`**；未获批准时一律等待，不得自行合并。
 - **违规回退义务（最高优先级，强制）**：一旦擅自推进了版本号或打了标签，必须立刻回退：把 `manifest.json` + `package.json` + `package-lock.json` 改回原版本号 → `npm run typecheck && npm run build && node --check index.js` 重建产物 → 提交推送 → 删除本地与远端多余标签（`git tag -d vX.Y.Z`、`git push origin :refs/tags/vX.Y.Z`），并在回复中明确说明已回退。
 - **开发→测试→发布**（合并与版本推进是两次独立授权，缺一不可省略）：
   1. `feature/* → dev`：`npm run typecheck && npm test && npm run build && node --check index.js && npm run verify:ci` → `git push origin dev` → 酒馆切 `dev` 分支真机测试
-  2. `dev → main`（**仅用户当轮明确要求“合并”时**）：`git checkout main && git merge --no-ff dev` → 解决 `index.js` 等产物冲突 → `git push origin main`；**到合并为止**，版本号与标签保持原样
+  2. `dev → main`（**仅用户当轮明确批准合并，且内容已提交并推送到 `dev` 后**）：`git checkout main && git merge --no-ff dev` → 解决 `index.js` 等产物冲突 → `git push origin main`；**到合并为止**，版本号与标签保持原样
   3. 版本推进 + 打标签（**必须由用户当轮单独明确授权**）：`manifest.json` + `package.json` + `package-lock.json` 同步改为目标版本 → `npm run build` 重建产物 → 提交 → `git tag vX.Y.Z` → `git push origin main --tags`
   4. 回滚（**仅用户明确要求时**）：按用户指定版本回退并重建产物，多余标签在本地与远端一并删除
 - **预览预发布边界**：`preview-*` 标签与 Release 只允许由 `main` 分支的 `preview` 作业创建，`dev` 与合并请求永不发布；预览标签基于 12 位提交哈希且不可复用或移动，但**不属于正式版本推进**，不得借预览发布修改 `manifest.json`、`package.json`、`package-lock.json` 的版本字段，也不得创建或移动 `vX.Y.Z` 标签。同一提交重复自动运行或手动补发只更新既有 Release 标题、说明与同名资产，不产生第二个标签
