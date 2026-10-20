@@ -10,8 +10,9 @@ import { bindHistoryCompare, renderUsageDetail } from './compare';
 import { renderOverview } from './overview';
 import { icon } from './icons';
 import { initStatsView, positionFilterDropdown, renderStatsView } from './stats-view';
-import { initExtraCharts, renderExtraCharts } from './extra-charts';
+import { initExtraCharts, renderExtraCharts, resetChartThemeCache } from './extra-charts';
 import { renderForecastView, initForecastView } from './forecast-view';
+import { disposeForecastCharts } from './forecast-chart';
 import { renderWalletView } from './wallet-view';
 import { applyTheme } from '../services/theme';
 import { DataEvents, on as onDataEvent } from '../data/events';
@@ -107,6 +108,19 @@ export function refreshUI() {
     renderStatsView();
     try { renderForecastView(); } catch {}
     try { renderWalletView(); } catch {}
+  } catch {}
+}
+
+/**
+ * 主题切换后的整体重绘（跟随系统时由 prefers-color-scheme 变化触发）。
+ * 面板关闭时无需处理：下次打开由 createPanel/refreshUI 重新取色。
+ */
+export function refreshTheme() {
+  try {
+    if (!panelOpen) return;
+    try { resetChartThemeCache(); } catch {}
+    try { disposeForecastCharts(); } catch {}
+    refreshUI();
   } catch {}
 }
 

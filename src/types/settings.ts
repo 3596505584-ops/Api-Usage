@@ -18,7 +18,8 @@ export type WebdavSettings = {
   proxy: string;
 };
 
-export type ThemeMode = 'light' | 'dark';
+/** light 浅色 / dark 深色 / auto 跟随系统（prefers-color-scheme） */
+export type ThemeMode = 'light' | 'dark' | 'auto';
 
 export type PricingSyncMode = 'add-missing' | 'overwrite-unlocked' | 'overwrite-all';
 export type PricingSyncSettings = {

@@ -4,7 +4,7 @@ import { saveHot } from '../store/persistence';
 import { saveApiKey } from '../services/balance';
 import { doSyncNow, saveWebdavPass } from '../services/sync';
 import { decryptKey } from '../utils/crypto';
-import { applyTheme } from '../services/theme';
+import { applyTheme, resolveTheme, syncThemeWatcher } from '../services/theme';
 import { PRICING, DEFAULT_PEAK_HOURS, HIDDEN_PRICING_MODELS } from '../constants/pricing';
 import { CN_HOLIDAY_COVERAGE_LABEL } from '../constants/holidays';
 import { isValidDayKey } from '../utils/date';
@@ -169,12 +169,12 @@ export function renderSettings(doc: Document) {
       <!-- 匿名使用统计（默认开启，可随时关闭） -->
       <div class="ds-card">
         <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);">匿名使用统计</span><label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;"><input type="checkbox" id="aus-telemetry-enabled" style="opacity:0;width:0;height:0;"><span style="position:absolute;inset:0;background:var(--ds-border);border-radius:12px;transition:0.2s;"><span id="aus-telemetry-slider" style="position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:var(--ds-card-inner);border-radius:50%;transition:0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.15);"></span></span></label></div>
-        <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-top:6px;line-height:1.6;">仅匿名上报浏览器环境参数（浏览器名与版本、系统、架构、语言、窄屏分桶、standalone、时区）、扩展版本与面板渲染耗时分桶等开发数据；<strong>不含对话内容、密钥等任何隐私信息，数据经过匿名化处理，仅用于开发与完善兼容性。</strong>关闭后立即停止采集与上报。<a href="https://janmk1453.github.io/Api-Usage/#privacy" target="_blank" rel="noreferrer" style="color:var(--ds-text);text-decoration:underline;">隐私声明</a></div>
+        <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-top:6px;line-height:1.6;">仅匿名上报浏览器环境参数（浏览器版本、系统、架构、语言、屏幕等）、渲染性能等开发数据；<strong>不含对话内容、密钥等任何隐私信息，数据经过匿名化处理，仅用于开发与完善兼容性。</strong>关闭后立即停止采集与上报。<a href="https://janmk1453.github.io/Api-Usage/#privacy" target="_blank" rel="noreferrer" style="color:var(--ds-text);text-decoration:underline;">隐私声明</a></div>
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;flex-wrap:wrap;"><span id="aus-telemetry-id" style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);">匿名标识：待生成</span><button id="aus-telemetry-reset" style="padding:6px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:var(--aus-fs-sm);cursor:pointer;">重置匿名标识</button></div>
         <div id="aus-telemetry-status" style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);margin-top:6px;"></div>
       </div>
       <!-- 颜色模式（与用量统计·模型选择一致的胶囊下拉） -->
-      <div class="ds-card" style="position:relative;"><div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);">颜色模式</span><div id="aus-theme-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);cursor:pointer;"><span style="color:var(--ds-text-2);">模式</span><span id="aus-theme-label" style="font-weight:600;color:var(--ds-text);">浅色</span>${icon('chevron-down', 14)}</div></div><div id="aus-theme-dropdown" style="display:none;position:absolute;top:44px;right:12px;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:140px;padding:8px;"></div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-top:6px;">切换后立即生效，深色模式针对夜间可读性优化</div></div>
+      <div class="ds-card" style="position:relative;"><div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);">颜色模式</span><div id="aus-theme-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);cursor:pointer;"><span style="color:var(--ds-text-2);">模式</span><span id="aus-theme-label" style="font-weight:600;color:var(--ds-text);">浅色</span>${icon('chevron-down', 14)}</div></div><div id="aus-theme-dropdown" style="display:none;position:absolute;top:44px;right:12px;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:140px;padding:8px;"></div><div id="aus-theme-hint" style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-top:6px;">切换后立即生效，深色模式针对夜间可读性优化</div></div>
 
       <!-- 历史显示范围 -->
       <div class="ds-card" style="position:relative;"><div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:var(--aus-fs-base);font-weight:600;color:var(--ds-text);">历史显示范围</span><div id="aus-history-scope-btn" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);font-size:var(--aus-fs-base);cursor:pointer;"><span style="color:var(--ds-text-2);">范围</span><span id="aus-history-scope-label" style="font-weight:600;color:var(--ds-text);">全部历史</span>${icon('chevron-down', 14)}</div></div><div id="aus-history-scope-dropdown" style="display:none;position:absolute;top:44px;right:12px;z-index:10;background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:160px;padding:8px;"></div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);margin-top:6px;">全部历史展示所有对话的记录，当前对话仅展示与当前聊天文件关联的记录</div></div>
@@ -325,9 +325,17 @@ export function renderSettings(doc: Document) {
     const label = doc.getElementById('aus-theme-label');
     if (!label) return;
     const cur = (state.settings as any).theme || 'light';
-    label.textContent = cur === 'dark' ? '深色' : '浅色';
+    label.textContent = cur === 'dark' ? '深色' : cur === 'auto' ? '跟随系统' : '浅色';
+    // auto 模式下提示当前实际生效的颜色，避免“选了跟随系统但看不出变化”的困惑
+    const hint = doc.getElementById('aus-theme-hint');
+    if (hint) {
+      const sysDark = resolveTheme('auto') === 'dark';
+      hint.textContent = cur === 'auto'
+        ? `跟随系统：当前系统为${sysDark ? '深色' : '浅色'}，系统切换后自动同步`
+        : '切换后立即生效，深色模式针对夜间可读性优化';
+    }
     if (!dropdown) return;
-    const opts: Array<{v:string,l:string}> = [{v:'light',l:'浅色'}, {v:'dark',l:'深色'}];
+    const opts: Array<{v:string,l:string}> = [{v:'light',l:'浅色'}, {v:'dark',l:'深色'}, {v:'auto',l:'跟随系统'}];
     dropdown.innerHTML = opts.map(o => {
       const active = o.v === cur ? 'background:var(--ds-card);font-weight:600;' : '';
       return `<div data-theme="${o.v}" style="padding:8px 10px;border-radius:8px;cursor:pointer;font-size:var(--aus-fs-base);${active}">${o.l}</div>`;
@@ -338,6 +346,7 @@ export function renderSettings(doc: Document) {
         (state.settings as any).theme = v;
         saveHot({ settings: state.settings });
         applyTheme(v);
+        syncThemeWatcher();
         dropdown.style.display = 'none';
         renderThemePicker();
         try { (globalThis as any).ApiUsageStat?.refreshUI?.(); } catch {}

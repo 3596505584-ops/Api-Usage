@@ -6,9 +6,9 @@
 import { state } from './store/index';
 import { repository } from './data/repository';
 import { installInterception } from './services/interception';
-import { createPanel, openPanel, closePanel, togglePanel, refreshUI, resetPanelState } from './ui/panel';
+import { createPanel, openPanel, closePanel, togglePanel, refreshUI, refreshTheme, resetPanelState } from './ui/panel';
 import { createPeakDot, updatePeakDot, stopPeakDot } from './ui/peak-dot';
-import { applyTheme } from './services/theme';
+import { applyTheme, watchSystemTheme, unwatchSystemTheme } from './services/theme';
 import { initTelemetry } from './services/telemetry';
 import { log } from './utils/logger';
 
@@ -162,6 +162,7 @@ export async function onDisable() {
   } catch {}
   try { resetPanelState(); } catch {}
   try { stopPeakDot(); } catch {}
+  try { unwatchSystemTheme(); } catch {}
   try { const m2 = await import('./services/balance'); (m2 as any).stopBalanceTimer?.(); } catch {}
   try { const m3 = await import('./services/currency'); (m3 as any).stopRateTimer?.(); } catch {}
   try { const m4 = await import('./services/pricing-sync'); (m4 as any).stopPricingSyncTimer?.(); } catch {}
@@ -187,6 +188,8 @@ async function init() {
   try { installInterception(); } catch {}
   const mount = () => {
     try { applyTheme((state.settings as any).theme); } catch {}
+    // 跟随系统：绑定 prefers-color-scheme 的 change 事件（仅 auto 模式生效）
+    try { watchSystemTheme(); } catch {}
     try { createPanel(); } catch {}
     try { ensureWandEntry(); } catch {}
     try { createPeakDot(); } catch {}
@@ -225,7 +228,7 @@ async function init() {
   try { getDoc().addEventListener('keydown', onEscapeKey); } catch {}
   try { window.addEventListener('pagehide', onPageHide); } catch {}
   // 不在启动期自动检查更新（外网不可达时会长时间挂起请求），改由用户打开面板时触发（openPanel → maybeAutoCheck，每次打开都执行）
-  (globalThis as any).ApiUsageStat = { MODULE, refreshUI, updatePeakDot, openPanel, closePanel, togglePanel, state, injectWandEntry: ensureWandEntry };
+  (globalThis as any).ApiUsageStat = { MODULE, refreshUI, refreshTheme, updatePeakDot, openPanel, closePanel, togglePanel, state, injectWandEntry: ensureWandEntry };
 }
 
 init();
