@@ -1,14 +1,14 @@
 import { pn as __exportAll } from "./graphic-BAx7jeh4.js";
 import { n as getSelectedSave, r as state$2, t as getHistoryForDisplay } from "./store-Cc2SGj8q.js";
 import { a as HIDDEN_PRICING_MODELS, l as PRICING, p as WEBDAV_SYNC_FILE, r as DEFAULT_PEAK_HOURS, t as DEFAULT_CONTEXT_LIMIT } from "./pricing-Bc-qEvy8.js";
-import { c as saveExtensionSettings, d as historyRecordKey, i as getExtensionSettings, u as saveHot } from "./persistence-BNuHASx4.js";
+import { c as saveExtensionSettings, d as historyRecordKey, i as getExtensionSettings, u as saveHot } from "./persistence-C4IJVd-B.js";
 import { r as toast, t as log } from "./logger-8RGXnvfI.js";
-import { C as mergeWalletCollections, O as DEEPSEEK_WALLET_ID, S as findWalletModel, T as walletPendingModelCount, _ as normalizeModel, a as decryptKey, b as defaultContextLimitForModel, c as isTruncatedFinish, d as calcCost, f as calcSavings, g as isWalletPeakHour, h as isPeakHour, i as saveWalletApiKey, k as WALLET_CATALOG_PROVIDERS, l as DataEvents, m as isDeepSeekOfficialModel, o as encryptKey, p as getPricing$1, r as getWalletApiKey, s as sanitizeHistoryTiming, t as repository, u as on, w as walletBalanceToCny, x as findWalletForHistory } from "./repository-iLgppw1d.js";
+import { A as DEEPSEEK_WALLET_ID, C as findWalletModel, E as walletPendingModelCount, S as findWalletForHistory, T as walletBalanceToCny, _ as normalizeModel, a as decryptKey, b as defaultContextLimitForModel, c as isTruncatedFinish, d as calcCost, f as calcSavings, g as isWalletPeakHour, h as isPeakHour, i as saveWalletApiKey, j as WALLET_CATALOG_PROVIDERS, l as DataEvents, m as isDeepSeekOfficialModel, o as encryptKey, p as getPricing$1, r as getWalletApiKey, s as sanitizeHistoryTiming, t as repository, u as on, w as mergeWalletCollections } from "./repository-JvxNaSRi.js";
 import { a as isUnsafeKey$1, c as localDay$1, i as isPeakHour$1, l as localTimeHM, n as isChinaHoliday, o as isValidDayKey, r as isExtraOffDay, s as isWeekendDay, t as esc$2, u as CN_HOLIDAY_COVERAGE_LABEL } from "./date-BJI2m6dS.js";
-import { a as getWalletExchangeRate, i as getDisplayCurrency, n as fetchLiveRate, r as formatMoney } from "./currency-t4zSPSKg.js";
-import { r as recalcAllCosts, t as installInterception } from "./interception-CwxjqVvh.js";
-import { i as saveApiKey, n as queryBalance, r as queryWalletBalance } from "./balance-7gM-4cCE.js";
-import { a as removeSyncedModels, n as isSyncedCustomModel, o as syncPricingFromModelsDev, r as previewSync, t as fetchModelsDevCatalog } from "./pricing-sync-DJHxT-Mq.js";
+import { a as getWalletExchangeRate, i as getDisplayCurrency, n as fetchLiveRate, r as formatMoney } from "./currency-BZt-7TC7.js";
+import { r as recalcAllCosts, t as installInterception } from "./interception-BoETqAOw.js";
+import { i as saveApiKey, n as queryBalance, r as queryWalletBalance } from "./balance-C3MhaV_X.js";
+import { a as removeSyncedModels, n as isSyncedCustomModel, o as syncPricingFromModelsDev, r as previewSync, t as fetchModelsDevCatalog } from "./pricing-sync-CADPKT9h.js";
 //#region src/services/import-export.ts
 function isUnsafeKey(k) {
 	return k === "__proto__" || k === "constructor" || k === "prototype";
@@ -2386,14 +2386,14 @@ function renderSettings(doc) {
 		doc.getElementById("aus-auto-balance-interval").style.display = autoCb.checked ? "block" : "none";
 		saveHot({ settings: state$2.settings });
 		try {
-			import("./balance-7gM-4cCE.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
+			import("./balance-C3MhaV_X.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
 		} catch {}
 	};
 	doc.getElementById("aus-balance-interval").onchange = (e) => {
 		state$2.settings.balanceInterval = parseInt(e.target.value) || 10;
 		saveHot({ settings: state$2.settings });
 		try {
-			import("./balance-7gM-4cCE.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
+			import("./balance-C3MhaV_X.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
 		} catch {}
 	};
 	if (dbgCb) dbgCb.onchange = () => {
@@ -2438,7 +2438,7 @@ function renderSettings(doc) {
 		const clearBtn = doc.getElementById("aus-btn-debug-clear");
 		if (clearBtn) clearBtn.onclick = async () => {
 			try {
-				const { repository } = await import("./repository-iLgppw1d.js").then((n) => n.n);
+				const { repository } = await import("./repository-JvxNaSRi.js").then((n) => n.n);
 				const { state: st } = await import("./store-Cc2SGj8q.js").then((n) => n.i);
 				await repository.replaceAll({ history: (st.history || []).filter((h) => h._debug !== true) });
 				await repository.recalcAll();
@@ -2588,8 +2588,8 @@ function renderSettings(doc) {
 					intervalDrop.style.display = "none";
 					if (intervalLabel) intervalLabel.textContent = intervalMap[el.getAttribute("data-interval")] || el.getAttribute("data-interval");
 					try {
-						import("./pricing-sync-DJHxT-Mq.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
-						import("./currency-t4zSPSKg.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
+						import("./pricing-sync-CADPKT9h.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
+						import("./currency-BZt-7TC7.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
 					} catch {}
 				};
 			});
@@ -2610,7 +2610,7 @@ function renderSettings(doc) {
 			if (panel) panel.style.display = enabledEl.checked ? "grid" : "none";
 			let removed = 0;
 			if (!enabledEl.checked) try {
-				const m = await import("./pricing-sync-DJHxT-Mq.js").then((n) => n.i);
+				const m = await import("./pricing-sync-CADPKT9h.js").then((n) => n.i);
 				try {
 					await m.markLegacySyncedModels?.({ skipRerender: true });
 				} catch {}
@@ -2620,8 +2620,8 @@ function renderSettings(doc) {
 			}
 			saveHot({ settings: state$2.settings });
 			try {
-				import("./currency-t4zSPSKg.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
-				import("./pricing-sync-DJHxT-Mq.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
+				import("./currency-BZt-7TC7.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
+				import("./pricing-sync-CADPKT9h.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
 			} catch {}
 			if (removed) {
 				renderModelsEditor(doc);
@@ -2651,7 +2651,7 @@ function renderSettings(doc) {
 			state$2.settings.pricingSync.useLiveRate = liveEl.checked;
 			saveHot({ settings: state$2.settings });
 			try {
-				import("./currency-t4zSPSKg.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
+				import("./currency-BZt-7TC7.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
 			} catch {}
 		};
 		if (recalcEl) recalcEl.onchange = () => {
@@ -4986,7 +4986,7 @@ function renderChatSummaryOverview(fullHistory) {
 	if (fullHistory) return;
 	(async () => {
 		try {
-			const mod = await import("./persistence-BNuHASx4.js").then((n) => n.s);
+			const mod = await import("./persistence-C4IJVd-B.js").then((n) => n.s);
 			if (!mod.getAllHistory) return;
 			const all = await mod.getAllHistory();
 			if (!all || all.length <= (state$2.history?.length || 0)) return;
@@ -7428,7 +7428,7 @@ async function getHistoryForStats() {
 	if (allHistoryPromise) return allHistoryPromise;
 	allHistoryPromise = (async () => {
 		try {
-			const mod = await import("./persistence-BNuHASx4.js").then((n) => n.s);
+			const mod = await import("./persistence-C4IJVd-B.js").then((n) => n.s);
 			if (mod.getAllHistory) {
 				const result = await mod.getAllHistory() || hot;
 				cachedAllHistory = result;
@@ -9921,7 +9921,7 @@ function bindWalletView(doc) {
 				wallet.balance.mode = input.checked ? "auto" : "manual";
 			});
 			try {
-				import("./balance-7gM-4cCE.js").then((n) => n.t).then((mod) => mod.restartBalanceTimer?.());
+				import("./balance-C3MhaV_X.js").then((n) => n.t).then((mod) => mod.restartBalanceTimer?.());
 			} catch {}
 			renderWalletView();
 		};
@@ -10637,6 +10637,20 @@ function renderHistoryInner(doc, fullHist) {
 		const c6 = fmtMoney(h.cost || 0, 6);
 		const in6 = fmtMoney(h.input_cost || 0, 6);
 		const out6 = fmtMoney(h.output_cost || 0, 6);
+		const isAgentRecord = String(h.origin || "") === "agent";
+		const agentTurnCount = Number(h.agentModelTurns) || 0;
+		const agentStatusKey = String(h.agentStatus || "");
+		const originTitle = isAgentRecord ? [
+			"Agent 模式",
+			agentTurnCount > 0 ? agentTurnCount + " 个模型回合" : "",
+			{
+				completed: "已完成",
+				partial_success: "部分完成",
+				cancelled: "已取消",
+				failed: "失败"
+			}[agentStatusKey] || ""
+		].filter(Boolean).join(" · ") : "常规对话";
+		const originBadge = isAgentRecord ? `<span class="aus-origin-badge" title="${esc$2(originTitle)}" style="flex-shrink:0;display:inline-block;padding:1px 6px;border-radius:999px;font-size:10px;font-weight:600;line-height:16px;background:var(--ds-green-bg);color:var(--ds-green);">Agent</span>` : `<span class="aus-origin-badge" title="${esc$2(originTitle)}" style="flex-shrink:0;display:inline-block;padding:1px 6px;border-radius:999px;font-size:10px;font-weight:600;line-height:16px;background:var(--ds-card-inner);color:var(--ds-text-3);">常规</span>`;
 		const recordDate = new Date(h.timestamp);
 		const recordDateText = recordDate.toLocaleDateString("zh-CN");
 		const recordTimeText = recordDate.toLocaleTimeString("zh-CN", { hour12: false });
@@ -10644,7 +10658,7 @@ function renderHistoryInner(doc, fullHist) {
     <div style="padding:10px 12px;background:var(--ds-card);border-radius:10px;margin-bottom:8px;font-size:var(--aus-fs-base);">
       <div class="aus-history-card-head" style="display:flex;justify-content:space-between;align-items:center;">
         <div class="aus-history-card-main" style="min-width:0;flex:1;">
-          <div class="aus-history-card-title" style="font-weight:600;color:var(--ds-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc$2(h.model)} · ${esc$2(localTimeHM(h.timestamp))}</div>
+          <div class="aus-history-card-title" style="display:flex;align-items:center;gap:6px;font-weight:600;color:var(--ds-text);white-space:nowrap;overflow:hidden;">${originBadge}<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc$2(h.model)} · ${esc$2(localTimeHM(h.timestamp))}</span></div>
           <div style="color:var(--ds-text-2);margin-top:2px;">${h.prompt_tokens || 0} in · ${h.completion_tokens || 0} out · ${h.duration || 0}ms · ${(h.tokenRate || 0) > 0 ? h.tokenRate + " t/s" : "未测速"}</div>
         </div>
         <div class="aus-history-card-actions" style="text-align:right;flex-shrink:0;margin-left:8px;display:flex;gap:6px;align-items:center;">
@@ -10864,7 +10878,7 @@ function renderHistory(doc, s) {
 	historyLoading = true;
 	(async () => {
 		try {
-			const mod = await import("./persistence-BNuHASx4.js").then((n) => n.s);
+			const mod = await import("./persistence-C4IJVd-B.js").then((n) => n.s);
 			if (!mod.getAllHistory) return;
 			const all = await mod.getAllHistory();
 			if (!all || !all.length) return;
@@ -11573,6 +11587,9 @@ function openPanel() {
 	panelOpen = true;
 	refreshUI();
 	try {
+		import("./collector--RBIRrJR.js").then((m) => m.reconcileOnPanelOpen()).catch(() => {});
+	} catch {}
+	try {
 		import("./update-Ca6URPP_.js").then((m) => m.maybeAutoCheck());
 	} catch {}
 }
@@ -11742,7 +11759,7 @@ function onEscapeKey(e) {
 }
 function onPageHide() {
 	try {
-		import("./persistence-BNuHASx4.js").then((n) => n.s).then((m) => m.flushSaveHot()).catch(() => {});
+		import("./persistence-C4IJVd-B.js").then((n) => n.s).then((m) => m.flushSaveHot()).catch(() => {});
 	} catch {}
 }
 function cleanupRuntimeBindings() {
@@ -11790,7 +11807,10 @@ function onAppReady() {
 		refreshUI();
 	} catch {}
 	try {
-		import("./interception-CwxjqVvh.js").then((n) => n.n).then((m) => m.installInterception()).catch(() => {});
+		import("./interception-BoETqAOw.js").then((n) => n.n).then((m) => m.installInterception()).catch(() => {});
+	} catch {}
+	try {
+		import("./collector--RBIRrJR.js").then((m) => m.initAgentUsage()).catch(() => {});
 	} catch {}
 }
 function onAppInitialized() {
@@ -11798,7 +11818,10 @@ function onAppInitialized() {
 		ensureWandEntry();
 	} catch {}
 	try {
-		import("./interception-CwxjqVvh.js").then((n) => n.n).then((m) => m.installInterception()).catch(() => {});
+		import("./interception-BoETqAOw.js").then((n) => n.n).then((m) => m.installInterception()).catch(() => {});
+	} catch {}
+	try {
+		import("./collector--RBIRrJR.js").then((m) => m.initAgentUsage()).catch(() => {});
 	} catch {}
 }
 function onChatChanged() {
@@ -11861,7 +11884,7 @@ function ensureWandEntry() {
 async function onInstall() {
 	log.debug("installed");
 	try {
-		const { loadHot } = await import("./persistence-BNuHASx4.js").then((n) => n.s);
+		const { loadHot } = await import("./persistence-C4IJVd-B.js").then((n) => n.s);
 		await loadHot();
 	} catch {}
 }
@@ -11871,7 +11894,7 @@ async function onUpdate() {
 async function onDelete() {
 	log.debug("deleted");
 	try {
-		const { flushSaveHot } = await import("./persistence-BNuHASx4.js").then((n) => n.s);
+		const { flushSaveHot } = await import("./persistence-C4IJVd-B.js").then((n) => n.s);
 		flushSaveHot();
 	} catch {}
 	try {
@@ -11888,13 +11911,13 @@ async function onDelete() {
 		stopPeakDot();
 	} catch {}
 	try {
-		(await import("./balance-7gM-4cCE.js").then((n) => n.t)).stopBalanceTimer?.();
+		(await import("./balance-C3MhaV_X.js").then((n) => n.t)).stopBalanceTimer?.();
 	} catch {}
 	try {
-		(await import("./currency-t4zSPSKg.js").then((n) => n.t)).stopRateTimer?.();
+		(await import("./currency-BZt-7TC7.js").then((n) => n.t)).stopRateTimer?.();
 	} catch {}
 	try {
-		(await import("./pricing-sync-DJHxT-Mq.js").then((n) => n.i)).stopPricingSyncTimer?.();
+		(await import("./pricing-sync-CADPKT9h.js").then((n) => n.i)).stopPricingSyncTimer?.();
 	} catch {}
 	cleanupRuntimeBindings();
 	try {
@@ -11921,26 +11944,32 @@ async function onDelete() {
 function onEnable() {
 	log.debug("enabled");
 	try {
-		import("./interception-CwxjqVvh.js").then((n) => n.n).then((m) => m.installInterception());
+		import("./interception-BoETqAOw.js").then((n) => n.n).then((m) => m.installInterception());
 	} catch {}
 	try {
-		import("./balance-7gM-4cCE.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
+		import("./collector--RBIRrJR.js").then((m) => m.initAgentUsage()).catch(() => {});
 	} catch {}
 	try {
-		import("./currency-t4zSPSKg.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
+		import("./balance-C3MhaV_X.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
 	} catch {}
 	try {
-		import("./pricing-sync-DJHxT-Mq.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
+		import("./currency-BZt-7TC7.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
+	} catch {}
+	try {
+		import("./pricing-sync-CADPKT9h.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
 	} catch {}
 }
 async function onDisable() {
 	log.debug("disabled");
 	try {
-		const { flushSaveHot } = await import("./persistence-BNuHASx4.js").then((n) => n.s);
+		const { flushSaveHot } = await import("./persistence-C4IJVd-B.js").then((n) => n.s);
 		flushSaveHot();
 	} catch {}
 	try {
-		import("./interception-CwxjqVvh.js").then((n) => n.n).then((m) => m.uninstallInterception?.());
+		import("./interception-BoETqAOw.js").then((n) => n.n).then((m) => m.uninstallInterception?.());
+	} catch {}
+	try {
+		import("./collector--RBIRrJR.js").then((m) => m.uninstallAgentUsage?.()).catch(() => {});
 	} catch {}
 	try {
 		const doc = getDoc();
@@ -11959,13 +11988,13 @@ async function onDisable() {
 		unwatchSystemTheme();
 	} catch {}
 	try {
-		(await import("./balance-7gM-4cCE.js").then((n) => n.t)).stopBalanceTimer?.();
+		(await import("./balance-C3MhaV_X.js").then((n) => n.t)).stopBalanceTimer?.();
 	} catch {}
 	try {
-		(await import("./currency-t4zSPSKg.js").then((n) => n.t)).stopRateTimer?.();
+		(await import("./currency-BZt-7TC7.js").then((n) => n.t)).stopRateTimer?.();
 	} catch {}
 	try {
-		(await import("./pricing-sync-DJHxT-Mq.js").then((n) => n.i)).stopPricingSyncTimer?.();
+		(await import("./pricing-sync-CADPKT9h.js").then((n) => n.i)).stopPricingSyncTimer?.();
 	} catch {}
 	cleanupRuntimeBindings();
 }
@@ -11993,16 +12022,19 @@ async function init() {
 		initTelemetry();
 	} catch {}
 	try {
-		(await import("./balance-7gM-4cCE.js").then((n) => n.t)).restartBalanceTimer?.();
+		(await import("./balance-C3MhaV_X.js").then((n) => n.t)).restartBalanceTimer?.();
 	} catch {}
 	try {
-		(await import("./currency-t4zSPSKg.js").then((n) => n.t)).restartRateTimer?.();
+		(await import("./currency-BZt-7TC7.js").then((n) => n.t)).restartRateTimer?.();
 	} catch {}
 	try {
-		(await import("./pricing-sync-DJHxT-Mq.js").then((n) => n.i)).restartPricingSyncTimer?.();
+		(await import("./pricing-sync-CADPKT9h.js").then((n) => n.i)).restartPricingSyncTimer?.();
 	} catch {}
 	try {
 		installInterception();
+	} catch {}
+	try {
+		import("./collector--RBIRrJR.js").then((m) => m.initAgentUsage()).catch(() => {});
 	} catch {}
 	const mount = () => {
 		try {
@@ -12024,7 +12056,7 @@ async function init() {
 			refreshUI();
 		} catch {}
 		try {
-			import("./pricing-sync-DJHxT-Mq.js").then((n) => n.i).then((m) => m.markLegacySyncedModels?.()).catch(() => {});
+			import("./pricing-sync-CADPKT9h.js").then((n) => n.i).then((m) => m.markLegacySyncedModels?.()).catch(() => {});
 		} catch {}
 	};
 	if (globalThis.SillyTavern?.getContext) mount();

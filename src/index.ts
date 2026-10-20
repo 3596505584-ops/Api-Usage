@@ -48,11 +48,13 @@ function onAppReady() {
   try { ensureWandEntry(); } catch {}
   try { refreshUI(); } catch {}
   try { import('./services/interception').then(m=>m.installInterception()).catch(() => {}); } catch {}
+  try { import('./services/agent-usage/collector').then(m => m.initAgentUsage()).catch(() => {}); } catch {}
 }
 
 function onAppInitialized() {
   try { ensureWandEntry(); } catch {}
   try { import('./services/interception').then(m=>m.installInterception()).catch(() => {}); } catch {}
+  try { import('./services/agent-usage/collector').then(m => m.initAgentUsage()).catch(() => {}); } catch {}
 }
 
 function onChatChanged() {
@@ -148,11 +150,12 @@ export async function onDelete() {
   } catch {}
   try { delete (globalThis as any).ApiUsageStat; delete (globalThis as any).ApiUsageStatInterceptor; } catch {}
 }
-export function onEnable() { log.debug('enabled'); try { import('./services/interception').then(m=>m.installInterception()); } catch {} try { import('./services/balance').then(m=> (m as any).restartBalanceTimer?.()); } catch {} try { import('./services/currency').then(m=> (m as any).restartRateTimer?.()); } catch {} try { import('./services/pricing-sync').then(m=> (m as any).restartPricingSyncTimer?.()); } catch {} }
+export function onEnable() { log.debug('enabled'); try { import('./services/interception').then(m=>m.installInterception()); } catch {} try { import('./services/agent-usage/collector').then(m=>m.initAgentUsage()).catch(() => {}); } catch {} try { import('./services/balance').then(m=> (m as any).restartBalanceTimer?.()); } catch {} try { import('./services/currency').then(m=> (m as any).restartRateTimer?.()); } catch {} try { import('./services/pricing-sync').then(m=> (m as any).restartPricingSyncTimer?.()); } catch {} }
 export async function onDisable() {
   log.debug('disabled');
   try { const { flushSaveHot } = await import('./store/persistence'); flushSaveHot(); } catch {}
   try { import('./services/interception').then(m=> (m as any).uninstallInterception?.()); } catch {}
+  try { import('./services/agent-usage/collector').then(m=> (m as any).uninstallAgentUsage?.()).catch(() => {}); } catch {}
   try {
     const doc = getDoc();
     doc.getElementById('aus-overlay')?.remove();
@@ -186,6 +189,7 @@ async function init() {
   try { const m = await import('./services/currency'); (m as any).restartRateTimer?.(); } catch {}
   try { const m = await import('./services/pricing-sync'); (m as any).restartPricingSyncTimer?.(); } catch {}
   try { installInterception(); } catch {}
+  try { import('./services/agent-usage/collector').then(m => m.initAgentUsage()).catch(() => {}); } catch {}
   const mount = () => {
     try { applyTheme((state.settings as any).theme); } catch {}
     // 跟随系统：绑定 prefers-color-scheme 的 change 事件（仅 auto 模式生效）

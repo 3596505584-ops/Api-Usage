@@ -1276,7 +1276,7 @@
         </ul>
       </section>
 
-      <section class="doc-section" id="history" data-keywords="历史记录 分页 筛选 详情 请求参数 完整响应 原始用量 消息内容 缓存断点 对比">
+      <section class="doc-section" id="history" data-keywords="历史记录 分页 筛选 详情 请求参数 完整响应 原始用量 消息内容 缓存断点 对比 Agent 常规 来源 TauriTavern">
         <div class="section-kicker">历史记录</div>
         <h2 id="history-title">历史记录</h2>
         <p class="lead">历史页按时间倒序展示每一次已记录的调用，用于核对单次请求的费用、Token、性能、缓存和原始返回信息。</p>
@@ -1290,6 +1290,15 @@
           <li>接入类型与密钥联动；切换接入后，密钥筛选会回到全部。</li>
           <li>筛选先作用于热历史和冷库全量历史，再进行分页，每页显示一定数量的记录。</li>
           <li>没有结果时可以点击清除筛选恢复，不必逐项重置。</li>
+        </ul>
+
+        <h3 id="history-origin">记录来源：Agent 与常规</h3>
+        <p>每条记录的模型名前面会有一个来源标识：<strong>常规</strong>表示浏览器正常发起的对话请求，<strong>Agent</strong>表示由 TauriTavern 的 Agent 模式产生的运行。旧记录没有来源字段，统一按常规显示。把鼠标停在标识上可以看到 Agent 运行的模型回合数与终态。</p>
+        <ul>
+          <li>Agent 模式下，一次运行只记一条历史，即使中间包含多轮模型调用、工具调用或子 Agent 委派，Token 与费用都是这些回合的合计。</li>
+          <li>Agent 条目的耗时是各回合模型净耗时之和，不含工具执行时间；首字延迟与速率不适用，显示为 0 或横线。</li>
+          <li>每个回合的明细与钱包分项保存在详情的“原始用量”页签中，包含回合序号、模型、来源、Token 与耗时。</li>
+          <li>不属于 TauriTavern 的酒馆不会出现 Agent 标识，记录方式与之前完全一致。</li>
         </ul>
 
         <h3 id="history-card">单条记录</h3>
@@ -1601,7 +1610,7 @@
         <p>关于页显示扩展名称、当前版本、仓库入口和项目说明。需要报告问题或查看变更时，应优先确认当前版本和复现步骤。</p>
       </section>
 
-      <section class="doc-section" id="faq" data-keywords="常见问题 没有记录 0 Token 费用为零 钱包 图表 WebDAV 窄屏 下拉">
+      <section class="doc-section" id="faq" data-keywords="常见问题 没有记录 0 Token 费用为零 钱包 图表 WebDAV 窄屏 下拉 Agent 标识">
         <div class="section-kicker">常见问题</div>
         <h2 id="faq-title">常见问题</h2>
         <p class="lead">以下问题优先从数据来源、筛选条件、钱包价格和浏览器显示环境四个方面检查。</p>
@@ -1612,6 +1621,14 @@
           <li>检查 SillyTavern 的 API 密钥、连接状态和请求地址是否可用。密钥错误或请求中止时，扩展可能没有可记录的用量。</li>
           <li>确认当前历史范围选择和设置中的历史范围开关没有过滤掉旧记录；需要时切换为“全部历史”。</li>
           <li>如果历史记录出现条目但 Token 为零，应检查上游是否返回了标准用量数据并向开发者反馈。</li>
+        </ul>
+
+        <h3 id="faq-agent">Agent 模式没有记录或没有 Agent 标识</h3>
+        <ul>
+          <li>Agent 采集只在使用 TauriTavern 宿主时启用；上游原版 SillyTavern 没有对应接口，因此始终按常规记录。</li>
+          <li>Agent 运行结束后才会写入一条历史，运行过程中不会边跑边写；如果运行被中断，只有已经发生的模型回合会被计入。</li>
+          <li>确认 Agent 配置中的模型来源可返回用量数据；若上游完全不返回用量，该回合会被跳过，避免写入 0 Token 的无效记录。</li>
+          <li>可以在浏览器控制台执行 <code>localStorage.setItem('aus_agent_capture','0')</code> 临时关闭 Agent 采集，执行 <code>removeItem</code> 恢复。</li>
         </ul>
 
         <h3 id="faq-empty-filter">筛选结果为空</h3>

@@ -447,6 +447,17 @@ function renderHistoryInner(doc: Document, fullHist: any[]) {
     const hps = hp.toFixed(1), mps = mp.toFixed(1), ops = op.toFixed(1);
     const fmtMoney = (v:number,d=4)=>{ try{  return formatMoney(v||0,d);} catch{ return '¥'+(v||0).toFixed(d)+' CNY'; } };
     const c4 = fmtMoney(h.cost||0,4); const c6 = fmtMoney(h.cost||0,6); const in6 = fmtMoney(h.input_cost||0,6); const out6 = fmtMoney(h.output_cost||0,6);
+    // 记录来源徽标：Agent 模式 / 常规对话（旧记录无 origin 视为常规）
+    const isAgentRecord = String((h as any).origin || '') === 'agent';
+    const agentTurnCount = Number((h as any).agentModelTurns) || 0;
+    const agentStatusKey = String((h as any).agentStatus || '');
+    const agentStatusLabels: Record<string, string> = { completed: '已完成', partial_success: '部分完成', cancelled: '已取消', failed: '失败' };
+    const originTitle = isAgentRecord
+      ? ['Agent 模式', agentTurnCount > 0 ? agentTurnCount + ' 个模型回合' : '', agentStatusLabels[agentStatusKey] || ''].filter(Boolean).join(' · ')
+      : '常规对话';
+    const originBadge = isAgentRecord
+      ? `<span class="aus-origin-badge" title="${esc(originTitle)}" style="flex-shrink:0;display:inline-block;padding:1px 6px;border-radius:999px;font-size:10px;font-weight:600;line-height:16px;background:var(--ds-green-bg);color:var(--ds-green);">Agent</span>`
+      : `<span class="aus-origin-badge" title="${esc(originTitle)}" style="flex-shrink:0;display:inline-block;padding:1px 6px;border-radius:999px;font-size:10px;font-weight:600;line-height:16px;background:var(--ds-card-inner);color:var(--ds-text-3);">常规</span>`;
     const recordDate = new Date(h.timestamp);
     const recordDateText = recordDate.toLocaleDateString('zh-CN');
     const recordTimeText = recordDate.toLocaleTimeString('zh-CN', { hour12: false });
@@ -454,7 +465,7 @@ function renderHistoryInner(doc: Document, fullHist: any[]) {
     <div style="padding:10px 12px;background:var(--ds-card);border-radius:10px;margin-bottom:8px;font-size:var(--aus-fs-base);">
       <div class="aus-history-card-head" style="display:flex;justify-content:space-between;align-items:center;">
         <div class="aus-history-card-main" style="min-width:0;flex:1;">
-          <div class="aus-history-card-title" style="font-weight:600;color:var(--ds-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(h.model)} · ${esc(localTimeHM(h.timestamp))}</div>
+          <div class="aus-history-card-title" style="display:flex;align-items:center;gap:6px;font-weight:600;color:var(--ds-text);white-space:nowrap;overflow:hidden;">${originBadge}<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(h.model)} · ${esc(localTimeHM(h.timestamp))}</span></div>
           <div style="color:var(--ds-text-2);margin-top:2px;">${h.prompt_tokens || 0} in · ${h.completion_tokens || 0} out · ${h.duration || 0}ms · ${(h.tokenRate||0)>0 ? h.tokenRate+' t/s' : '未测速'}</div>
         </div>
         <div class="aus-history-card-actions" style="text-align:right;flex-shrink:0;margin-left:8px;display:flex;gap:6px;align-items:center;">
@@ -1299,6 +1310,8 @@ export function openPanel() {
   });
   panelOpen = true;
   refreshUI();
+  // Agent 模式用量对账（无 TauriTavern 时该模块立即返回，不产生任何 IPC）
+  try { import('../services/agent-usage/collector').then(m => m.reconcileOnPanelOpen()).catch(() => {}); } catch {}
   try { import('../services/update').then(m => m.maybeAutoCheck()); } catch {}
 }
 export function closePanel() {

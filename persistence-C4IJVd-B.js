@@ -7,6 +7,8 @@ import { t as log } from "./logger-8RGXnvfI.js";
 * 优先使用 endpointId，钱包记录与迁移前记录才能保持同一身份。
 */
 function historyRecordKey(entry) {
+	const agentRunId = typeof entry?.agentRunId === "string" ? entry.agentRunId.trim() : "";
+	if (agentRunId) return JSON.stringify(["agent", agentRunId]);
 	return JSON.stringify([
 		Number(entry?.timestamp) || 0,
 		String(entry?.model || ""),

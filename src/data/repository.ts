@@ -35,6 +35,7 @@ import {
 import { DEEPSEEK_WALLET_ID, type WalletConfig } from '../types/wallet';
 import { migrateLegacyWalletApiKey } from '../services/wallet-secrets';
 import { historyRecordKey } from '../utils/history-key';
+import type { AgentRunEntryInput } from '../types/agent';
 
 function getCurrentChatId(): string | null {
   try {
@@ -422,7 +423,40 @@ function migrateWallets(hot: any, cold: any[] = []): boolean {
 
 const WALLET_PRICING_BACKFILL_VERSION = 1;
 
+/**
+ * Agent 模式条目的重算：一次 Run 可能跨多个钱包、多个时段，
+ * 因此按 raw_usage.agent.walletBreakdown 逐项计价后求和。
+ * 返回 null 表示不是 Agent 条目（或缺少分项），调用方继续走原有单钱包逻辑。
+ */
+function recalcAgentRunCost(entry: any): ReturnType<typeof calcCost> | null {
+  if (!entry || entry.origin !== 'agent') return null;
+  const shares = entry?.raw_usage?.agent?.walletBreakdown;
+  if (!Array.isArray(shares) || !shares.length) return null;
+  let input = 0;
+  let output = 0;
+  let priceType = '';
+  let source: ReturnType<typeof calcCost>['source'] = 'unpriced';
+  for (const share of shares) {
+    const shareWallet = share?.walletId
+      ? (state.wallets || []).find((item) => item.id === share.walletId) || null
+      : null;
+    const c = calcCost({
+      timestamp: Number(share?.timestamp) || entry.timestamp,
+      model: typeof share?.model === 'string' && share.model ? share.model : entry.model,
+      prompt_cache_hit_tokens: Number(share?.hit) || 0,
+      prompt_cache_miss_tokens: Number(share?.miss) || 0,
+      completion_tokens: Number(share?.comp) || 0,
+    }, state.settings as any, shareWallet);
+    input += c.input;
+    output += c.output;
+    if (shares.length === 1) { priceType = c.priceType; source = c.source; }
+  }
+  return { input, output, total: input + output, priceType: priceType || entry.priceType || 'old', source };
+}
+
 function recalcEntryCost(entry: any, wallet: WalletConfig | null) {
+  const agentCost = recalcAgentRunCost(entry);
+  if (agentCost) return agentCost;
   const legacyWallet = entry?.legacyPricingWalletId
     ? state.wallets.find((item) => item.id === entry.legacyPricingWalletId) || null
     : null;
@@ -433,6 +467,42 @@ function recalcEntryCost(entry: any, wallet: WalletConfig | null) {
     prompt_cache_miss_tokens: entry.cache_miss_tokens || 0,
     completion_tokens: entry.completion_tokens || 0,
   }, state.settings as any, legacyWallet || wallet);
+}
+
+/** 钱包余额增减（sign=-1 为回滚）；只调整已填写余额的钱包，与 addEntry 的预扣口径一致 */
+function adjustWalletBalance(walletId: string | null | undefined, cost: number, sign: 1 | -1): void {
+  if (!walletId) return;
+  const amount = Number(cost);
+  if (!Number.isFinite(amount) || amount === 0) return;
+  const wallet = (state.wallets || []).find((item) => item.id === walletId);
+  if (!wallet) return;
+  const current = wallet.balance.amount == null || wallet.balance.amount === ''
+    ? NaN
+    : parseFloat(String(wallet.balance.amount));
+  if (!Number.isFinite(current)) return;
+  const delta = wallet.balance.currency === 'USD' ? amount / getWalletExchangeRate() : amount;
+  wallet.balance.amount = (current - sign * delta).toFixed(4);
+  wallet.updatedAt = Date.now();
+}
+
+/** 回滚一条 Agent 历史对聚合、轮次与钱包余额的贡献（用于同 Run 重采 upsert） */
+function rollbackAgentRunEntry(entry: any): void {
+  if (!entry) return;
+  state.total_tokens -= Number(entry.total_tokens) || 0;
+  state.total_cost -= Number(entry.cost) || 0;
+  state.input_tokens -= Number(entry.prompt_tokens) || 0;
+  state.output_tokens -= Number(entry.completion_tokens) || 0;
+  state.cache_hit_tokens -= Number(entry.cache_hit_tokens) || 0;
+  state.cache_miss_tokens -= Number(entry.cache_miss_tokens) || 0;
+  state.input_cost -= Number(entry.input_cost) || 0;
+  state.output_cost -= Number(entry.output_cost) || 0;
+  const shares = entry?.raw_usage?.agent?.walletBreakdown;
+  if (Array.isArray(shares) && shares.length) {
+    for (const share of shares) adjustWalletBalance(share?.walletId ?? null, Number(share?.cost) || 0, -1);
+  } else {
+    adjustWalletBalance(entry.walletId ?? null, Number(entry.cost) || 0, -1);
+  }
+  if (isDeepSeekOfficialModel(entry.model) && state.rounds > 0) state.rounds -= 1;
 }
 
 function applyCostPatch(entry: any, cost: ReturnType<typeof calcCost>): void {
@@ -1064,6 +1134,179 @@ export const repository = {
         }
       }
     } catch {}
+    if (state.history.length > MAX_HISTORY) {
+      const overflow = state.history.slice(MAX_HISTORY);
+      appendHistoryCold(overflow).catch(notifyStorageFailure);
+      state.history = state.history.slice(0, MAX_HISTORY);
+    }
+    state.startTime = state.startTime || Date.now();
+    persist();
+    emit(DataEvents.HISTORY_ADDED, entry);
+    return entry;
+  },
+
+  /**
+   * Agent 模式写入：一次 Run = 一条历史，按 agentRunId 幂等 upsert（不追加）。
+   * 终态才调用；重复调用会先回滚旧条目贡献再写入新值。
+   * 与 addEntry 完全独立，常规对话链路不受影响。
+   */
+  async addAgentRunEntry(input: AgentRunEntryInput): Promise<any | null> {
+    if (!input || typeof input !== 'object') return null;
+    const runId = String(input.agentRunId || '').trim();
+    if (!runId) return null;
+    const hit = Number(input.hit) || 0;
+    const miss = Number(input.miss) || 0;
+    const comp = Number(input.comp) || 0;
+    const total = Number(input.total) || hit + miss + comp;
+    if (hit + miss + comp <= 0) {
+      log.debug('addAgentRunEntry 跳过：全 0 token ' + runId);
+      return null;
+    }
+    const shares = (Array.isArray(input.walletShares) && input.walletShares.length
+      ? input.walletShares
+      : [{
+        walletId: input.walletId ?? null,
+        timestamp: input.timestamp,
+        model: input.model,
+        hit,
+        miss,
+        comp,
+        total,
+        cost: Number(input.cost) || 0,
+        inputCost: Number(input.inputCost) || 0,
+        outputCost: Number(input.outputCost) || 0,
+        priceType: input.priceType,
+        pricingSource: input.pricingSource,
+      }]) as any[];
+
+    // 1) 同 Run 已存在于热历史 → 回滚后重建
+    let existing = (state.history || []).findIndex((entry: any) => entry && entry.agentRunId === runId);
+    if (existing >= 0) {
+      rollbackAgentRunEntry(state.history[existing]);
+      state.history.splice(existing, 1);
+    } else {
+      // 2) 也可能已溢流到冷历史
+      try {
+        const cold = await loadHistoryCold();
+        const coldIndex = cold.findIndex((entry: any) => entry && entry.agentRunId === runId);
+        if (coldIndex >= 0) {
+          rollbackAgentRunEntry(cold[coldIndex]);
+          cold.splice(coldIndex, 1);
+          await saveHistoryCold(cold);
+        }
+      } catch {}
+    }
+
+    const connection = input.connection;
+    const now = Date.now();
+    const entry: any = {
+      timestamp: Number(input.timestamp) || now,
+      model: normalizeModel(String(input.model || 'unknown')),
+      requestId: 'agent:' + runId,
+      prompt_tokens: hit + miss,
+      cache_hit_tokens: hit,
+      cache_miss_tokens: miss,
+      completion_tokens: comp,
+      total_tokens: total,
+      input_cost: Number(input.inputCost) || 0,
+      output_cost: Number(input.outputCost) || 0,
+      cost: Number(input.cost) || 0,
+      cache_hit_rate: hit + miss > 0 ? (hit / (hit + miss)) * 100 : 0,
+      priceType: input.priceType || 'old',
+      raw_usage: {
+        prompt_tokens: hit + miss,
+        cache_hit_tokens: hit,
+        cache_miss_tokens: miss,
+        completion_tokens: comp,
+        total_tokens: total,
+        agent: {
+          version: 1,
+          runId,
+          status: input.status,
+          profileId: input.profileId ?? null,
+          modelTurns: Number(input.modelTurns) || 0,
+          invocationCount: Number(input.invocationCount) || 1,
+          stableChatId: input.stableChatId ?? null,
+          messageIndex: input.messageIndex ?? null,
+          generationType: input.generationType ?? null,
+          committed: !!input.committed,
+          partial: !!input.partial,
+          wallClockMs: Number(input.wallClockMs) || 0,
+          turns: (input.turns || []).map((turn) => ({
+            round: turn.round,
+            invocationId: turn.invocationId,
+            model: turn.model,
+            source: turn.source ?? null,
+            providerFormat: turn.providerFormat ?? null,
+            usage: turn.rawUsage ?? null,
+            durationMs: turn.durationMs,
+            timestamp: turn.timestamp,
+            cost: turn.cost,
+          })),
+          walletBreakdown: shares.map((share) => ({
+            walletId: share.walletId ?? null,
+            timestamp: share.timestamp,
+            model: share.model,
+            hit: share.hit,
+            miss: share.miss,
+            comp: share.comp,
+            total: share.total,
+            cost: share.cost,
+            inputCost: share.inputCost,
+            outputCost: share.outputCost,
+            priceType: share.priceType,
+            pricingSource: share.pricingSource,
+          })),
+        },
+      },
+      messages: [],
+      duration: Number(input.duration) || 0,
+      ttft: 0,
+      thinkTime: 0,
+      thinkTokens: Number(input.thinkTokens) || 0,
+      tokenRate: 0,
+      fullRequest: input.fullRequest ?? null,
+      fullResponse: null,
+      finishReason: null,
+      isTruncated: false,
+      streamed: null,
+      chatId: input.chatId ?? getCurrentChatId(),
+      chatName: input.chatName ?? getCurrentChatName(),
+      sourceType: connection?.sourceType ?? null,
+      endpointId: connection?.endpointId ?? null,
+      endpointLabel: connection?.endpointLabel ?? null,
+      credentialId: connection?.credentialId ?? null,
+      credentialLabel: connection?.credentialLabel ?? null,
+      walletId: input.walletId ?? shares[0]?.walletId ?? null,
+      pricingSource: input.pricingSource || 'unpriced',
+      origin: 'agent',
+      agentRunId: runId,
+      agentProfileId: input.profileId ?? null,
+      agentStatus: input.status ?? null,
+      agentModelTurns: Number(input.modelTurns) || 0,
+      agentInvocationCount: Number(input.invocationCount) || 1,
+      agentStableChatId: input.stableChatId ?? null,
+      agentMessageIndex: input.messageIndex ?? null,
+      agentGenerationType: input.generationType ?? null,
+      agentCommitted: !!input.committed,
+      agentPartial: !!input.partial,
+      agentTimingSource: 'events',
+    };
+
+    state.history.unshift(entry);
+    state.total_tokens += total;
+    state.total_cost += entry.cost;
+    state.input_tokens += hit + miss;
+    state.output_tokens += comp;
+    state.cache_hit_tokens += hit;
+    state.cache_miss_tokens += miss;
+    state.input_cost += entry.input_cost;
+    state.output_cost += entry.output_cost;
+    // 轮次口径与 aggregateHistory / rebuildAggregates 保持一致，避免刷新后 rounds 漂移
+    if (isDeepSeekOfficialModel(entry.model)) state.rounds += 1;
+    // 多钱包 Run 按分项分别预扣，避免只扣主钱包导致余额偏差
+    for (const share of shares) adjustWalletBalance(share?.walletId ?? null, Number(share?.cost) || 0, 1);
+
     if (state.history.length > MAX_HISTORY) {
       const overflow = state.history.slice(MAX_HISTORY);
       appendHistoryCold(overflow).catch(notifyStorageFailure);

@@ -49,6 +49,31 @@ export type HistoryEntry = {
   legacyPricingWalletId?: string | null;
   /** 旧数据同名校验价来源模型名 */
   legacyPricingModel?: string | null;
+
+  // ---- 记录来源（可选，缺省即常规对话；旧记录不迁移） ----
+  /** 记录来源：常规对话 / TauriTavern Agent 模式；无值等同 'chat' */
+  origin?: 'chat' | 'agent';
+  /** Agent 模式 Run 标识；有值时作为唯一幂等键 */
+  agentRunId?: string | null;
+  agentProfileId?: string | null;
+  /** Run 终态：completed / partial_success / cancelled / failed */
+  agentStatus?: string | null;
+  /** 实际参与计费的模型回合数 */
+  agentModelTurns?: number | null;
+  /** 含子 Agent 的 Invocation 数 */
+  agentInvocationCount?: number | null;
+  /** TauriTavern 稳定聊天 ID（重命名不变） */
+  agentStableChatId?: string | null;
+  /** 最后一次提交所在的聊天楼层 */
+  agentMessageIndex?: number | null;
+  /** 生成类型：normal / regenerate / swipe … */
+  agentGenerationType?: string | null;
+  /** 是否有内容提交到聊天（失败/取消可能为 false） */
+  agentCommitted?: boolean | null;
+  /** 采集是否不完整（超时、回合读取失败、事件截断） */
+  agentPartial?: boolean | null;
+  /** 耗时口径来源 */
+  agentTimingSource?: 'events' | null;
 };
 
 export type Save = {
