@@ -1986,6 +1986,20 @@ var repository = {
 		emit(DataEvents.SETTINGS_CHANGED);
 		return wallet;
 	},
+	/** 收起所有已展开的钱包（离开钱包页时调用），一次落盘 */
+	collapseAllWallets() {
+		let changed = false;
+		for (const wallet of state.wallets || []) if (wallet.collapsed !== true) {
+			wallet.collapsed = true;
+			wallet.updatedAt = Date.now();
+			changed = true;
+		}
+		if (changed) {
+			persist();
+			emit(DataEvents.SETTINGS_CHANGED);
+		}
+		return changed;
+	},
 	setWalletIgnored(walletId, ignored) {
 		if (!walletId || walletId === "wallet:deepseek-official") return false;
 		if (ignored) {
@@ -2057,7 +2071,7 @@ var repository = {
 					const modelObservation = observeModel(wallet, model, nowTs);
 					if (modelObservation.changed) wallet.updatedAt = nowTs;
 					if (modelObservation.model?.source === "discovered" && modelObservation.model.price.priceConfigured !== true && state.settings.pricingSync?.enabled) try {
-						import("./pricing-sync-CP0UaEYe.js").then((n) => n.i).then((module) => module.syncPricingFromModelsDev({ silent: true })).then(() => this.recalcWallet(wallet.id)).catch(() => {});
+						import("./pricing-sync-DJHxT-Mq.js").then((n) => n.i).then((module) => module.syncPricingFromModelsDev({ silent: true })).then(() => this.recalcWallet(wallet.id)).catch(() => {});
 					} catch {}
 				}
 				wallet.lastUsedAt = nowTs;

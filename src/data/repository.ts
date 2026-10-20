@@ -791,6 +791,23 @@ export const repository = {
     return wallet;
   },
 
+  /** 收起所有已展开的钱包（离开钱包页时调用），一次落盘 */
+  collapseAllWallets(): boolean {
+    let changed = false;
+    for (const wallet of state.wallets || []) {
+      if (wallet.collapsed !== true) {
+        wallet.collapsed = true;
+        wallet.updatedAt = Date.now();
+        changed = true;
+      }
+    }
+    if (changed) {
+      persist();
+      emit(DataEvents.SETTINGS_CHANGED);
+    }
+    return changed;
+  },
+
   setWalletIgnored(walletId: string, ignored: boolean): boolean {
     if (!walletId || walletId === DEEPSEEK_WALLET_ID) return false;
     if (ignored) {

@@ -3,12 +3,12 @@ import { n as getSelectedSave, r as state$2, t as getHistoryForDisplay } from ".
 import { a as HIDDEN_PRICING_MODELS, l as PRICING, p as WEBDAV_SYNC_FILE, r as DEFAULT_PEAK_HOURS, t as DEFAULT_CONTEXT_LIMIT } from "./pricing-Bc-qEvy8.js";
 import { c as saveExtensionSettings, d as historyRecordKey, i as getExtensionSettings, u as saveHot } from "./persistence-BNuHASx4.js";
 import { r as toast, t as log } from "./logger-8RGXnvfI.js";
-import { C as mergeWalletCollections, O as DEEPSEEK_WALLET_ID, S as findWalletModel, T as walletPendingModelCount, _ as normalizeModel, a as decryptKey, b as defaultContextLimitForModel, c as isTruncatedFinish, d as calcCost, f as calcSavings, g as isWalletPeakHour, h as isPeakHour, i as saveWalletApiKey, k as WALLET_CATALOG_PROVIDERS, l as DataEvents, m as isDeepSeekOfficialModel, o as encryptKey, p as getPricing$1, r as getWalletApiKey, s as sanitizeHistoryTiming, t as repository, u as on, w as walletBalanceToCny, x as findWalletForHistory } from "./repository-C_XhljCi.js";
+import { C as mergeWalletCollections, O as DEEPSEEK_WALLET_ID, S as findWalletModel, T as walletPendingModelCount, _ as normalizeModel, a as decryptKey, b as defaultContextLimitForModel, c as isTruncatedFinish, d as calcCost, f as calcSavings, g as isWalletPeakHour, h as isPeakHour, i as saveWalletApiKey, k as WALLET_CATALOG_PROVIDERS, l as DataEvents, m as isDeepSeekOfficialModel, o as encryptKey, p as getPricing$1, r as getWalletApiKey, s as sanitizeHistoryTiming, t as repository, u as on, w as walletBalanceToCny, x as findWalletForHistory } from "./repository-iLgppw1d.js";
 import { a as isUnsafeKey$1, c as localDay$1, i as isPeakHour$1, l as localTimeHM, n as isChinaHoliday, o as isValidDayKey, r as isExtraOffDay, s as isWeekendDay, t as esc$2, u as CN_HOLIDAY_COVERAGE_LABEL } from "./date-BJI2m6dS.js";
 import { a as getWalletExchangeRate, i as getDisplayCurrency, n as fetchLiveRate, r as formatMoney } from "./currency-t4zSPSKg.js";
-import { r as recalcAllCosts, t as installInterception } from "./interception-DuVK9ian.js";
-import { i as saveApiKey, n as queryBalance, r as queryWalletBalance } from "./balance-CybZ7bHi.js";
-import { a as removeSyncedModels, n as isSyncedCustomModel, o as syncPricingFromModelsDev, r as previewSync, t as fetchModelsDevCatalog } from "./pricing-sync-CP0UaEYe.js";
+import { r as recalcAllCosts, t as installInterception } from "./interception-CwxjqVvh.js";
+import { i as saveApiKey, n as queryBalance, r as queryWalletBalance } from "./balance-7gM-4cCE.js";
+import { a as removeSyncedModels, n as isSyncedCustomModel, o as syncPricingFromModelsDev, r as previewSync, t as fetchModelsDevCatalog } from "./pricing-sync-DJHxT-Mq.js";
 //#region src/services/import-export.ts
 function isUnsafeKey(k) {
 	return k === "__proto__" || k === "constructor" || k === "prototype";
@@ -2386,14 +2386,14 @@ function renderSettings(doc) {
 		doc.getElementById("aus-auto-balance-interval").style.display = autoCb.checked ? "block" : "none";
 		saveHot({ settings: state$2.settings });
 		try {
-			import("./balance-CybZ7bHi.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
+			import("./balance-7gM-4cCE.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
 		} catch {}
 	};
 	doc.getElementById("aus-balance-interval").onchange = (e) => {
 		state$2.settings.balanceInterval = parseInt(e.target.value) || 10;
 		saveHot({ settings: state$2.settings });
 		try {
-			import("./balance-CybZ7bHi.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
+			import("./balance-7gM-4cCE.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
 		} catch {}
 	};
 	if (dbgCb) dbgCb.onchange = () => {
@@ -2438,7 +2438,7 @@ function renderSettings(doc) {
 		const clearBtn = doc.getElementById("aus-btn-debug-clear");
 		if (clearBtn) clearBtn.onclick = async () => {
 			try {
-				const { repository } = await import("./repository-C_XhljCi.js").then((n) => n.n);
+				const { repository } = await import("./repository-iLgppw1d.js").then((n) => n.n);
 				const { state: st } = await import("./store-Cc2SGj8q.js").then((n) => n.i);
 				await repository.replaceAll({ history: (st.history || []).filter((h) => h._debug !== true) });
 				await repository.recalcAll();
@@ -2588,7 +2588,7 @@ function renderSettings(doc) {
 					intervalDrop.style.display = "none";
 					if (intervalLabel) intervalLabel.textContent = intervalMap[el.getAttribute("data-interval")] || el.getAttribute("data-interval");
 					try {
-						import("./pricing-sync-CP0UaEYe.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
+						import("./pricing-sync-DJHxT-Mq.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
 						import("./currency-t4zSPSKg.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
 					} catch {}
 				};
@@ -2610,7 +2610,7 @@ function renderSettings(doc) {
 			if (panel) panel.style.display = enabledEl.checked ? "grid" : "none";
 			let removed = 0;
 			if (!enabledEl.checked) try {
-				const m = await import("./pricing-sync-CP0UaEYe.js").then((n) => n.i);
+				const m = await import("./pricing-sync-DJHxT-Mq.js").then((n) => n.i);
 				try {
 					await m.markLegacySyncedModels?.({ skipRerender: true });
 				} catch {}
@@ -2621,7 +2621,7 @@ function renderSettings(doc) {
 			saveHot({ settings: state$2.settings });
 			try {
 				import("./currency-t4zSPSKg.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
-				import("./pricing-sync-CP0UaEYe.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
+				import("./pricing-sync-DJHxT-Mq.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
 			} catch {}
 			if (removed) {
 				renderModelsEditor(doc);
@@ -9580,7 +9580,7 @@ function bindWalletView(doc) {
 				wallet.balance.mode = input.checked ? "auto" : "manual";
 			});
 			try {
-				import("./balance-CybZ7bHi.js").then((n) => n.t).then((mod) => mod.restartBalanceTimer?.());
+				import("./balance-7gM-4cCE.js").then((n) => n.t).then((mod) => mod.restartBalanceTimer?.());
 			} catch {}
 			renderWalletView();
 		};
@@ -9938,6 +9938,7 @@ function prettyFullResponse(resp) {
 }
 var panelCreated = false;
 var panelOpen = false;
+var currentView = "overview";
 var collapsed = false;
 function refreshUI() {
 	try {
@@ -10544,6 +10545,11 @@ function bindPanel(doc) {
 	if (q) q.onclick = () => queryBalance();
 }
 function switchView(view) {
+	const prevView = currentView;
+	currentView = view;
+	if (prevView === "wallet" && view !== "wallet") try {
+		repository.collapseAllWallets();
+	} catch {}
 	try {
 		trackPage(view);
 	} catch {}
@@ -11443,7 +11449,7 @@ function onAppReady() {
 		refreshUI();
 	} catch {}
 	try {
-		import("./interception-DuVK9ian.js").then((n) => n.n).then((m) => m.installInterception()).catch(() => {});
+		import("./interception-CwxjqVvh.js").then((n) => n.n).then((m) => m.installInterception()).catch(() => {});
 	} catch {}
 }
 function onAppInitialized() {
@@ -11451,7 +11457,7 @@ function onAppInitialized() {
 		ensureWandEntry();
 	} catch {}
 	try {
-		import("./interception-DuVK9ian.js").then((n) => n.n).then((m) => m.installInterception()).catch(() => {});
+		import("./interception-CwxjqVvh.js").then((n) => n.n).then((m) => m.installInterception()).catch(() => {});
 	} catch {}
 }
 function onChatChanged() {
@@ -11541,13 +11547,13 @@ async function onDelete() {
 		stopPeakDot();
 	} catch {}
 	try {
-		(await import("./balance-CybZ7bHi.js").then((n) => n.t)).stopBalanceTimer?.();
+		(await import("./balance-7gM-4cCE.js").then((n) => n.t)).stopBalanceTimer?.();
 	} catch {}
 	try {
 		(await import("./currency-t4zSPSKg.js").then((n) => n.t)).stopRateTimer?.();
 	} catch {}
 	try {
-		(await import("./pricing-sync-CP0UaEYe.js").then((n) => n.i)).stopPricingSyncTimer?.();
+		(await import("./pricing-sync-DJHxT-Mq.js").then((n) => n.i)).stopPricingSyncTimer?.();
 	} catch {}
 	cleanupRuntimeBindings();
 	try {
@@ -11574,16 +11580,16 @@ async function onDelete() {
 function onEnable() {
 	log.debug("enabled");
 	try {
-		import("./interception-DuVK9ian.js").then((n) => n.n).then((m) => m.installInterception());
+		import("./interception-CwxjqVvh.js").then((n) => n.n).then((m) => m.installInterception());
 	} catch {}
 	try {
-		import("./balance-CybZ7bHi.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
+		import("./balance-7gM-4cCE.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
 	} catch {}
 	try {
 		import("./currency-t4zSPSKg.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
 	} catch {}
 	try {
-		import("./pricing-sync-CP0UaEYe.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
+		import("./pricing-sync-DJHxT-Mq.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
 	} catch {}
 }
 async function onDisable() {
@@ -11593,7 +11599,7 @@ async function onDisable() {
 		flushSaveHot();
 	} catch {}
 	try {
-		import("./interception-DuVK9ian.js").then((n) => n.n).then((m) => m.uninstallInterception?.());
+		import("./interception-CwxjqVvh.js").then((n) => n.n).then((m) => m.uninstallInterception?.());
 	} catch {}
 	try {
 		const doc = getDoc();
@@ -11612,13 +11618,13 @@ async function onDisable() {
 		unwatchSystemTheme();
 	} catch {}
 	try {
-		(await import("./balance-CybZ7bHi.js").then((n) => n.t)).stopBalanceTimer?.();
+		(await import("./balance-7gM-4cCE.js").then((n) => n.t)).stopBalanceTimer?.();
 	} catch {}
 	try {
 		(await import("./currency-t4zSPSKg.js").then((n) => n.t)).stopRateTimer?.();
 	} catch {}
 	try {
-		(await import("./pricing-sync-CP0UaEYe.js").then((n) => n.i)).stopPricingSyncTimer?.();
+		(await import("./pricing-sync-DJHxT-Mq.js").then((n) => n.i)).stopPricingSyncTimer?.();
 	} catch {}
 	cleanupRuntimeBindings();
 }
@@ -11646,13 +11652,13 @@ async function init() {
 		initTelemetry();
 	} catch {}
 	try {
-		(await import("./balance-CybZ7bHi.js").then((n) => n.t)).restartBalanceTimer?.();
+		(await import("./balance-7gM-4cCE.js").then((n) => n.t)).restartBalanceTimer?.();
 	} catch {}
 	try {
 		(await import("./currency-t4zSPSKg.js").then((n) => n.t)).restartRateTimer?.();
 	} catch {}
 	try {
-		(await import("./pricing-sync-CP0UaEYe.js").then((n) => n.i)).restartPricingSyncTimer?.();
+		(await import("./pricing-sync-DJHxT-Mq.js").then((n) => n.i)).restartPricingSyncTimer?.();
 	} catch {}
 	try {
 		installInterception();
@@ -11677,7 +11683,7 @@ async function init() {
 			refreshUI();
 		} catch {}
 		try {
-			import("./pricing-sync-CP0UaEYe.js").then((n) => n.i).then((m) => m.markLegacySyncedModels?.()).catch(() => {});
+			import("./pricing-sync-DJHxT-Mq.js").then((n) => n.i).then((m) => m.markLegacySyncedModels?.()).catch(() => {});
 		} catch {}
 	};
 	if (globalThis.SillyTavern?.getContext) mount();

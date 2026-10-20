@@ -656,7 +656,12 @@ export function bindPanel(doc: Document) {
 }
 
 function switchView(view: typeof currentView) {
+  const prevView = currentView;
   currentView = view;
+  // 离开钱包页时收起所有已展开的钱包，下次进入保持默认收起
+  if (prevView === 'wallet' && view !== 'wallet') {
+    try { repository.collapseAllWallets(); } catch {}
+  }
   // 匿名使用统计：页面使用率（仅本地累加，关闭面板时统一上报）
   try { trackPage(view); } catch {}
   const doc = getDoc();
