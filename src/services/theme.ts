@@ -103,22 +103,10 @@ export function setTheme(mode: ThemeMode) {
   applyTheme(m);
 }
 
-/**
- * 当前生效主题（供图表等需要即时取色的代码使用）
- * 优先读面板属性（权威值），失效时回退到设置解析。
- */
-export function resolvedTheme(): ResolvedTheme {
-  try {
-    const p = getDoc().getElementById('aus-panel');
-    const v = p?.getAttribute('data-ds-theme');
-    if (v === 'dark' || v === 'light') return v;
-  } catch {}
-  return resolveTheme((state.settings as any)?.theme);
-}
-
 /* ---------------- 跟随系统的实时监听 ---------------- */
 
 let boundWin: any = null;
+let boundMql: any = null;
 let boundHandler: ((e: any) => void) | null = null;
 
 /**
@@ -138,6 +126,8 @@ export function watchSystemTheme(win?: any) {
   const w = win ?? hostWindow();
   if (!w || typeof w.matchMedia !== 'function') return;
   if (boundWin === w) return;
+  // 切换宿主窗口前先解除旧绑定，避免在旧 window 上留下失效的监听
+  unwatchSystemTheme();
   try {
     const mql = w.matchMedia(DARK_QUERY);
     if (!mql || typeof mql.addEventListener !== 'function') return; // 老 Safari 无 addEventListener 分支，静默跳过
@@ -152,14 +142,17 @@ export function watchSystemTheme(win?: any) {
     };
     mql.addEventListener('change', boundHandler);
     boundWin = w;
+    // matchMedia 每次调用返回新的 MediaQueryList，必须保存绑定时拿到的那一个才能正确解绑
+    boundMql = mql;
   } catch {}
 }
 
 /** 解除监听（扩展禁用时调用，避免热重载后重复触发） */
 export function unwatchSystemTheme() {
   try {
-    if (boundWin && boundHandler) boundWin.matchMedia(DARK_QUERY).removeEventListener('change', boundHandler);
+    if (boundMql && boundHandler) boundMql.removeEventListener('change', boundHandler);
   } catch {}
+  boundMql = null;
   boundWin = null;
   boundHandler = null;
 }

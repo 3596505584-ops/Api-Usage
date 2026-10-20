@@ -6,7 +6,6 @@ import {
   systemPrefersDark,
   watchSystemTheme,
   unwatchSystemTheme,
-  resolvedTheme,
 } from './theme';
 import { state } from '../store/index';
 
@@ -190,21 +189,5 @@ describe('跟随系统的实时监听', () => {
   it('不支持 addEventListener 的旧内核静默跳过，不抛错', () => {
     const win: any = { matchMedia: () => ({ matches: true, addListener: () => {} }) };
     expect(() => watchSystemTheme(win)).not.toThrow();
-  });
-});
-
-describe('resolvedTheme 以面板属性为准', () => {
-  it('面板已有 data-ds-theme 时直接返回，保证图表取色与当前渲染一致', () => {
-    stubDoc(() => ({ getAttribute: () => 'dark' }));
-    stubWindow(null, false);
-    state.settings.theme = 'light';
-    expect(resolvedTheme()).toBe('dark');
-  });
-
-  it('面板不存在时回退到设置解析', () => {
-    stubDoc(() => null);
-    stubWindow(null, true);
-    state.settings.theme = 'auto';
-    expect(resolvedTheme()).toBe('dark');
   });
 });

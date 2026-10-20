@@ -690,6 +690,7 @@ function applyTheme(theme) {
 	} catch {}
 }
 var boundWin = null;
+var boundMql = null;
 var boundHandler = null;
 /**
 * 主题实际变化后需要重绘的动态内容。
@@ -709,6 +710,7 @@ function watchSystemTheme(win) {
 	const w = win ?? hostWindow();
 	if (!w || typeof w.matchMedia !== "function") return;
 	if (boundWin === w) return;
+	unwatchSystemTheme();
 	try {
 		const mql = w.matchMedia(DARK_QUERY);
 		if (!mql || typeof mql.addEventListener !== "function") return;
@@ -723,13 +725,15 @@ function watchSystemTheme(win) {
 		};
 		mql.addEventListener("change", boundHandler);
 		boundWin = w;
+		boundMql = mql;
 	} catch {}
 }
 /** 解除监听（扩展禁用时调用，避免热重载后重复触发） */
 function unwatchSystemTheme() {
 	try {
-		if (boundWin && boundHandler) boundWin.matchMedia(DARK_QUERY).removeEventListener("change", boundHandler);
+		if (boundMql && boundHandler) boundMql.removeEventListener("change", boundHandler);
 	} catch {}
+	boundMql = null;
 	boundWin = null;
 	boundHandler = null;
 }
