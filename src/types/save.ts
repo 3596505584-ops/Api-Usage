@@ -13,6 +13,8 @@ export type HistoryEntry = {
   input_cost: number;
   output_cost: number;
   cost: number;
+  /** 平台实扣总价及记录时汇率；独立保存以免重算覆盖或汇率变动 */
+  reportedCost?: { amount: number; currency: 'USD' | 'CNY'; exchangeRate: number };
   cache_hit_rate: number;
   priceType: string;
   raw_usage?: unknown;
@@ -44,7 +46,7 @@ export type HistoryEntry = {
   /** 请求归属的钱包标识；旧记录为空 */
   walletId?: string | null;
   /** 本次费用的计价来源 */
-  pricingSource?: 'wallet' | 'builtin' | 'legacy' | 'legacy-unassigned' | 'legacy-match' | 'unpriced';
+  pricingSource?: 'api' | 'wallet' | 'builtin' | 'legacy' | 'legacy-unassigned' | 'legacy-match' | 'unpriced';
   /** 旧数据同名校验价来源钱包；仅迁移时写入，新请求不写 */
   legacyPricingWalletId?: string | null;
   /** 旧数据同名校验价来源模型名 */

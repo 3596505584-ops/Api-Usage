@@ -3,12 +3,12 @@ import { n as getSelectedSave, r as state$2, t as getHistoryForDisplay } from ".
 import { a as HIDDEN_PRICING_MODELS, l as PRICING, p as WEBDAV_SYNC_FILE, r as DEFAULT_PEAK_HOURS, t as DEFAULT_CONTEXT_LIMIT } from "./pricing-Bc-qEvy8.js";
 import { c as saveExtensionSettings, d as historyRecordKey, i as getExtensionSettings, u as saveHot } from "./persistence-C4IJVd-B.js";
 import { r as toast, t as log } from "./logger-8RGXnvfI.js";
-import { A as DEEPSEEK_WALLET_ID, C as findWalletModel, E as walletPendingModelCount, S as findWalletForHistory, T as walletBalanceToCny, _ as normalizeModel, a as decryptKey, b as defaultContextLimitForModel, c as isTruncatedFinish, d as calcCost, f as calcSavings, g as isWalletPeakHour, h as isPeakHour, i as saveWalletApiKey, j as WALLET_CATALOG_PROVIDERS, l as DataEvents, m as isDeepSeekOfficialModel, o as encryptKey, p as getPricing$1, r as getWalletApiKey, s as sanitizeHistoryTiming, t as repository, u as on, w as mergeWalletCollections } from "./repository-JvxNaSRi.js";
+import { A as resolvedBalanceProvider, C as mergeWalletCollections, D as balanceQueryUrl, E as BALANCE_PROVIDERS, F as DEEPSEEK_WALLET_ID, I as WALLET_CATALOG_PROVIDERS, O as normalizeBalanceQuery, S as findWalletModel, T as walletPendingModelCount, _ as normalizeModel, a as decryptKey, c as isTruncatedFinish, d as calcCost, f as calcSavings, g as isWalletPeakHour, h as isPeakHour, i as saveWalletApiKey, j as safeBalanceUrl, l as DataEvents, m as isDeepSeekOfficialModel, o as encryptKey, p as getPricing$1, r as getWalletApiKey, s as sanitizeHistoryTiming, t as repository, u as on, w as walletBalanceToCny, x as findWalletForHistory, y as defaultContextLimitForModel } from "./repository-BdeEwY0n.js";
 import { a as isUnsafeKey$1, c as localDay$1, i as isPeakHour$1, l as localTimeHM, n as isChinaHoliday, o as isValidDayKey, r as isExtraOffDay, s as isWeekendDay, t as esc$2, u as CN_HOLIDAY_COVERAGE_LABEL } from "./date-BJI2m6dS.js";
 import { a as getWalletExchangeRate, i as getDisplayCurrency, n as fetchLiveRate, r as formatMoney } from "./currency-BZt-7TC7.js";
-import { r as recalcAllCosts, t as installInterception } from "./interception-BoETqAOw.js";
-import { i as saveApiKey, n as queryBalance, r as queryWalletBalance } from "./balance-C3MhaV_X.js";
-import { a as removeSyncedModels, n as isSyncedCustomModel, o as syncPricingFromModelsDev, r as previewSync, t as fetchModelsDevCatalog } from "./pricing-sync-CADPKT9h.js";
+import { r as recalcAllCosts, t as installInterception } from "./interception-CSM9wbti.js";
+import { a as saveApiKey, i as queryWalletBalance, n as canAutoCalibrate, r as queryBalance } from "./balance-D-OTE3-5.js";
+import { a as removeSyncedModels, n as isSyncedCustomModel, o as syncPricingFromModelsDev, r as previewSync, t as fetchModelsDevCatalog } from "./pricing-sync-4MD0EImp.js";
 //#region src/services/import-export.ts
 function isUnsafeKey(k) {
 	return k === "__proto__" || k === "constructor" || k === "prototype";
@@ -2443,14 +2443,14 @@ function renderSettings(doc) {
 		doc.getElementById("aus-auto-balance-interval").style.display = autoCb.checked ? "block" : "none";
 		saveHot({ settings: state$2.settings });
 		try {
-			import("./balance-C3MhaV_X.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
+			import("./balance-D-OTE3-5.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
 		} catch {}
 	};
 	doc.getElementById("aus-balance-interval").onchange = (e) => {
 		state$2.settings.balanceInterval = parseInt(e.target.value) || 10;
 		saveHot({ settings: state$2.settings });
 		try {
-			import("./balance-C3MhaV_X.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
+			import("./balance-D-OTE3-5.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
 		} catch {}
 	};
 	if (dbgCb) dbgCb.onchange = () => {
@@ -2495,7 +2495,7 @@ function renderSettings(doc) {
 		const clearBtn = doc.getElementById("aus-btn-debug-clear");
 		if (clearBtn) clearBtn.onclick = async () => {
 			try {
-				const { repository } = await import("./repository-JvxNaSRi.js").then((n) => n.n);
+				const { repository } = await import("./repository-BdeEwY0n.js").then((n) => n.n);
 				const { state: st } = await import("./store-Cc2SGj8q.js").then((n) => n.i);
 				await repository.replaceAll({ history: (st.history || []).filter((h) => h._debug !== true) });
 				await repository.recalcAll();
@@ -2645,7 +2645,7 @@ function renderSettings(doc) {
 					intervalDrop.style.display = "none";
 					if (intervalLabel) intervalLabel.textContent = intervalMap[el.getAttribute("data-interval")] || el.getAttribute("data-interval");
 					try {
-						import("./pricing-sync-CADPKT9h.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
+						import("./pricing-sync-4MD0EImp.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
 						import("./currency-BZt-7TC7.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
 					} catch {}
 				};
@@ -2667,7 +2667,7 @@ function renderSettings(doc) {
 			if (panel) panel.style.display = enabledEl.checked ? "grid" : "none";
 			let removed = 0;
 			if (!enabledEl.checked) try {
-				const m = await import("./pricing-sync-CADPKT9h.js").then((n) => n.i);
+				const m = await import("./pricing-sync-4MD0EImp.js").then((n) => n.i);
 				try {
 					await m.markLegacySyncedModels?.({ skipRerender: true });
 				} catch {}
@@ -2678,7 +2678,7 @@ function renderSettings(doc) {
 			saveHot({ settings: state$2.settings });
 			try {
 				import("./currency-BZt-7TC7.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
-				import("./pricing-sync-CADPKT9h.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
+				import("./pricing-sync-4MD0EImp.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
 			} catch {}
 			if (removed) {
 				renderModelsEditor(doc);
@@ -9762,6 +9762,75 @@ function renderCatalogPicker(wallet) {
 	}))])}
     </div>`;
 }
+function renderQueryPicker(wallet, kind, label, options, value) {
+	return `<div style="position:relative;min-width:0;">
+    <button data-wallet-query-btn="${kind}" data-wallet-id="${esc$2(wallet.id)}" style="max-width:100%;padding:7px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;">${esc$2(label)}：${esc$2(options.find((p) => p.id === value)?.label || value)}${icon("chevron-down", 14)}</button>
+    <div id="aus-wallet-${kind}-drop-${esc$2(wallet.id)}" data-wallet-dropdown="1" style="display:none;position:absolute;top:38px;left:0;z-index:50;max-width:100%;min-width:180px;max-height:260px;overflow:auto;padding:6px;border:1px solid var(--ds-border);border-radius:12px;background:var(--ds-card-inner);box-shadow:0 8px 24px rgba(0,0,0,0.12);">${dropdownHtml(wallet.id, kind, options.map((p) => ({
+		...p,
+		active: p.id === value
+	})))}</div>
+  </div>`;
+}
+function renderBalanceConfig(wallet) {
+	const q = normalizeBalanceQuery(wallet.balance.query);
+	const provider = resolvedBalanceProvider(wallet);
+	const snapshot = wallet.balance.snapshot;
+	const field = (key, label, value, placeholder = "") => `<label style="display:grid;gap:4px;font-size:var(--aus-fs-sm);color:var(--ds-text-2);">${label}<input data-wallet-query-field="${key}" data-wallet-id="${esc$2(wallet.id)}" value="${esc$2(String(value))}" placeholder="${esc$2(placeholder)}" style="width:100%;min-width:0;padding:7px 9px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);" /></label>`;
+	return `${renderQueryPicker(wallet, "balance-provider", "余额来源", BALANCE_PROVIDERS, q.provider)}
+    ${q.provider === "custom" ? `<div style="display:grid;gap:8px;">
+      ${field("url", "GET 查询地址（HTTPS，不包含密钥或查询参数）", q.url, "https://api.example.com/balance")}
+      ${field("balancePath", "余额字段路径", q.balancePath, "data.balance 或 data.items[0].balance")}
+      ${field("usagePath", "已用金额字段路径（可选）", q.usagePath, "data.used")}
+      ${field("totalPath", "总额度字段（可选；余额 = 总额度 − 已用金额）", q.totalPath, "data.total")}
+      ${field("multiplier", "金额乘数（分换元填 0.01）", q.multiplier)}
+      ${renderQueryPicker(wallet, "query-currency", "接口金额币种", [{
+		id: "CNY",
+		label: "CNY"
+	}, {
+		id: "USD",
+		label: "USD"
+	}], q.currency)}
+      ${renderQueryPicker(wallet, "query-auth", "密钥请求头", [{
+		id: "bearer",
+		label: "Authorization: Bearer"
+	}, {
+		id: "x-api-key",
+		label: "x-api-key"
+	}], q.auth)}
+    </div>` : ""}
+    <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);word-break:break-all;">查询地址：${esc$2(balanceQueryUrl(wallet) || "未识别到余额接口，可选择平台或配置自定义接口")}</div>
+    ${provider === "openrouter" ? "<div style=\"font-size:var(--aus-fs-sm);color:var(--ds-text-2);\">账户余额和累计消费需要 OpenRouter 管理密钥。普通调用密钥请选择「密钥用量/额度」，该额度不会作为账户余额。</div>" : ""}
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;position:relative;">
+      ${renderCredentialPicker(wallet)}
+      <button data-wallet-calibrate="1" data-wallet-id="${esc$2(wallet.id)}" ${canAutoCalibrate(wallet) ? "" : "disabled"} style="padding:7px 11px;border:1px solid var(--ds-black);border-radius:999px;background:var(--ds-black);color:var(--ds-black-text);font-size:var(--aus-fs-sm);cursor:pointer;">立即查询</button>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <input type="password" autocomplete="new-password" data-wallet-api-key="1" data-wallet-id="${esc$2(wallet.id)}" value="" placeholder="${getWalletApiKey(wallet.id) ? "已保存校准密钥（留空不修改）" : "填写该平台的校准密钥"}" style="flex:1;min-width:120px;padding:7px 9px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);" />
+      <button data-wallet-save-key="1" data-wallet-id="${esc$2(wallet.id)}" class="aus-wallet-icon-btn" style="width:auto;padding:0 8px;">保存密钥</button>
+      ${getWalletApiKey(wallet.id) ? `<button data-wallet-clear-key="1" data-wallet-id="${esc$2(wallet.id)}" class="aus-wallet-icon-btn is-danger" style="width:auto;padding:0 8px;">清除密钥</button>` : ""}
+    </div>
+    ${snapshot ? `<div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);">平台${snapshot.scope === "key" ? "密钥" : "账户"}累计消费：${snapshot.usage === null ? "接口未提供" : esc$2(String(snapshot.usage)) + " " + snapshot.currency}${snapshot.scope === "key" ? ` · 密钥剩余额度：${snapshot.keyRemaining == null ? "未设限/接口未提供" : esc$2(String(snapshot.keyRemaining)) + " " + snapshot.currency}` : ""}<br>查询时间：${esc$2(new Date(snapshot.checkedAt).toLocaleString())}</div>` : ""}
+    <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);">定时查询需在设置开启自动校准总开关。校准密钥仅本地保存，不参与导出或同步；切换查询平台/地址后需重新填写。浏览器直连要求平台允许跨域访问。</div>
+    ${renderQueryPicker(wallet, "response-cost", "usage.cost 计费", [
+		{
+			id: "auto",
+			label: "自动识别币种"
+		},
+		{
+			id: "USD",
+			label: "按 USD 实际费用"
+		},
+		{
+			id: "CNY",
+			label: "按 CNY 实际费用"
+		},
+		{
+			id: "off",
+			label: "仅按模型价格估算"
+		}
+	], wallet.responseCost || "auto")}
+    <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);">平台返回 usage.cost 时优先记录实扣总额；自动模式识别 OpenRouter 的 USD 或响应 cost_currency。仅返回总价时，输入/输出费用不作拆分。未返回费用时按模型价格估算。</div>`;
+}
 function renderWalletCard(wallet, history) {
 	const avatarLetter = (() => {
 		const first = String(wallet.name || wallet.endpointDisplay || wallet.endpointLabel || "").trim().replace(/^https?:\/\//i, "").replace(/^www\./i, "").replace(/^api\./i, "").replace(/^[^0-9a-zA-Z\u4e00-\u9fa5]+/, "").charAt(0);
@@ -9769,7 +9838,7 @@ function renderWalletCard(wallet, history) {
 	})();
 	const pending = walletPendingModelCount(wallet);
 	const isOfficial = wallet.id === DEEPSEEK_WALLET_ID;
-	const selectedCredential = wallet.credentials.find((item) => item.id === wallet.balance.primaryCredentialId);
+	const supportsBalance = canAutoCalibrate(wallet);
 	const collapsed = wallet.collapsed !== false;
 	const metrics = [{
 		label: "余额",
@@ -9807,8 +9876,8 @@ function renderWalletCard(wallet, history) {
         <div style="border:1px solid var(--ds-border);border-radius:10px;padding:10px;display:grid;gap:8px;">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
             <div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);">钱包余额</div><div style="font-size:17px;font-weight:700;color:var(--ds-text);">${esc$2(walletBalanceText(wallet))}</div></div>
-            <label style="display:flex;align-items:center;gap:6px;font-size:var(--aus-fs-sm);color:var(--ds-text-2);cursor:${isOfficial ? "pointer" : "not-allowed"};">
-              <input type="checkbox" data-wallet-auto-balance="1" data-wallet-id="${esc$2(wallet.id)}" ${wallet.balance.mode === "auto" ? "checked" : ""} ${isOfficial ? "" : "disabled"} /> 自动校准
+            <label style="display:flex;align-items:center;gap:6px;font-size:var(--aus-fs-sm);color:var(--ds-text-2);cursor:${supportsBalance ? "pointer" : "not-allowed"};">
+              <input type="checkbox" data-wallet-auto-balance="1" data-wallet-id="${esc$2(wallet.id)}" ${wallet.balance.mode === "auto" ? "checked" : ""} ${supportsBalance ? "" : "disabled"} /> 自动校准
             </label>
           </div>
           <div style="display:flex;gap:6px;align-items:center;position:relative;">
@@ -9826,21 +9895,10 @@ function renderWalletCard(wallet, history) {
 	}])}
             </div>
           </div>
-          ${isOfficial ? `
-            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;position:relative;">
-              ${renderCredentialPicker(wallet)}
-              <button data-wallet-calibrate="1" data-wallet-id="${esc$2(wallet.id)}" style="padding:7px 11px;border:1px solid var(--ds-black);border-radius:999px;background:var(--ds-black);color:var(--ds-black-text);font-size:var(--aus-fs-sm);cursor:pointer;">立即校准</button>
-            </div>
-            <div style="display:flex;gap:6px;">
-              <input type="password" data-wallet-api-key="1" data-wallet-id="${esc$2(wallet.id)}" value="" placeholder="${getWalletApiKey(wallet.id) ? "已保存钱包校准密钥（留空不修改）" : "填写钱包校准密钥"}" style="flex:1;min-width:0;padding:7px 9px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);" />
-              <button data-wallet-save-key="1" data-wallet-id="${esc$2(wallet.id)}" style="padding:7px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;">保存密钥</button>
-            </div>
-            <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);">自动校准仅支持 DeepSeek 官方直连，并需在设置开启自动校准总开关；主密钥：${esc$2(selectedCredential?.label || "未指定")}</div>
-            <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);word-break:break-all;">已识别密钥：${wallet.credentials.length ? wallet.credentials.map((item) => esc$2(item.label)).join("、") : "未识别"}</div>
-          ` : `<div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);">该接入暂不支持自动余额校准，请手工维护余额。</div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);word-break:break-all;">已识别密钥：${wallet.credentials.length ? wallet.credentials.map((item) => esc$2(item.label)).join("、") : "未识别"}</div>`}
+          ${renderBalanceConfig(wallet)}
         </div>
 
-        <div style="border:1px solid var(--ds-border);border-radius:10px;padding:10px;display:grid;gap:8px;position:relative;">
+        <div style="border:1px solid var(--ds-border);border-radius:10px;padding:10px;display:grid;gap:8px;align-content:start;position:relative;">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
             <div style="font-size:var(--aus-fs-sm);font-weight:600;color:var(--ds-text);">峰谷规则</div>
             ${renderCatalogPicker(wallet)}
@@ -9938,6 +9996,54 @@ function readModelPrices(row) {
 	return result;
 }
 function bindWalletView(doc) {
+	doc.querySelectorAll("[data-wallet-query-btn]").forEach((button) => {
+		button.onclick = (event) => {
+			event.stopPropagation();
+			const dropdown = doc.getElementById(`aus-wallet-${button.getAttribute("data-wallet-query-btn")}-drop-${button.getAttribute("data-wallet-id")}`);
+			if (!dropdown) return;
+			closeOtherDropdowns(dropdown.id);
+			dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+		};
+	});
+	doc.querySelectorAll("[data-wallet-query-field]").forEach((input) => {
+		input.onchange = () => {
+			const walletId = input.getAttribute("data-wallet-id");
+			const field = input.getAttribute("data-wallet-query-field");
+			if (![
+				"url",
+				"balancePath",
+				"usagePath",
+				"totalPath",
+				"multiplier"
+			].includes(field)) return;
+			const value = String(input.value || "").trim();
+			if (field === "url" && !safeBalanceUrl(value)) {
+				toast("error", "请输入有效 HTTPS 地址（本机允许 HTTP），地址不能包含密钥、查询参数或片段");
+				return;
+			}
+			if (field === "multiplier" && (!Number.isFinite(Number(value)) || Number(value) <= 0)) {
+				toast("error", "金额乘数必须为大于 0 的数字");
+				return;
+			}
+			const current = repository.getWallet(walletId);
+			const addressChanged = field === "url" && current?.balance.query?.url !== value;
+			repository.updateWallet(walletId, (wallet) => {
+				const query = normalizeBalanceQuery(wallet.balance.query);
+				query[field] = field === "multiplier" ? Number(value) : value;
+				wallet.balance.query = query;
+				delete wallet.balance.snapshot;
+				if (addressChanged) wallet.balance.mode = "manual";
+			});
+			if (addressChanged) saveWalletApiKey(walletId, "");
+			renderWalletView();
+		};
+	});
+	doc.querySelectorAll("[data-wallet-clear-key]").forEach((button) => {
+		button.onclick = () => {
+			saveWalletApiKey(button.getAttribute("data-wallet-id"), "");
+			renderWalletView();
+		};
+	});
 	doc.querySelectorAll("[data-wallet-toggle]").forEach((button) => {
 		button.onclick = () => {
 			const walletId = button.getAttribute("data-wallet-id");
@@ -9978,7 +10084,7 @@ function bindWalletView(doc) {
 				wallet.balance.mode = input.checked ? "auto" : "manual";
 			});
 			try {
-				import("./balance-C3MhaV_X.js").then((n) => n.t).then((mod) => mod.restartBalanceTimer?.());
+				import("./balance-D-OTE3-5.js").then((n) => n.t).then((mod) => mod.restartBalanceTimer?.());
 			} catch {}
 			renderWalletView();
 		};
@@ -9999,7 +10105,17 @@ function bindWalletView(doc) {
 			const walletId = button.getAttribute("data-wallet-id");
 			const input = doc.querySelector(`[data-wallet-api-key][data-wallet-id="${walletId}"]`);
 			if (!walletId || !input) return;
-			saveWalletApiKey(walletId, input.value.trim());
+			if (!input.value.trim()) {
+				toast("warning", "留空不会修改已有密钥；如需删除请点击清除密钥");
+				return;
+			}
+			const wallet = repository.getWallet(walletId);
+			const target = wallet && balanceQueryUrl(wallet);
+			if (!target) {
+				toast("warning", "请先选择余额来源或填写有效查询地址");
+				return;
+			}
+			saveWalletApiKey(walletId, input.value.trim(), target);
 			toast("success", input.value.trim() ? "钱包校准密钥已保存" : "钱包校准密钥已清除");
 			renderWalletView();
 		};
@@ -10258,6 +10374,30 @@ function bindWalletView(doc) {
 			else if (kind === "credential") repository.updateWallet(walletId, (wallet) => {
 				wallet.balance.primaryCredentialId = value || null;
 			});
+			else if (kind === "response-cost") repository.updateWallet(walletId, (wallet) => {
+				wallet.responseCost = value;
+			});
+			else if ([
+				"balance-provider",
+				"query-currency",
+				"query-auth"
+			].includes(kind)) {
+				const current = repository.getWallet(walletId);
+				const changedProvider = kind === "balance-provider" && (current?.balance.query?.provider || "auto") !== value;
+				repository.updateWallet(walletId, (wallet) => {
+					const query = normalizeBalanceQuery(wallet.balance.query);
+					if (kind === "balance-provider") query.provider = value;
+					else if (kind === "query-currency") query.currency = value;
+					else query.auth = value;
+					wallet.balance.query = normalizeBalanceQuery(query);
+					delete wallet.balance.snapshot;
+					if (changedProvider) wallet.balance.mode = "manual";
+				});
+				if (changedProvider) {
+					saveWalletApiKey(walletId, "");
+					toast("info", "余额来源已切换，请重新填写对应平台的校准密钥");
+				}
+			}
 			closeDropdowns();
 			renderWalletView();
 		};
@@ -10266,7 +10406,7 @@ function bindWalletView(doc) {
 		bindWalletView._outsideBound = true;
 		doc.addEventListener("click", (event) => {
 			const target = event.target;
-			if (!target?.closest?.("[data-wallet-dropdown]") && !target?.closest?.("[data-wallet-currency-btn]") && !target?.closest?.("[data-wallet-catalog-btn]") && !target?.closest?.("[data-wallet-credential-btn]")) closeDropdowns();
+			if (!target?.closest?.("[data-wallet-dropdown]") && !target?.closest?.("[data-wallet-query-btn]") && !target?.closest?.("[data-wallet-currency-btn]") && !target?.closest?.("[data-wallet-catalog-btn]") && !target?.closest?.("[data-wallet-credential-btn]")) closeDropdowns();
 		});
 	}
 }
@@ -10744,9 +10884,9 @@ function renderHistoryInner(doc, fullHist) {
             <div style="font-size:10px;color:var(--ds-text-3);font-weight:600;letter-spacing:0.5px;">基础信息</div>
             <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:6px;font-size:11px;">
               <div><div style="color:var(--ds-text-2);font-size:10px;">模型</div><div style="font-weight:600;color:var(--ds-text);margin-top:2px;word-break:break-all;">${esc$2(h.model || "—")}</div></div>
-              <div><div style="color:var(--ds-text-2);font-size:10px;">时段</div><div style="font-weight:600;margin-top:2px;color:var(--ds-text);">${h.priceType === "new-peak" || h.priceType === "wallet-peak" ? "高峰" : h.priceType === "new-offpeak" || h.priceType === "wallet-offpeak" ? "非高峰" : h.priceType === "unpriced" ? "待定价" : "旧价格"}</div></div>
+              <div><div style="color:var(--ds-text-2);font-size:10px;">时段</div><div style="font-weight:600;margin-top:2px;color:var(--ds-text);">${h.priceType === "api" ? "平台实扣" : h.priceType === "new-peak" || h.priceType === "wallet-peak" ? "高峰" : h.priceType === "new-offpeak" || h.priceType === "wallet-offpeak" ? "非高峰" : h.priceType === "unpriced" ? "待定价" : "旧价格"}</div></div>
               <div style="min-width:0;"><div style="color:var(--ds-text-2);font-size:10px;">钱包</div><div style="font-weight:600;color:var(--ds-text);margin-top:2px;word-break:break-all;">${esc$2(repository.getWallet(String(h.walletId || ""))?.name || h.endpointLabel || "未归属钱包")}</div></div>
-              <div style="min-width:0;"><div style="color:var(--ds-text-2);font-size:10px;">计价来源</div><div style="font-weight:600;color:var(--ds-text);margin-top:2px;word-break:break-all;">${h.pricingSource === "wallet" ? "钱包规则" : h.pricingSource === "builtin" ? "DeepSeek 内置" : h.pricingSource === "unpriced" ? "待定价" : h.pricingSource === "legacy-match" ? "旧数据同名价" : h.pricingSource === "legacy" ? "旧全局规则" : "旧记录兜底"}</div></div>
+              <div style="min-width:0;"><div style="color:var(--ds-text-2);font-size:10px;">计价来源</div><div style="font-weight:600;color:var(--ds-text);margin-top:2px;word-break:break-all;">${h.pricingSource === "api" ? "平台实扣总额" : h.pricingSource === "wallet" ? "钱包规则" : h.pricingSource === "builtin" ? "DeepSeek 内置" : h.pricingSource === "unpriced" ? "待定价" : h.pricingSource === "legacy-match" ? "旧数据同名价" : h.pricingSource === "legacy" ? "旧全局规则" : "旧记录兜底"}</div></div>
               <div><div style="color:var(--ds-text-2);font-size:10px;">日期</div><div style="font-weight:600;color:var(--ds-text);margin-top:2px;">${esc$2(recordDateText)}</div></div>
               <div><div style="color:var(--ds-text-2);font-size:10px;">时间</div><div style="font-weight:600;color:var(--ds-text);margin-top:2px;">${esc$2(recordTimeText)}</div></div>
             </div>
@@ -10781,8 +10921,8 @@ function renderHistoryInner(doc, fullHist) {
           <div style="background:var(--ds-card-inner);border:1px solid var(--ds-border);border-radius:10px;padding:10px;">
             <div style="font-size:10px;color:var(--ds-text-3);font-weight:600;letter-spacing:0.5px;">费用明细</div>
             <div style="display:grid;gap:6px;margin-top:6px;font-size:11px;">
-              <div style="display:flex;justify-content:space-between;"><span style="color:var(--ds-text-2);">输入费用</span><span style="font-weight:600;color:var(--ds-text);">${in6}</span></div>
-              <div style="display:flex;justify-content:space-between;"><span style="color:var(--ds-text-2);">输出费用</span><span style="font-weight:600;color:var(--ds-text);">${out6}</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:var(--ds-text-2);">输入费用</span><span style="font-weight:600;color:var(--ds-text);">${h.pricingSource === "api" ? "未提供拆分" : in6}</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:var(--ds-text-2);">输出费用</span><span style="font-weight:600;color:var(--ds-text);">${h.pricingSource === "api" ? "未提供拆分" : out6}</span></div>
               <div style="display:flex;justify-content:space-between;border-top:1px solid var(--ds-card);padding-top:6px;margin-top:2px;"><span style="color:var(--ds-text);font-weight:600;">总费用</span><span style="font-weight:700;color:var(--ds-text);">${c6}</span></div>
             </div>
           </div>
@@ -11312,7 +11452,7 @@ function createPanel() {
           <div data-view="help" style="display:none;">
             <div style="display:grid;gap:12px;">
               <div class="ds-card" style="line-height:1.7;font-size:var(--aus-fs-base);"><div style="font-size:var(--aus-fs-sm);color:#FF6A00;font-weight:600;margin-bottom:6px;">完整使用文档</div><div style="color:var(--ds-text-2);">详细说明各页面、筛选、钱包、定价、同步、隐私与常见问题。</div><a href="https://janmk1453.github.io/Api-Usage/" target="_blank" rel="noreferrer" style="display:inline-flex;align-items:center;justify-content:center;margin-top:10px;padding:8px 14px;border-radius:999px;background:var(--ds-black);color:var(--ds-black-text);text-decoration:none;font-size:var(--aus-fs-base);font-weight:600;">前往完整使用文档</a></div>
-              <div class="ds-card" style="line-height:1.7;font-size:var(--aus-fs-base);"><div style="font-size:var(--aus-fs-sm);color:#DC2626;font-weight:600;margin-bottom:6px;">隐私声明（完整版：<a href="https://janmk1453.github.io/Api-Usage/#privacy" target="_blank" rel="noreferrer" style="color:#DC2626;text-decoration:underline;">https://janmk1453.github.io/Api-Usage/#privacy</a>）</div><div style="color:var(--ds-text-2);display:grid;gap:6px;"><div>本扩展有且只能获得用户在酒馆本身中填写的：密钥条目的编号、用户备注和掩码末三位，仅用于独立区分请求来源，不会且无法读取、保存或上传完整明文密钥。</div><div>用户储存在酒馆本身的密钥是安全的，本扩展无法获取真实密钥。</div><div>用户主动填入本扩展的校准密钥是实际可用的密钥，且仅会被用于查询 DeepSeek 官方余额，不会额外造成扣费或消耗；它仅经 XOR 混淆后存放于 SillyTavern，不进入历史记录、统计、日志、导入导出或 WebDAV。自动校准时仅由浏览器直接发送至 <a href="https://api.deepseek.com/user/balance" target="_blank" rel="noreferrer" style="color:var(--ds-text);text-decoration:underline;">https://api.deepseek.com/user/balance</a> API 查询。</div><div>XOR 不是安全加密，请使用权限受限的密钥并自行评估风险。</div><div>本扩展完整代码开源可审查。</div><div style="margin-top:2px;padding-top:6px;border-top:1px solid var(--ds-border);font-weight:600;color:#DC2626;">免责声明（完整版见上方链接）</div><div>本扩展不对功能“价格来源”、“自动同步”等利用 <a href="https://models.dev" target="_blank" rel="noreferrer" style="color:var(--ds-text);text-decoration:underline;">models.dev</a> 获取的数据中出现或可能出现的商业化中转站负责；我们不建议使用任何商业化中转站，尽管我们已经尽力筛选数据，但由于对大量数据进行完全筛选难以实现，因此我们不对可能出现的任何商业化中转站名称负责，不构成推荐，和 models.dev 或任何中转站没有商业往来，坚定不移的反对商业化。</div><div>我们将尽可能维护扩展的安全和隐私性，但本扩展不对因酒馆/本扩展的安全漏洞或因间接原因导致的任何形式的密钥泄露及产生的损失负责。</div></div></div>
+              <div class="ds-card" style="line-height:1.7;font-size:var(--aus-fs-base);"><div style="font-size:var(--aus-fs-sm);color:#DC2626;font-weight:600;margin-bottom:6px;">隐私声明（完整版：<a href="https://janmk1453.github.io/Api-Usage/#privacy" target="_blank" rel="noreferrer" style="color:#DC2626;text-decoration:underline;">https://janmk1453.github.io/Api-Usage/#privacy</a>）</div><div style="color:var(--ds-text-2);display:grid;gap:6px;"><div>本扩展有且只能获得用户在酒馆本身中填写的：密钥条目的编号、用户备注和掩码末三位，仅用于独立区分请求来源，不会且无法读取、保存或上传完整明文密钥。</div><div>用户储存在酒馆本身的密钥是安全的，本扩展无法获取真实密钥。</div><div>用户主动填入本扩展的校准密钥是实际可用的密钥，仅用于向钱包中展示的余额查询地址发起 GET 请求。内置平台使用余额或用量查询接口，不调用模型；自定义接口的权限与计费规则以提供方为准；它仅经 XOR 混淆后存放于 SillyTavern，不进入历史记录、统计、日志、导入导出或 WebDAV。密钥仅由浏览器直接发送至保存时绑定的查询地址；支持 DeepSeek、OpenRouter、硅基流动、Moonshot 和用户配置的 JSON 接口。地址变化需重新保存密钥，平台需允许浏览器跨域请求。</div><div>XOR 不是安全加密，请使用权限受限的密钥并自行评估风险。</div><div>本扩展完整代码开源可审查。</div><div style="margin-top:2px;padding-top:6px;border-top:1px solid var(--ds-border);font-weight:600;color:#DC2626;">免责声明（完整版见上方链接）</div><div>本扩展不对功能“价格来源”、“自动同步”等利用 <a href="https://models.dev" target="_blank" rel="noreferrer" style="color:var(--ds-text);text-decoration:underline;">models.dev</a> 获取的数据中出现或可能出现的商业化中转站负责；我们不建议使用任何商业化中转站，尽管我们已经尽力筛选数据，但由于对大量数据进行完全筛选难以实现，因此我们不对可能出现的任何商业化中转站名称负责，不构成推荐，和 models.dev 或任何中转站没有商业往来，坚定不移的反对商业化。</div><div>我们将尽可能维护扩展的安全和隐私性，但本扩展不对因酒馆/本扩展的安全漏洞或因间接原因导致的任何形式的密钥泄露及产生的损失负责。</div></div></div>
               <div class="ds-card" style="line-height:1.7;font-size:var(--aus-fs-base);"><div style="font-size:var(--aus-fs-sm);color:#0BA25E;font-weight:600;margin-bottom:6px;">钱包</div><div style="color:var(--ds-text-2);display:grid;gap:4px;"><div>1. 扩展按识别到的接入链接自动创建和汇总钱包，默认始终保留 DeepSeek 官方钱包；同名链接下识别的密钥和模型会归入同一钱包。</div><div>2. 每个钱包可独立维护名称、余额、模型价格、峰谷规则和价格来源；钱包默认收起，展开状态按钱包记忆。价格来源仅展示第一方模型厂商，不展示中转站或聚合平台。</div><div>3. 请求进入后会先匹配所属钱包，再使用该钱包的模型价格和峰谷规则计费，并从对应钱包余额预扣；未配置价格的模型先记零费用，保存或同步价格后自动重算冷热历史。</div><div>4. 自动余额校准仅支持 DeepSeek 官方直连，校准密钥需在钱包内单独填写；其他接入可使用手工余额，多个密钥不会自动相加。</div><div>5. 删除钱包会进入“已忽略接入”，后续请求不会自动重建、不参与余额合计，历史记录仍保留归属，需要时可恢复显示。</div></div></div>
               <div class="ds-card" style="line-height:1.7;font-size:var(--aus-fs-base);"><div style="font-size:var(--aus-fs-sm);color:#2563EB;font-weight:600;margin-bottom:6px;">📊 使用统计 / 预测</div><div style="color:var(--ds-text-2);display:grid;gap:4px;"><div>1. 输入 API 密钥并保存后点击“查询”获取余额（余额查询仅支持 DeepSeek 官方）</div><div>2. 正常对话，扩展自动记录每次请求的费用、token 数及缓存命中等统计数据</div></div></div>
               <div class="ds-card" style="line-height:1.7;font-size:var(--aus-fs-base);"><div style="font-size:var(--aus-fs-sm);color:var(--ds-green);font-weight:600;margin-bottom:6px;">💡 高峰时间提示</div><div style="color:var(--ds-text-2);display:grid;gap:4px;"><div>1. 设置中可开启峰值提示小圆点，直观显示当前（DeepSeek）高低峰状态</div><div>2. 圆点可拖动，位置自动记忆，找不到时可在设置中重置</div><div>3. DeepSeek 官方规则：周一至周五（不含中国法定节假日）9:00-12:00、14:00-18:00 为高峰，其余时段（含周末、中国法定节假日全天）为空闲；调休上班的周末同样按空闲计费</div><div>4. 内置中国法定节假日数据覆盖 ${CN_HOLIDAY_COVERAGE_LABEL}，超出范围的年份可在设置中按日期补充“额外空闲日期”</div></div></div>
@@ -11644,7 +11784,7 @@ function openPanel() {
 	panelOpen = true;
 	refreshUI();
 	try {
-		import("./collector--RBIRrJR.js").then((m) => m.reconcileOnPanelOpen()).catch(() => {});
+		import("./collector-ekgebSdO.js").then((m) => m.reconcileOnPanelOpen()).catch(() => {});
 	} catch {}
 	try {
 		import("./update-Ct72N0n3.js").then((m) => m.maybeAutoCheck());
@@ -11864,10 +12004,10 @@ function onAppReady() {
 		refreshUI();
 	} catch {}
 	try {
-		import("./interception-BoETqAOw.js").then((n) => n.n).then((m) => m.installInterception()).catch(() => {});
+		import("./interception-CSM9wbti.js").then((n) => n.n).then((m) => m.installInterception()).catch(() => {});
 	} catch {}
 	try {
-		import("./collector--RBIRrJR.js").then((m) => m.initAgentUsage()).catch(() => {});
+		import("./collector-ekgebSdO.js").then((m) => m.initAgentUsage()).catch(() => {});
 	} catch {}
 }
 function onAppInitialized() {
@@ -11875,10 +12015,10 @@ function onAppInitialized() {
 		ensureWandEntry();
 	} catch {}
 	try {
-		import("./interception-BoETqAOw.js").then((n) => n.n).then((m) => m.installInterception()).catch(() => {});
+		import("./interception-CSM9wbti.js").then((n) => n.n).then((m) => m.installInterception()).catch(() => {});
 	} catch {}
 	try {
-		import("./collector--RBIRrJR.js").then((m) => m.initAgentUsage()).catch(() => {});
+		import("./collector-ekgebSdO.js").then((m) => m.initAgentUsage()).catch(() => {});
 	} catch {}
 }
 function onChatChanged() {
@@ -11968,13 +12108,13 @@ async function onDelete() {
 		stopPeakDot();
 	} catch {}
 	try {
-		(await import("./balance-C3MhaV_X.js").then((n) => n.t)).stopBalanceTimer?.();
+		(await import("./balance-D-OTE3-5.js").then((n) => n.t)).stopBalanceTimer?.();
 	} catch {}
 	try {
 		(await import("./currency-BZt-7TC7.js").then((n) => n.t)).stopRateTimer?.();
 	} catch {}
 	try {
-		(await import("./pricing-sync-CADPKT9h.js").then((n) => n.i)).stopPricingSyncTimer?.();
+		(await import("./pricing-sync-4MD0EImp.js").then((n) => n.i)).stopPricingSyncTimer?.();
 	} catch {}
 	cleanupRuntimeBindings();
 	try {
@@ -12001,19 +12141,19 @@ async function onDelete() {
 function onEnable() {
 	log.debug("enabled");
 	try {
-		import("./interception-BoETqAOw.js").then((n) => n.n).then((m) => m.installInterception());
+		import("./interception-CSM9wbti.js").then((n) => n.n).then((m) => m.installInterception());
 	} catch {}
 	try {
-		import("./collector--RBIRrJR.js").then((m) => m.initAgentUsage()).catch(() => {});
+		import("./collector-ekgebSdO.js").then((m) => m.initAgentUsage()).catch(() => {});
 	} catch {}
 	try {
-		import("./balance-C3MhaV_X.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
+		import("./balance-D-OTE3-5.js").then((n) => n.t).then((m) => m.restartBalanceTimer?.());
 	} catch {}
 	try {
 		import("./currency-BZt-7TC7.js").then((n) => n.t).then((m) => m.restartRateTimer?.());
 	} catch {}
 	try {
-		import("./pricing-sync-CADPKT9h.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
+		import("./pricing-sync-4MD0EImp.js").then((n) => n.i).then((m) => m.restartPricingSyncTimer?.());
 	} catch {}
 }
 async function onDisable() {
@@ -12023,10 +12163,10 @@ async function onDisable() {
 		flushSaveHot();
 	} catch {}
 	try {
-		import("./interception-BoETqAOw.js").then((n) => n.n).then((m) => m.uninstallInterception?.());
+		import("./interception-CSM9wbti.js").then((n) => n.n).then((m) => m.uninstallInterception?.());
 	} catch {}
 	try {
-		import("./collector--RBIRrJR.js").then((m) => m.uninstallAgentUsage?.()).catch(() => {});
+		import("./collector-ekgebSdO.js").then((m) => m.uninstallAgentUsage?.()).catch(() => {});
 	} catch {}
 	try {
 		const doc = getDoc();
@@ -12045,13 +12185,13 @@ async function onDisable() {
 		unwatchSystemTheme();
 	} catch {}
 	try {
-		(await import("./balance-C3MhaV_X.js").then((n) => n.t)).stopBalanceTimer?.();
+		(await import("./balance-D-OTE3-5.js").then((n) => n.t)).stopBalanceTimer?.();
 	} catch {}
 	try {
 		(await import("./currency-BZt-7TC7.js").then((n) => n.t)).stopRateTimer?.();
 	} catch {}
 	try {
-		(await import("./pricing-sync-CADPKT9h.js").then((n) => n.i)).stopPricingSyncTimer?.();
+		(await import("./pricing-sync-4MD0EImp.js").then((n) => n.i)).stopPricingSyncTimer?.();
 	} catch {}
 	cleanupRuntimeBindings();
 }
@@ -12079,19 +12219,19 @@ async function init() {
 		initTelemetry();
 	} catch {}
 	try {
-		(await import("./balance-C3MhaV_X.js").then((n) => n.t)).restartBalanceTimer?.();
+		(await import("./balance-D-OTE3-5.js").then((n) => n.t)).restartBalanceTimer?.();
 	} catch {}
 	try {
 		(await import("./currency-BZt-7TC7.js").then((n) => n.t)).restartRateTimer?.();
 	} catch {}
 	try {
-		(await import("./pricing-sync-CADPKT9h.js").then((n) => n.i)).restartPricingSyncTimer?.();
+		(await import("./pricing-sync-4MD0EImp.js").then((n) => n.i)).restartPricingSyncTimer?.();
 	} catch {}
 	try {
 		installInterception();
 	} catch {}
 	try {
-		import("./collector--RBIRrJR.js").then((m) => m.initAgentUsage()).catch(() => {});
+		import("./collector-ekgebSdO.js").then((m) => m.initAgentUsage()).catch(() => {});
 	} catch {}
 	const mount = () => {
 		try {
@@ -12113,7 +12253,7 @@ async function init() {
 			refreshUI();
 		} catch {}
 		try {
-			import("./pricing-sync-CADPKT9h.js").then((n) => n.i).then((m) => m.markLegacySyncedModels?.()).catch(() => {});
+			import("./pricing-sync-4MD0EImp.js").then((n) => n.i).then((m) => m.markLegacySyncedModels?.()).catch(() => {});
 		} catch {}
 	};
 	if (globalThis.SillyTavern?.getContext) mount();

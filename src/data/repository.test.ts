@@ -5,6 +5,7 @@ import { state } from '../store/index';
 import { defaultSettings } from '../types/settings';
 import { createDeepSeekWallet, createWalletFromConnection } from './wallets';
 import { DEEPSEEK_WALLET_ID } from '../types/wallet';
+import { officialEndpointId } from '../services/connection-identity';
 import {
   appendHistoryCold,
   clearHistoryCold,
@@ -30,6 +31,77 @@ function entry(timestamp: number, tokens: number, cost: number): any {
 let context: any;
 
 describe('仓库全量处理', () => {
+  const openrouter = { sourceType: 'openrouter', endpointId: officialEndpointId('openrouter'), endpointLabel: 'OpenRouter 官方' };
+  function prepareOpenRouter() {
+    const wallet = createWalletFromConnection(openrouter, state.settings)!;
+    wallet.balance.amount = '10';
+    wallet.balance.currency = 'USD';
+    state.wallets = [wallet];
+    return wallet;
+  }
+
+  it('OpenRouter 实扣金额优先于未配置模型价格，余额按 USD 扣减', () => {
+    const wallet = prepareOpenRouter();
+    state.settings.pricingSync.exchangeRate = 7;
+    const added = repository.addEntry({ prompt_tokens: 100, completion_tokens: 20, cost: 0.2 }, 'vendor/model', [], 0, undefined, undefined, 0, 0, null, openrouter);
+    expect(added).toMatchObject({ input_cost: 0, output_cost: 0, pricingSource: 'api', reportedCost: { amount: 0.2, currency: 'USD', exchangeRate: 7 } });
+    expect(added.cost).toBeCloseTo(1.4);
+    expect(Number(wallet.balance.amount)).toBeCloseTo(9.8);
+    expect(state.total_cost).toBeCloseTo(1.4);
+  });
+
+  it('双路径后到的实扣费用回填一次，不重复扣余额或增加记录', () => {
+    const wallet = prepareOpenRouter();
+    state.settings.pricingSync.exchangeRate = 7;
+    const add = (cost?: number) => repository.addEntry({ prompt_tokens: 100, completion_tokens: 20, ...(cost === undefined ? {} : { cost }) }, 'vendor/model', [], 0, undefined, undefined, 0, 0, null, openrouter, 'request-api-cost-merge');
+    add();
+    add(0.3);
+    add(0.3);
+    expect(state.history).toHaveLength(1);
+    expect(state.history[0].pricingSource).toBe('api');
+    expect(state.history[0].cost).toBeCloseTo(2.1);
+    expect(state.total_cost).toBeCloseTo(2.1);
+    expect(Number(wallet.balance.amount)).toBeCloseTo(9.7);
+  });
+
+  it('免费请求的 0 费用保留为实扣价；未知币种不盲目作为 USD', () => {
+    prepareOpenRouter();
+    const free = repository.addEntry({ prompt_tokens: 10, cost: 0 }, 'vendor/free', [], 0, undefined, undefined, 0, 0, null, openrouter);
+    expect(free).toMatchObject({ cost: 0, pricingSource: 'api' });
+    const relay = { sourceType: 'custom', endpointId: 'test-unknown-currency', endpointLabel: 'relay.example' };
+    const unknown = repository.addEntry({ prompt_tokens: 10, cost: 999 }, 'custom/model', [], 0, undefined, undefined, 0, 0, null, relay);
+    expect(unknown.pricingSource).toBe('unpriced');
+    expect(unknown.reportedCost).toBeUndefined();
+    const relayWallet = repository.getWallet(unknown.walletId)!;
+    relayWallet.responseCost = 'CNY';
+    const known = repository.addEntry({ prompt_tokens: 11, cost: 0.1 }, 'custom/model', [], 0, undefined, undefined, 0, 0, null, relay);
+    expect(known).toMatchObject({ cost: 0.1, pricingSource: 'api' });
+  });
+
+  it('全量重算和钱包重算保留热冷历史的实扣价与记录时汇率', async () => {
+    const wallet = prepareOpenRouter();
+    state.settings.pricingSync.exchangeRate = 7;
+    repository.addEntry({ prompt_tokens: 10, cost: 0.1 }, 'vendor/model', [], 0, undefined, undefined, 0, 0, null, openrouter);
+    await appendHistoryCold([{ ...entry(1000, 10, 0.7), model: 'vendor/model', walletId: wallet.id, reportedCost: { amount: 0.1, currency: 'USD', exchangeRate: 7 }, pricingSource: 'api' }]);
+    state.settings.pricingSync.exchangeRate = 10;
+    await repository.rebuildAggregates();
+    await repository.recalcAll();
+    await repository.recalcWallet(wallet.id);
+    expect(state.history[0].cost).toBeCloseTo(0.7);
+    expect((await loadHistoryCold())[0].cost).toBeCloseTo(0.7);
+    expect(state.total_cost).toBeCloseTo(1.4);
+  });
+
+  it('密钥用量快照不覆盖手工账户余额，账户校准保留手工模式', () => {
+    const wallet = prepareOpenRouter();
+    repository.setWalletAccountSnapshot(wallet.id, { amount: null, currency: 'USD', usage: 2, scope: 'key', keyRemaining: 8 });
+    expect(wallet.balance.amount).toBe('10');
+    expect(wallet.balance.lastCalibrated).toBeNull();
+    repository.setWalletAccountSnapshot(wallet.id, { amount: '20', currency: 'USD', usage: 5, scope: 'account' });
+    expect(wallet.balance.amount).toBe('20');
+    expect(wallet.balance.mode).toBe('manual');
+    expect(wallet.balance.lastCalibrated).toBeGreaterThan(0);
+  });
   beforeEach(async () => {
     context = {
       extensionSettings: {},

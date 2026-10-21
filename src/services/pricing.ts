@@ -216,7 +216,7 @@ export function calcCost(
   u: { timestamp: number; model: string; prompt_cache_hit_tokens: number; prompt_cache_miss_tokens: number; completion_tokens: number },
   settings: Settings,
   wallet?: WalletConfig | null,
-): { input: number; output: number; total: number; priceType: string; source: 'wallet' | 'builtin' | 'legacy' | 'legacy-unassigned' | 'unpriced' } {
+): { input: number; output: number; total: number; priceType: string; source: 'api' | 'wallet' | 'builtin' | 'legacy' | 'legacy-unassigned' | 'unpriced' } {
   const model = u.model || 'deepseek-v4-flash';
   const walletRule = wallet ? findWalletModel(wallet, model) : null;
   const useWalletRule = !!walletRule

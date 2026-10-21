@@ -320,6 +320,180 @@ function resolveRuntimeConnectionContext(body) {
 	return buildConnectionContext(body, secretsModule?.secret_state || null, secretsModule?.SECRET_KEYS);
 }
 //#endregion
+//#region src/data/balance-providers.ts
+var BALANCE_PROVIDERS = [
+	{
+		id: "auto",
+		label: "按接入地址自动识别"
+	},
+	{
+		id: "manual",
+		label: "仅手工余额"
+	},
+	{
+		id: "deepseek",
+		label: "DeepSeek"
+	},
+	{
+		id: "openrouter",
+		label: "OpenRouter 账户（管理密钥）"
+	},
+	{
+		id: "openrouter-key",
+		label: "OpenRouter 密钥用量/额度"
+	},
+	{
+		id: "siliconflow",
+		label: "硅基流动（中国站）"
+	},
+	{
+		id: "moonshot",
+		label: "Moonshot（中国站）"
+	},
+	{
+		id: "moonshot-intl",
+		label: "Moonshot（国际站）"
+	},
+	{
+		id: "custom",
+		label: "自定义 JSON 接口"
+	}
+];
+function normalizeBalanceQuery(raw) {
+	return {
+		provider: BALANCE_PROVIDERS.some((p) => p.id === raw?.provider) ? raw.provider : "auto",
+		url: safeBalanceUrl(raw?.url) || "",
+		balancePath: String(raw?.balancePath || "").trim(),
+		usagePath: String(raw?.usagePath || "").trim(),
+		totalPath: String(raw?.totalPath || "").trim(),
+		multiplier: typeof raw?.multiplier === "number" && Number.isFinite(raw.multiplier) && raw.multiplier > 0 ? raw.multiplier : 1,
+		currency: raw?.currency === "USD" ? "USD" : "CNY",
+		auth: raw?.auth === "x-api-key" ? "x-api-key" : "bearer"
+	};
+}
+/** 查询地址不包含密钥；禁止用户信息、查询参数和重定向转发凭证。 */
+function safeBalanceUrl(value) {
+	try {
+		const url = new URL(String(value || ""));
+		const local = [
+			"localhost",
+			"127.0.0.1",
+			"[::1]"
+		].includes(url.hostname);
+		if (url.protocol !== "https:" && !(url.protocol === "http:" && local)) return null;
+		if (url.username || url.password || url.search || url.hash) return null;
+		return url.href;
+	} catch {
+		return null;
+	}
+}
+function detectBalanceProvider(wallet) {
+	const hosts = {
+		"api.deepseek.com": "deepseek",
+		"openrouter.ai": "openrouter",
+		"api.siliconflow.cn": "siliconflow",
+		"api.moonshot.cn": "moonshot",
+		"api.moonshot.ai": "moonshot-intl"
+	};
+	for (const field of [wallet.endpointLabel, wallet.endpointId]) try {
+		const text = String(field || "");
+		const url = new URL(text.includes("://") ? text : `https://${text}`);
+		if (url.username || url.password || url.port) continue;
+		const provider = hosts[url.hostname.toLowerCase()];
+		if (provider) return provider;
+	} catch {}
+	const source = String(wallet.sourceType || "").toLowerCase();
+	if (wallet.endpointId === officialEndpointId(source)) return {
+		deepseek: "deepseek",
+		openrouter: "openrouter",
+		siliconflow: "siliconflow",
+		moonshot: "moonshot"
+	}[source] || null;
+	return null;
+}
+function resolvedBalanceProvider(wallet) {
+	const provider = wallet.balance.query?.provider || "auto";
+	return provider === "auto" ? detectBalanceProvider(wallet) : provider;
+}
+function balanceQueryUrl(wallet) {
+	const urls = {
+		deepseek: "https://api.deepseek.com/user/balance",
+		openrouter: "https://openrouter.ai/api/v1/credits",
+		"openrouter-key": "https://openrouter.ai/api/v1/key",
+		siliconflow: "https://api.siliconflow.cn/v1/user/info",
+		moonshot: "https://api.moonshot.cn/v1/users/me/balance",
+		"moonshot-intl": "https://api.moonshot.ai/v1/users/me/balance"
+	};
+	const provider = resolvedBalanceProvider(wallet);
+	return provider === "custom" ? safeBalanceUrl(wallet.balance.query?.url) : provider ? urls[provider] || null : null;
+}
+function moneyNumber(value) {
+	if (typeof value !== "number" && (typeof value !== "string" || !value.trim())) return null;
+	const n = Number(value);
+	return Number.isFinite(n) ? n : null;
+}
+/** 只读取自有属性，不执行表达式；支持 data.items[0].balance。 */
+function jsonField(data, path) {
+	if (!path || !/^[\w-]+(?:\[\d+\]|\.[\w-]+)*$/.test(path)) return void 0;
+	let value = data;
+	for (const key of path.replace(/\[(\d+)\]/g, ".$1").split(".")) {
+		if ([
+			"__proto__",
+			"prototype",
+			"constructor"
+		].includes(key) || !value || typeof value !== "object" || !Object.prototype.hasOwnProperty.call(value, key)) return void 0;
+		value = value[key];
+	}
+	return value;
+}
+function parseAccountSnapshot(wallet, data) {
+	if (data?.error || data?.success === false || data?.status === false) throw new Error("平台返回查询失败");
+	const provider = resolvedBalanceProvider(wallet);
+	let amount = null;
+	let usage = null;
+	let currency = "CNY";
+	let keyRemaining = null;
+	let scope = "account";
+	if (provider === "deepseek") {
+		const infos = Array.isArray(data?.balance_infos) ? data.balance_infos : [];
+		const info = infos.find((i) => i.currency === wallet.balance.currency) || infos[0];
+		if (!info || !["CNY", "USD"].includes(info.currency)) throw new Error("余额响应缺少有效币种");
+		amount = moneyNumber(info.total_balance);
+		currency = info.currency;
+	} else if (provider === "openrouter") {
+		currency = "USD";
+		const credits = moneyNumber(data?.data?.total_credits);
+		usage = moneyNumber(data?.data?.total_usage);
+		if (credits !== null && usage !== null) amount = credits - usage;
+	} else if (provider === "openrouter-key") {
+		currency = "USD";
+		scope = "key";
+		usage = moneyNumber(data?.data?.usage);
+		keyRemaining = moneyNumber(data?.data?.limit_remaining);
+	} else if (provider === "siliconflow") amount = moneyNumber(data?.data?.totalBalance);
+	else if (provider === "moonshot" || provider === "moonshot-intl") {
+		amount = moneyNumber(data?.data?.available_balance);
+		currency = provider === "moonshot-intl" ? "USD" : "CNY";
+	} else if (provider === "custom") {
+		const q = normalizeBalanceQuery(wallet.balance.query);
+		currency = q.currency;
+		const rawUsage = q.usagePath ? moneyNumber(jsonField(data, q.usagePath)) : null;
+		if (q.usagePath && rawUsage === null) throw new Error("已用金额字段不存在或不是有效数字");
+		usage = rawUsage === null ? null : rawUsage * q.multiplier;
+		const rawAmount = moneyNumber(jsonField(data, q.totalPath || q.balancePath));
+		if (rawAmount !== null && (!q.totalPath || rawUsage !== null)) amount = (rawAmount - (q.totalPath ? rawUsage : 0)) * q.multiplier;
+	}
+	if (scope === "account" ? amount === null || !Number.isFinite(amount) : usage === null) throw new Error("未找到有效余额/用量，请检查接口和字段配置");
+	if (usage !== null && (!Number.isFinite(usage) || usage < 0)) throw new Error("平台已用金额无效");
+	return {
+		amount: amount === null ? null : String(amount),
+		currency,
+		usage,
+		scope,
+		keyRemaining
+	};
+}
+//#endregion
 //#region src/data/wallets.ts
 var DEEPSEEK_OFFICIAL_ENDPOINT_ID = officialEndpointId("deepseek");
 function cleanText(value) {
@@ -507,7 +681,21 @@ function normalizeWallet(raw, settings, now = Date.now()) {
 		endpointLabel: cleanText(raw.endpointLabel) || null,
 		endpointDisplay: cleanText(raw.endpointDisplay || raw.endpointLabel) || null,
 		catalogProvider: isFirstPartyCatalogProvider(rawCatalogProvider) ? rawCatalogProvider : null,
+		responseCost: [
+			"CNY",
+			"USD",
+			"off"
+		].includes(raw.responseCost) ? raw.responseCost : "auto",
 		balance: {
+			query: normalizeBalanceQuery(balanceRaw.query),
+			...balanceRaw.snapshot && typeof balanceRaw.snapshot === "object" ? { snapshot: {
+				amount: moneyNumber(balanceRaw.snapshot.amount) === null ? null : String(balanceRaw.snapshot.amount),
+				currency: walletCurrencyOrDefault(balanceRaw.snapshot.currency),
+				usage: moneyNumber(balanceRaw.snapshot.usage),
+				scope: balanceRaw.snapshot.scope === "key" ? "key" : "account",
+				keyRemaining: moneyNumber(balanceRaw.snapshot.keyRemaining),
+				checkedAt: finiteNumber(balanceRaw.snapshot.checkedAt, 0)
+			} } : {},
 			mode: balanceRaw.mode === "auto" ? "auto" : "manual",
 			amount: balanceRaw.amount == null || balanceRaw.amount === "" ? null : String(balanceRaw.amount),
 			currency: walletCurrencyOrDefault(balanceRaw.currency),
@@ -632,7 +820,11 @@ function normalizeWallets(raw, settings, now = Date.now()) {
 function cloneWallet(wallet) {
 	return {
 		...wallet,
-		balance: { ...wallet.balance },
+		balance: {
+			...wallet.balance,
+			query: normalizeBalanceQuery(wallet.balance.query),
+			snapshot: wallet.balance.snapshot ? { ...wallet.balance.snapshot } : void 0
+		},
 		peakHours: wallet.peakHours.map((item) => ({ ...item })),
 		credentials: wallet.credentials.map((item) => ({ ...item })),
 		models: wallet.models.map((item) => ({
@@ -1083,6 +1275,25 @@ function calcSavings(u, settings, wallet) {
 	return (u.prompt_cache_hit_tokens || 0) / 1e6 * (p.miss - p.hit);
 }
 //#endregion
+//#region src/data/reported-cost.ts
+function extractReportedCost(usage, wallet) {
+	if (!wallet || wallet.responseCost === "off") return null;
+	if ((!wallet.responseCost || wallet.responseCost === "auto") && usage?.cost_currency != null && !["CNY", "USD"].includes(usage.cost_currency)) return null;
+	const currency = wallet.responseCost === "CNY" || wallet.responseCost === "USD" ? wallet.responseCost : usage?.cost_currency === "USD" || usage?.cost_currency === "CNY" ? usage.cost_currency : detectBalanceProvider(wallet) === "openrouter" ? "USD" : null;
+	const amount = moneyNumber(usage?.cost);
+	return currency && amount !== null && amount >= 0 ? {
+		amount,
+		currency
+	} : null;
+}
+function reportedCostInCny(reported, rate) {
+	const amount = moneyNumber(reported?.amount);
+	if (amount === null || amount < 0 || !["USD", "CNY"].includes(reported?.currency)) return null;
+	if (reported.currency === "USD" && (!Number.isFinite(rate) || rate <= 0)) return null;
+	const cny = reported.currency === "USD" ? amount * rate : amount;
+	return Number.isFinite(cny) ? cny : null;
+}
+//#endregion
 //#region src/data/events.ts
 var map = /* @__PURE__ */ new Map();
 var DataEvents = {
@@ -1223,6 +1434,8 @@ function decryptKey(ciphertext) {
 //#endregion
 //#region src/services/wallet-secrets.ts
 var SECRETS_KEY = "walletSecrets";
+var TARGETS_KEY = "walletSecretTargets";
+var LEGACY_DEEPSEEK_URL = "https://api.deepseek.com/user/balance";
 function readMap() {
 	try {
 		const value = (getExtensionSettings() || {})[SECRETS_KEY];
@@ -1231,25 +1444,38 @@ function readMap() {
 		return {};
 	}
 }
-function getWalletApiKey(walletId) {
+function getWalletApiKey(walletId, targetUrl) {
 	if (!walletId) return "";
 	try {
+		if (targetUrl) {
+			const bound = getExtensionSettings()?.[TARGETS_KEY]?.[walletId];
+			if (bound ? bound !== targetUrl : walletId !== "wallet:deepseek-official" || targetUrl !== LEGACY_DEEPSEEK_URL) return "";
+		}
 		const encrypted = readMap()[walletId];
 		return encrypted ? decryptKey(encrypted) : "";
 	} catch {
 		return "";
 	}
 }
-function saveWalletApiKey(walletId, key) {
+function saveWalletApiKey(walletId, key, targetUrl) {
 	if (!walletId) return;
 	const settings = getExtensionSettings() || {};
 	const map = readMap();
+	const targets = { ...settings[TARGETS_KEY] || {} };
 	const value = String(key || "").trim();
-	if (value) map[walletId] = encryptKey(value);
-	else delete map[walletId];
+	if (value) {
+		map[walletId] = encryptKey(value);
+		const target = targetUrl || (walletId === "wallet:deepseek-official" ? LEGACY_DEEPSEEK_URL : "");
+		if (target) targets[walletId] = target;
+		else delete targets[walletId];
+	} else {
+		delete map[walletId];
+		delete targets[walletId];
+	}
 	saveExtensionSettings({
 		...settings,
 		[SECRETS_KEY]: map,
+		[TARGETS_KEY]: targets,
 		_updated: Date.now()
 	});
 }
@@ -1668,6 +1894,14 @@ function recalcAgentRunCost(entry) {
 	};
 }
 function recalcEntryCost(entry, wallet) {
+	const reported = reportedCostInCny(entry.reportedCost, entry.reportedCost?.exchangeRate || getWalletExchangeRate());
+	if (reported !== null) return {
+		input: 0,
+		output: 0,
+		total: reported,
+		priceType: "api",
+		source: "api"
+	};
 	const agentCost = recalcAgentRunCost(entry);
 	if (agentCost) return agentCost;
 	const legacyWallet = entry?.legacyPricingWalletId ? state.wallets.find((item) => item.id === entry.legacyPricingWalletId) || null : null;
@@ -1713,7 +1947,7 @@ function applyCostPatch(entry, cost) {
 	entry.output_cost = cost.output;
 	entry.cost = cost.total;
 	entry.priceType = cost.priceType;
-	entry.pricingSource = entry.legacyPricingWalletId ? "legacy-match" : cost.source;
+	entry.pricingSource = cost.source === "api" ? "api" : entry.legacyPricingWalletId ? "legacy-match" : cost.source;
 }
 function applyTotalDelta(previous, next) {
 	state.input_cost += (next.input || 0) - (previous.input || 0);
@@ -2085,6 +2319,19 @@ var repository = {
 			if (calibrated) wallet.balance.lastCalibrated = Date.now();
 		});
 	},
+	setWalletAccountSnapshot(walletId, snapshot) {
+		return this.updateWallet(walletId, (wallet) => {
+			wallet.balance.snapshot = {
+				...snapshot,
+				checkedAt: Date.now()
+			};
+			if (snapshot.scope === "account" && snapshot.amount !== null) {
+				wallet.balance.amount = snapshot.amount;
+				wallet.balance.currency = snapshot.currency;
+				wallet.balance.lastCalibrated = Date.now();
+			}
+		});
+	},
 	recalcEntryWallet(entry) {
 		return findWalletForHistory(state.wallets, entry);
 	},
@@ -2139,7 +2386,7 @@ var repository = {
 					const modelObservation = observeModel(wallet, model, nowTs);
 					if (modelObservation.changed) wallet.updatedAt = nowTs;
 					if (modelObservation.model?.source === "discovered" && modelObservation.model.price.priceConfigured !== true && state.settings.pricingSync?.enabled) try {
-						import("./pricing-sync-CADPKT9h.js").then((n) => n.i).then((module) => module.syncPricingFromModelsDev({ silent: true })).then(() => this.recalcWallet(wallet.id)).catch(() => {});
+						import("./pricing-sync-4MD0EImp.js").then((n) => n.i).then((module) => module.syncPricingFromModelsDev({ silent: true })).then(() => this.recalcWallet(wallet.id)).catch(() => {});
 					} catch {}
 				}
 				wallet.lastUsedAt = nowTs;
@@ -2210,6 +2457,32 @@ var repository = {
 							head.walletId = wallet.id;
 							changed = true;
 						}
+						const reportedCost = extractReportedCost(usage, wallet);
+						if (reportedCost && !head.reportedCost) {
+							const previous = {
+								input: head.input_cost || 0,
+								output: head.output_cost || 0,
+								total: head.cost || 0
+							};
+							head.reportedCost = {
+								...reportedCost,
+								exchangeRate: getWalletExchangeRate()
+							};
+							head.raw_usage = usage;
+							const next = recalcEntryCost(head, wallet);
+							applyCostPatch(head, next);
+							applyTotalDelta(previous, next);
+							adjustWalletBalance(head.walletId, next.total - previous.total, 1);
+							if (state.lastUsage?.requestId === requestId) Object.assign(state.lastUsage, {
+								reportedCost: head.reportedCost,
+								cost: next.total,
+								input_cost: next.input,
+								output_cost: next.output,
+								pricingSource: "api",
+								priceType: "api"
+							});
+							changed = true;
+						}
 						if (changed) {
 							if (state.lastUsage?.timestamp === head.timestamp) {
 								if (head.fullResponse) state.lastUsage.fullResponse = head.fullResponse;
@@ -2266,7 +2539,12 @@ var repository = {
 		lu.finishReason = fr;
 		lu.isTruncated = isTruncatedFinish(fr);
 		lu.messages = (messages || []).map(clampMessage);
-		const c = calcCost({
+		const reportedCost = extractReportedCost(usage, wallet);
+		if (reportedCost) lu.reportedCost = {
+			...reportedCost,
+			exchangeRate: getWalletExchangeRate()
+		};
+		const c = reportedCost ? recalcEntryCost(lu, wallet) : calcCost({
 			timestamp: lu.timestamp,
 			model,
 			prompt_cache_hit_tokens: hit,
@@ -2332,7 +2610,8 @@ var repository = {
 			credentialId: connection?.credentialId ?? null,
 			credentialLabel: connection?.credentialLabel ?? null,
 			walletId: wallet?.id ?? null,
-			pricingSource: c.source
+			pricingSource: c.source,
+			...lu.reportedCost ? { reportedCost: lu.reportedCost } : {}
 		};
 		log.debug("addEntry 即将写入", {
 			model: entry.model,
@@ -2978,4 +3257,4 @@ var repository = {
 	}
 };
 //#endregion
-export { DEEPSEEK_WALLET_ID as A, findWalletModel as C, buildEndpointContext as D, walletPendingModelCount as E, initConnectionIdentity as O, findWalletForHistory as S, walletBalanceToCny as T, normalizeModel as _, decryptKey as a, defaultContextLimitForModel as b, isTruncatedFinish as c, calcCost as d, calcSavings as f, isWalletPeakHour as g, isPeakHour as h, saveWalletApiKey as i, WALLET_CATALOG_PROVIDERS as j, resolveRuntimeConnectionContext as k, DataEvents as l, isDeepSeekOfficialModel as m, repository_exports as n, encryptKey as o, getPricing as p, getWalletApiKey as r, sanitizeHistoryTiming as s, repository as t, on as u, DEEPSEEK_OFFICIAL_ENDPOINT_ID as v, mergeWalletCollections as w, findWalletForConnection as x, cloneWallet as y };
+export { resolvedBalanceProvider as A, mergeWalletCollections as C, balanceQueryUrl as D, BALANCE_PROVIDERS as E, DEEPSEEK_WALLET_ID as F, WALLET_CATALOG_PROVIDERS as I, buildEndpointContext as M, initConnectionIdentity as N, normalizeBalanceQuery as O, resolveRuntimeConnectionContext as P, findWalletModel as S, walletPendingModelCount as T, normalizeModel as _, decryptKey as a, findWalletForConnection as b, isTruncatedFinish as c, calcCost as d, calcSavings as f, isWalletPeakHour as g, isPeakHour as h, saveWalletApiKey as i, safeBalanceUrl as j, parseAccountSnapshot as k, DataEvents as l, isDeepSeekOfficialModel as m, repository_exports as n, encryptKey as o, getPricing as p, getWalletApiKey as r, sanitizeHistoryTiming as s, repository as t, on as u, cloneWallet as v, walletBalanceToCny as w, findWalletForHistory as x, defaultContextLimitForModel as y };

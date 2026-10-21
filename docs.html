@@ -1073,7 +1073,7 @@
 
         <h3 id="quick-start-balance">配置余额与费用</h3>
         <ul>
-          <li>需要查看余额或剩余轮数预测时，进入“钱包”设置手工余额，或为 DeepSeek 官方直连钱包填写校准密钥。</li>
+          <li>需要查看余额或剩余轮数预测时，进入“钱包”设置手工余额，或为支持查询的平台钱包填写对应校准密钥。</li>
           <li>需要准确计算非内置模型费用时，在对应钱包中添加模型价格，或配置价格来源后同步价格。</li>
           <li>概览页的余额口径只影响余额和剩余轮数预测，不改变其他统计快照的范围。</li>
         </ul>
@@ -1163,7 +1163,7 @@
         <p>“充值余额”卡显示当前选择的钱包余额。右上角“余额口径”可以切换 DeepSeek 官方钱包、全部钱包合计或其他钱包。</p>
         <ul>
           <li>余额口径只影响余额显示和剩余轮数预测，不改变概览、统计和历史中的其他全量指标。</li>
-          <li>手工余额直接使用填写值；自动校准仅支持支持该能力的官方直连钱包。</li>
+          <li>手工余额直接使用填写值；可自动识别 DeepSeek、OpenRouter、硅基流动、Moonshot，也可配置自定义 JSON 接口。</li>
           <li>多个钱包不会自动把某个密钥余额相加，只有选择“全部钱包合计”时才汇总各钱包已设置余额。</li>
         </ul>
 
@@ -1422,17 +1422,20 @@
         <p>钱包默认收起，收起状态显示钱包名称、接入地址、余额、密钥数量、模型数量、请求数和费用摘要。点击“展开”后显示余额、峰谷、模型价格和价格来源等详细设置。展开状态会按钱包独立记忆。</p>
 
         <h3 id="wallet-balance">余额与自动校准</h3>
+        <p>钱包的「余额来源」支持自动识别、手动选择平台和自定义 JSON GET 接口。OpenRouter 账户余额使用 total_credits − total_usage，需要管理密钥；普通密钥请选择「密钥用量/额度」，其限额不会被当成账户余额。硅基流动中国站使用 totalBalance（CNY）；Moonshot 中国/国际站使用 available_balance（CNY/USD）。</p>
+        <p>自定义接口填写查询 URL、余额字段（如 data.balance）、可选已用字段（如 data.used）、币种和金额乘数。若填写总额度字段，余额为（总额度 − 已用金额）× 乘数。路径支持 data.items[0].balance，不执行表达式。URL 使用 HTTPS（本机允许 HTTP），不包含账号密码、查询参数和片段。</p>
+        <p>平台账户或密钥累计消费独立显示，不补写成本机请求历史。常规对话的 usage.cost 在币种明确时优先记录实扣总价；OpenRouter 默认 USD，其他平台可指定 CNY/USD，未返回费用时按模型价格估算。仅有总价时输入/输出费用不拆分。实扣价保留记录时汇率，重算不覆盖。Agent 通道沿用按模型价格估算。</p>
         <div class="table-wrap">
           <table>
             <thead><tr><th>余额方式</th><th>适用情况</th><th>说明</th></tr></thead>
             <tbody>
               <tr><td>手工余额</td><td>所有钱包</td><td>直接填写当前可用余额，适合代理、兼容接口或不提供余额查询的接入。</td></tr>
-              <tr><td>自动校准</td><td>DeepSeek 官方直连钱包</td><td>需要钱包内校准密钥和全局自动校准开关；查询成功后覆盖钱包余额。</td></tr>
+              <tr><td>自动校准</td><td>DeepSeek、OpenRouter、硅基流动、Moonshot、自定义 JSON 接口</td><td>选择余额来源并保存对应密钥。定时查询需要钱包和设置总开关同时开启；账户查询成功后覆盖余额，密钥额度独立显示。</td></tr>
               <tr><td>钱包币种</td><td>所有钱包</td><td>用于显示和换算；概览显示会按统一汇率折算。</td></tr>
             </tbody>
           </table>
         </div>
-        <div class="callout warning"><strong>密钥区别：</strong>酒馆中的普通密钥条目只用于识别请求来源；钱包校准密钥是用户主动填写的实际密钥，只用于查询 DeepSeek 官方余额。扩展不会把多个密钥的余额自动相加。</div>
+        <div class="callout warning"><strong>密钥区别：</strong>酒馆中的普通密钥条目只用于识别请求来源；钱包校准密钥是用户主动填写的实际密钥，只向保存时绑定的查询地址发送 GET 请求；支持平台余额、用量接口和自定义 JSON 查询。扩展不会把多个密钥的余额自动相加。</div>
 
         <h3 id="wallet-credentials">密钥身份与主密钥</h3>
         <ul>
@@ -1493,7 +1496,7 @@
         </ul>
 
         <h3 id="settings-balance">自动校准余额</h3>
-        <p>全局开关决定是否允许钱包按间隔自动查询余额。开启后可以设置校准间隔，单位为分钟。只有钱包页中启用了自动校准且支持官方查询的钱包会执行。</p>
+        <p>全局开关决定是否允许钱包按间隔自动查询余额。开启后可以设置校准间隔，单位为分钟。只有钱包页中启用了自动校准且配置了有效查询接口的钱包会执行。</p>
         <div class="callout"><strong>优先级：</strong>全局开关关闭时，钱包内即使开启自动校准也不会定时查询；手工余额仍可正常使用。</div>
 
         <h3 id="settings-pricing">内置定价与默认峰谷</h3>
@@ -1755,7 +1758,7 @@
           <li>本扩展<strong>不采集、不上传任何可识别个人身份的数据</strong>。唯一会离开设备的，是可在「设置 → 匿名使用统计」一键关闭的匿名使用统计（随机设备标识、环境分桶、页面使用次数、扩展版本与渲染耗时分桶），其中不含聊天内容、模型名、密钥、余额、费用与接口地址，详见第十节。</li>
           <li>本扩展发起的所有网络请求<strong>仅限于本声明第四节列出的域名</strong>，除该清单外不存在任何其他网络访问。</li>
           <li>本扩展<strong>无法获取用户储存在酒馆中的明文 API 密钥</strong>，详见第五节。</li>
-          <li>用户主动填入本扩展的校准密钥<strong>不会被上传到除 DeepSeek 官方余额接口以外的任何位置</strong>，详见第六节。</li>
+          <li>用户主动填入本扩展的校准密钥<strong>仅发送至保存时绑定的钱包余额/用量查询地址</strong>，详见第六节。</li>
         </ol>
 
         <h3 id="privacy-not-doing">二、本扩展明确不做的事</h3>
@@ -1784,7 +1787,7 @@
           <table>
             <thead><tr><th>#</th><th>域名</th><th>资源</th><th>功能</th><th>触发条件</th><th>发送内容</th></tr></thead>
             <tbody>
-              <tr><td>1</td><td><span class="code">api.deepseek.com</span></td><td><span class="code">GET /user/balance</span></td><td>查询 DeepSeek 官方钱包余额（校准）</td><td>仅当钱包为 DeepSeek 官方接入、且用户主动填写校准密钥后：手动校准，或开启「自动校准」后按设定间隔（1–1440 分钟）触发</td><td>仅 <span class="code">Authorization: Bearer &lt;校准密钥&gt;</span> 请求头；不含任何聊天内容或统计数据</td></tr>
+              <tr><td>1</td><td><span class="code">api.deepseek.com / openrouter.ai / api.siliconflow.cn / api.moonshot.cn / api.moonshot.ai</span> 或用户配置的查询域名</td><td>GET 余额或用量接口（钱包中展示完整地址）</td><td>查询对应平台账户余额、累计消费或密钥用量</td><td>用户保存对应地址的校准密钥后：手动查询，或同时开启钱包和全局自动校准后按设定间隔触发</td><td>仅 Authorization: Bearer 或自定义 x-api-key 请求头；不含聊天内容或本机统计数据。不跟随重定向、不发送 cookie。</td></tr>
               <tr><td>2</td><td><span class="code">models.dev</span></td><td><span class="code">/api.json</span>、<span class="code">/catalog.json</span></td><td>模型价格目录同步（「价格来源、自动同步」功能）</td><td><strong>默认关闭</strong>；用户开启后手动或按设定间隔触发</td><td>无用户数据（纯 GET 拉取公开目录）</td></tr>
               <tr><td>3</td><td><span class="code">raw.githubusercontent.com</span></td><td><span class="code">anomalyco/opencode/main/models.json</span></td><td>价格同步的备用数据源</td><td>同上，仅在主源拉取失败时依序尝试</td><td>无用户数据</td></tr>
               <tr><td>4</td><td><span class="code">raw.githubusercontent.com</span></td><td><span class="code">janmk1453/Api-Usage/{main|dev}/manifest.json</span></td><td>检查所选分支的扩展更新</td><td>每小时一次的自动检查（5 秒超时）</td><td>无用户数据</td></tr>
@@ -1811,8 +1814,8 @@
 
         <h3 id="privacy-calibration-key">六、关于用户主动填入的校准密钥</h3>
         <ul>
-          <li>用户在钱包页主动填写的校准密钥是<strong>实际可用</strong>的密钥，且<strong>仅会被用于查询 DeepSeek 官方余额</strong>（<a href="https://api.deepseek.com/user/balance" target="_blank" rel="noreferrer">https://api.deepseek.com/user/balance</a>），该查询不会产生任何扣费或消耗；</li>
-          <li>自动校准仅对该密钥对应的 DeepSeek 官方钱包生效，由<strong>浏览器直接</strong>发送至上述接口，不经过任何第三方；</li>
+          <li>用户在钱包页主动填写的校准密钥是<strong>实际可用</strong>的密钥，<strong>仅用于向钱包显示并绑定的余额/用量地址发送 GET 请求</strong>。内置平台查询不调用模型；自定义接口的权限与计费规则由提供方决定；</li>
+          <li>查询由<strong>浏览器直接</strong>发送至对应平台或自定义服务，不经扩展作者服务器。导入/同步配置不会改变已有密钥绑定的地址；地址变化需重新保存密钥。接口需允许 CORS；</li>
           <li>校准密钥仅经 <strong>XOR 混淆</strong>后存放于 SillyTavern 的扩展设置与浏览器本地存储中；</li>
           <li>校准密钥<strong>不进入</strong>历史记录、统计聚合、调试日志、导入导出文件或 WebDAV 同步；</li>
           <li><strong>XOR 不是安全加密</strong>，仅能防止明文直接可见。请使用权限受限的密钥（如仅具只读余额权限的密钥）并自行评估风险。</li>

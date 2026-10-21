@@ -15,6 +15,7 @@ import {
   type WalletPriceTier,
 } from '../types/wallet';
 import { isUnsafeKey } from '../utils/date';
+import { normalizeBalanceQuery, moneyNumber } from './balance-providers';
 
 export const DEEPSEEK_OFFICIAL_ENDPOINT_ID = officialEndpointId('deepseek');
 
@@ -244,7 +245,19 @@ export function normalizeWallet(raw: any, settings: Settings, now = Date.now()):
     endpointLabel: cleanText(raw.endpointLabel) || null,
     endpointDisplay: cleanText(raw.endpointDisplay || raw.endpointLabel) || null,
     catalogProvider: isFirstPartyCatalogProvider(rawCatalogProvider) ? rawCatalogProvider : null,
+    responseCost: ['CNY', 'USD', 'off'].includes(raw.responseCost) ? raw.responseCost : 'auto',
     balance: {
+      query: normalizeBalanceQuery(balanceRaw.query),
+      ...(balanceRaw.snapshot && typeof balanceRaw.snapshot === 'object' ? {
+        snapshot: {
+          amount: moneyNumber(balanceRaw.snapshot.amount) === null ? null : String(balanceRaw.snapshot.amount),
+          currency: walletCurrencyOrDefault(balanceRaw.snapshot.currency),
+          usage: moneyNumber(balanceRaw.snapshot.usage),
+          scope: balanceRaw.snapshot.scope === 'key' ? 'key' as const : 'account' as const,
+          keyRemaining: moneyNumber(balanceRaw.snapshot.keyRemaining),
+          checkedAt: finiteNumber(balanceRaw.snapshot.checkedAt, 0),
+        },
+      } : {}),
       mode: balanceRaw.mode === 'auto' ? 'auto' : 'manual',
       amount: balanceRaw.amount == null || balanceRaw.amount === '' ? null : String(balanceRaw.amount),
       currency: walletCurrencyOrDefault(balanceRaw.currency),
@@ -389,7 +402,7 @@ export function normalizeWallets(raw: unknown, settings: Settings, now = Date.no
 export function cloneWallet(wallet: WalletConfig): WalletConfig {
   return {
     ...wallet,
-    balance: { ...wallet.balance },
+    balance: { ...wallet.balance, query: normalizeBalanceQuery(wallet.balance.query), snapshot: wallet.balance.snapshot ? { ...wallet.balance.snapshot } : undefined },
     peakHours: wallet.peakHours.map((item) => ({ ...item })),
     credentials: wallet.credentials.map((item) => ({ ...item })),
     models: wallet.models.map((item) => ({

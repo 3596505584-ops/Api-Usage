@@ -40,9 +40,30 @@
 - **用量统计**：按时间、模型、对话、接入类型和 API 密钥五维筛选，查看消费、请求数、模型汇总，并用自定义图表与 6 张固定图表比较不同模型和时段的表现。
 - **历史记录**：逐条查看 Token、费用、耗时、速率与缓存占比；详情窗口提供请求参数、完整响应、Raw 用量与消息内容，并支持新旧记录缓存断点对比。
 - **趋势预测**：以单个对话为单位拟合输入、输出、成本与命中率，给出下一轮预估与 95% 区间、上下文压缩点、余额/上下文可支撑轮数、模型效率与能耗评分。
-- **多钱包**：按接入地址自动建立钱包，分别管理余额、密钥标识、模型价格与峰谷规则；支持手工余额和 DeepSeek 官方余额自动校准。
+- **多钱包**：按接入地址自动建立钱包，分别管理余额、密钥标识、模型价格与峰谷规则；支持手工余额、DeepSeek/OpenRouter/硅基流动/Moonshot 余额查询，以及自定义 JSON 接口。
 - **计价与数据**：内置 DeepSeek 官方峰谷价与 2024–2026 中国法定节假日；支持 models.dev 价格同步、历史/钱包导入导出与 WebDAV 合并同步。
 - **Agent 模式（TauriTavern）**：在 [TauriTavern](https://github.com/Darkatse/TauriTavern) 下自动采集 Agent 模式的模型用量，一次运行记一条历史，并在历史行标注来源为 `Agent` 或 `常规`。
+
+## 多平台余额与实际费用
+
+进入「钱包」展开对应接入，在「余额来源」选择自动识别、平台或自定义接口，保存该平台的校准密钥后点击「立即查询」。定时查询需要同时开启钱包的自动校准和设置中的总开关。新接入会在首次对话后自动建立钱包。
+
+| 来源 | 余额 / 用量口径 | 密钥要求 |
+| --- | --- | --- |
+| DeepSeek | 账户余额（CNY/USD） | 官方 API Key |
+| OpenRouter 账户 | total_credits − total_usage；显示账户累计消费（USD） | 管理密钥；403 时会提示切换 |
+| OpenRouter 密钥 | 当前密钥累计消费、剩余限额；不覆盖账户余额 | 普通 API Key |
+| 硅基流动（中国站） | totalBalance（CNY，含赠金与充值） | 官方 API Key |
+| Moonshot 中国 / 国际 | available_balance（分别为 CNY / USD） | 对应站点 API Key |
+| 自定义 JSON | 可配置余额、累计消费、总额度字段与金额乘数 | Bearer 或 x-api-key |
+
+自定义示例：查询地址填 "https://api.example.com/balance"，响应为 "{"data":{"balance":8000,"used":2000}}" 时，余额字段填 "data.balance"，已用金额填 "data.used"，若单位为分则乘数填 "0.01"。也支持 "data.items[0].balance"；如响应给出总额度，可填写总额度与已用字段来相减。仅支持 GET JSON，不执行用户脚本。查询地址不能含账号密码、查询参数或片段；默认要求 HTTPS，本机开发服务可用 HTTP。
+
+常规对话响应中的 "usage.cost" 优先作为实际总费用：自动识别 OpenRouter 的 USD 或明确的 "cost_currency: CNY/USD"；其他平台可在钱包的「usage.cost 计费」指定币种或关闭。没有费用字段时继续按钱包模型价格估算。实际费用保存记录时汇率，历史重算不会覆盖；仅返回总价时输入/输出费用不拆分，在明细中标为「未提供拆分」。TauriTavern Agent 通道沿用其原有按回合模型价格估算方式。
+
+平台账户累计消费包含其他客户端的使用，独立于本插件记录的消费；不会把它补写为本机请求历史。余额耗尽、查询失败、无限密钥额度各自保留真实口径。浏览器直接查询需要平台允许 CORS；不支持的来源可使用手工余额，或自建允许跨域的 JSON 查询服务。
+
+校准密钥与查询地址在本地绑定，密钥不导出、不同步；切换平台或地址后需重新保存对应密钥。官方接口参考：[OpenRouter 余额](https://openrouter.ai/docs/api/api-reference/credits/get-credits)、[OpenRouter 密钥](https://openrouter.ai/docs/api/api-reference/api-keys/get-current-api-key)、[DeepSeek 余额](https://api-docs.deepseek.com/api/get-user-balance/)、[硅基流动](https://siliconflow.readme.io/reference/user-info)、[Moonshot 中国](https://platform.kimi.com/docs/api/balance)、[Moonshot 国际](https://platform.kimi.ai/docs/api/balance)。
 
 ## TauriTavern Agent 模式
 

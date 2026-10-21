@@ -6,7 +6,8 @@ import {
   walletPendingModelCount,
 } from '../data/wallets';
 import { formatMoney, getDisplayCurrency, getWalletExchangeRate } from '../services/currency';
-import { queryWalletBalance } from '../services/balance';
+import { canAutoCalibrate, queryWalletBalance } from '../services/balance';
+import { BALANCE_PROVIDERS, balanceQueryUrl, normalizeBalanceQuery, resolvedBalanceProvider, safeBalanceUrl } from '../data/balance-providers';
 import { getWalletApiKey, saveWalletApiKey } from '../services/wallet-secrets';
 import { syncPricingFromModelsDev } from '../services/pricing-sync';
 import { toast } from '../utils/logger';
@@ -177,6 +178,45 @@ function renderCatalogPicker(wallet: WalletConfig): string {
     </div>`;
 }
 
+function renderQueryPicker(wallet: WalletConfig, kind: string, label: string, options: Array<{ id: string; label: string }>, value: string): string {
+  return `<div style="position:relative;min-width:0;">
+    <button data-wallet-query-btn="${kind}" data-wallet-id="${esc(wallet.id)}" style="max-width:100%;padding:7px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;">${esc(label)}：${esc(options.find((p) => p.id === value)?.label || value)}${icon('chevron-down', 14)}</button>
+    <div id="aus-wallet-${kind}-drop-${esc(wallet.id)}" data-wallet-dropdown="1" style="display:none;position:absolute;top:38px;left:0;z-index:50;max-width:100%;min-width:180px;max-height:260px;overflow:auto;padding:6px;border:1px solid var(--ds-border);border-radius:12px;background:var(--ds-card-inner);box-shadow:0 8px 24px rgba(0,0,0,0.12);">${dropdownHtml(wallet.id, kind, options.map((p) => ({ ...p, active: p.id === value })))}</div>
+  </div>`;
+}
+
+function renderBalanceConfig(wallet: WalletConfig): string {
+  const q = normalizeBalanceQuery(wallet.balance.query);
+  const provider = resolvedBalanceProvider(wallet);
+  const snapshot = wallet.balance.snapshot;
+  const field = (key: string, label: string, value: string | number, placeholder = '') => `<label style="display:grid;gap:4px;font-size:var(--aus-fs-sm);color:var(--ds-text-2);">${label}<input data-wallet-query-field="${key}" data-wallet-id="${esc(wallet.id)}" value="${esc(String(value))}" placeholder="${esc(placeholder)}" style="width:100%;min-width:0;padding:7px 9px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);" /></label>`;
+  return `${renderQueryPicker(wallet, 'balance-provider', '余额来源', BALANCE_PROVIDERS, q.provider)}
+    ${q.provider === 'custom' ? `<div style="display:grid;gap:8px;">
+      ${field('url', 'GET 查询地址（HTTPS，不包含密钥或查询参数）', q.url, 'https://api.example.com/balance')}
+      ${field('balancePath', '余额字段路径', q.balancePath, 'data.balance 或 data.items[0].balance')}
+      ${field('usagePath', '已用金额字段路径（可选）', q.usagePath, 'data.used')}
+      ${field('totalPath', '总额度字段（可选；余额 = 总额度 − 已用金额）', q.totalPath, 'data.total')}
+      ${field('multiplier', '金额乘数（分换元填 0.01）', q.multiplier)}
+      ${renderQueryPicker(wallet, 'query-currency', '接口金额币种', [{ id: 'CNY', label: 'CNY' }, { id: 'USD', label: 'USD' }], q.currency)}
+      ${renderQueryPicker(wallet, 'query-auth', '密钥请求头', [{ id: 'bearer', label: 'Authorization: Bearer' }, { id: 'x-api-key', label: 'x-api-key' }], q.auth)}
+    </div>` : ''}
+    <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);word-break:break-all;">查询地址：${esc(balanceQueryUrl(wallet) || '未识别到余额接口，可选择平台或配置自定义接口')}</div>
+    ${provider === 'openrouter' ? '<div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);">账户余额和累计消费需要 OpenRouter 管理密钥。普通调用密钥请选择「密钥用量/额度」，该额度不会作为账户余额。</div>' : ''}
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;position:relative;">
+      ${renderCredentialPicker(wallet)}
+      <button data-wallet-calibrate="1" data-wallet-id="${esc(wallet.id)}" ${canAutoCalibrate(wallet) ? '' : 'disabled'} style="padding:7px 11px;border:1px solid var(--ds-black);border-radius:999px;background:var(--ds-black);color:var(--ds-black-text);font-size:var(--aus-fs-sm);cursor:pointer;">立即查询</button>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <input type="password" autocomplete="new-password" data-wallet-api-key="1" data-wallet-id="${esc(wallet.id)}" value="" placeholder="${getWalletApiKey(wallet.id) ? '已保存校准密钥（留空不修改）' : '填写该平台的校准密钥'}" style="flex:1;min-width:120px;padding:7px 9px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);" />
+      <button data-wallet-save-key="1" data-wallet-id="${esc(wallet.id)}" class="aus-wallet-icon-btn" style="width:auto;padding:0 8px;">保存密钥</button>
+      ${getWalletApiKey(wallet.id) ? `<button data-wallet-clear-key="1" data-wallet-id="${esc(wallet.id)}" class="aus-wallet-icon-btn is-danger" style="width:auto;padding:0 8px;">清除密钥</button>` : ''}
+    </div>
+    ${snapshot ? `<div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);">平台${snapshot.scope === 'key' ? '密钥' : '账户'}累计消费：${snapshot.usage === null ? '接口未提供' : esc(String(snapshot.usage)) + ' ' + snapshot.currency}${snapshot.scope === 'key' ? ` · 密钥剩余额度：${snapshot.keyRemaining == null ? '未设限/接口未提供' : esc(String(snapshot.keyRemaining)) + ' ' + snapshot.currency}` : ''}<br>查询时间：${esc(new Date(snapshot.checkedAt).toLocaleString())}</div>` : ''}
+    <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);">定时查询需在设置开启自动校准总开关。校准密钥仅本地保存，不参与导出或同步；切换查询平台/地址后需重新填写。浏览器直连要求平台允许跨域访问。</div>
+    ${renderQueryPicker(wallet, 'response-cost', 'usage.cost 计费', [{ id: 'auto', label: '自动识别币种' }, { id: 'USD', label: '按 USD 实际费用' }, { id: 'CNY', label: '按 CNY 实际费用' }, { id: 'off', label: '仅按模型价格估算' }], wallet.responseCost || 'auto')}
+    <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);">平台返回 usage.cost 时优先记录实扣总额；自动模式识别 OpenRouter 的 USD 或响应 cost_currency。仅返回总价时，输入/输出费用不作拆分。未返回费用时按模型价格估算。</div>`;
+}
+
 function renderWalletCard(wallet: WalletConfig, history: any[]): string {
   // 收起态左侧方块标识：取钱包名称中第一个有意义的字符（剥离协议与 api./www. 前缀）
   const avatarLetter = (() => {
@@ -191,7 +231,7 @@ function renderWalletCard(wallet: WalletConfig, history: any[]): string {
   })();
   const pending = walletPendingModelCount(wallet);
   const isOfficial = wallet.id === DEEPSEEK_WALLET_ID;
-  const selectedCredential = wallet.credentials.find((item) => item.id === wallet.balance.primaryCredentialId);
+  const supportsBalance = canAutoCalibrate(wallet);
   const collapsed = wallet.collapsed !== false;
   // 收起态只外显余额与模型数，密钥数/请求数/费用不外显（展开后按需查看）
   const metrics = [
@@ -225,8 +265,8 @@ function renderWalletCard(wallet: WalletConfig, history: any[]): string {
         <div style="border:1px solid var(--ds-border);border-radius:10px;padding:10px;display:grid;gap:8px;">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
             <div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-2);">钱包余额</div><div style="font-size:17px;font-weight:700;color:var(--ds-text);">${esc(walletBalanceText(wallet))}</div></div>
-            <label style="display:flex;align-items:center;gap:6px;font-size:var(--aus-fs-sm);color:var(--ds-text-2);cursor:${isOfficial ? 'pointer' : 'not-allowed'};">
-              <input type="checkbox" data-wallet-auto-balance="1" data-wallet-id="${esc(wallet.id)}" ${wallet.balance.mode === 'auto' ? 'checked' : ''} ${isOfficial ? '' : 'disabled'} /> 自动校准
+            <label style="display:flex;align-items:center;gap:6px;font-size:var(--aus-fs-sm);color:var(--ds-text-2);cursor:${supportsBalance ? 'pointer' : 'not-allowed'};">
+              <input type="checkbox" data-wallet-auto-balance="1" data-wallet-id="${esc(wallet.id)}" ${wallet.balance.mode === 'auto' ? 'checked' : ''} ${supportsBalance ? '' : 'disabled'} /> 自动校准
             </label>
           </div>
           <div style="display:flex;gap:6px;align-items:center;position:relative;">
@@ -236,21 +276,10 @@ function renderWalletCard(wallet: WalletConfig, history: any[]): string {
               ${dropdownHtml(wallet.id, 'currency', [{ id: 'CNY', label: 'CNY', active: wallet.balance.currency === 'CNY' }, { id: 'USD', label: 'USD', active: wallet.balance.currency === 'USD' }])}
             </div>
           </div>
-          ${isOfficial ? `
-            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;position:relative;">
-              ${renderCredentialPicker(wallet)}
-              <button data-wallet-calibrate="1" data-wallet-id="${esc(wallet.id)}" style="padding:7px 11px;border:1px solid var(--ds-black);border-radius:999px;background:var(--ds-black);color:var(--ds-black-text);font-size:var(--aus-fs-sm);cursor:pointer;">立即校准</button>
-            </div>
-            <div style="display:flex;gap:6px;">
-              <input type="password" data-wallet-api-key="1" data-wallet-id="${esc(wallet.id)}" value="" placeholder="${getWalletApiKey(wallet.id) ? '已保存钱包校准密钥（留空不修改）' : '填写钱包校准密钥'}" style="flex:1;min-width:0;padding:7px 9px;border:1px solid var(--ds-border);border-radius:8px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);" />
-              <button data-wallet-save-key="1" data-wallet-id="${esc(wallet.id)}" style="padding:7px 10px;border:1px solid var(--ds-border);border-radius:999px;background:var(--ds-card-inner);color:var(--ds-text);font-size:var(--aus-fs-sm);cursor:pointer;">保存密钥</button>
-            </div>
-            <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);">自动校准仅支持 DeepSeek 官方直连，并需在设置开启自动校准总开关；主密钥：${esc(selectedCredential?.label || '未指定')}</div>
-            <div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);word-break:break-all;">已识别密钥：${wallet.credentials.length ? wallet.credentials.map((item) => esc(item.label)).join('、') : '未识别'}</div>
-          ` : `<div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);">该接入暂不支持自动余额校准，请手工维护余额。</div><div style="font-size:var(--aus-fs-sm);color:var(--ds-text-3);word-break:break-all;">已识别密钥：${wallet.credentials.length ? wallet.credentials.map((item) => esc(item.label)).join('、') : '未识别'}</div>`}
+          ${renderBalanceConfig(wallet)}
         </div>
 
-        <div style="border:1px solid var(--ds-border);border-radius:10px;padding:10px;display:grid;gap:8px;position:relative;">
+        <div style="border:1px solid var(--ds-border);border-radius:10px;padding:10px;display:grid;gap:8px;align-content:start;position:relative;">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
             <div style="font-size:var(--aus-fs-sm);font-weight:600;color:var(--ds-text);">峰谷规则</div>
             ${renderCatalogPicker(wallet)}
@@ -348,6 +377,44 @@ function readModelPrices(row: HTMLElement): Record<'offpeak' | 'peak', WalletPri
 }
 
 function bindWalletView(doc: Document): void {
+  doc.querySelectorAll('[data-wallet-query-btn]').forEach((button: any) => {
+    button.onclick = (event: Event) => {
+      event.stopPropagation();
+      const dropdown = doc.getElementById(`aus-wallet-${button.getAttribute('data-wallet-query-btn')}-drop-${button.getAttribute('data-wallet-id')}`);
+      if (!dropdown) return;
+      closeOtherDropdowns(dropdown.id);
+      dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+    };
+  });
+  doc.querySelectorAll('[data-wallet-query-field]').forEach((input: any) => {
+    input.onchange = () => {
+      const walletId = input.getAttribute('data-wallet-id');
+      const field = input.getAttribute('data-wallet-query-field');
+      if (!['url', 'balancePath', 'usagePath', 'totalPath', 'multiplier'].includes(field)) return;
+      const value = String(input.value || '').trim();
+      if (field === 'url' && !safeBalanceUrl(value)) {
+        toast('error', '请输入有效 HTTPS 地址（本机允许 HTTP），地址不能包含密钥、查询参数或片段');
+        return;
+      }
+      if (field === 'multiplier' && (!Number.isFinite(Number(value)) || Number(value) <= 0)) {
+        toast('error', '金额乘数必须为大于 0 的数字'); return;
+      }
+      const current = repository.getWallet(walletId);
+      const addressChanged = field === 'url' && current?.balance.query?.url !== value;
+      repository.updateWallet(walletId, (wallet) => {
+        const query = normalizeBalanceQuery(wallet.balance.query);
+        (query as any)[field] = field === 'multiplier' ? Number(value) : value;
+        wallet.balance.query = query;
+        delete wallet.balance.snapshot;
+        if (addressChanged) wallet.balance.mode = 'manual';
+      });
+      if (addressChanged) saveWalletApiKey(walletId, '');
+      renderWalletView();
+    };
+  });
+  doc.querySelectorAll('[data-wallet-clear-key]').forEach((button: any) => {
+    button.onclick = () => { saveWalletApiKey(button.getAttribute('data-wallet-id'), ''); renderWalletView(); };
+  });
   doc.querySelectorAll('[data-wallet-toggle]').forEach((button: any) => {
     button.onclick = () => {
       const walletId = button.getAttribute('data-wallet-id');
@@ -408,7 +475,11 @@ function bindWalletView(doc: Document): void {
       const walletId = button.getAttribute('data-wallet-id');
       const input = doc.querySelector(`[data-wallet-api-key][data-wallet-id="${walletId}"]`) as HTMLInputElement | null;
       if (!walletId || !input) return;
-      saveWalletApiKey(walletId, input.value.trim());
+      if (!input.value.trim()) { toast('warning', '留空不会修改已有密钥；如需删除请点击清除密钥'); return; }
+      const wallet = repository.getWallet(walletId);
+      const target = wallet && balanceQueryUrl(wallet);
+      if (!target) { toast('warning', '请先选择余额来源或填写有效查询地址'); return; }
+      saveWalletApiKey(walletId, input.value.trim(), target);
       toast('success', input.value.trim() ? '钱包校准密钥已保存' : '钱包校准密钥已清除');
       renderWalletView();
     };
@@ -671,6 +742,24 @@ function bindWalletView(doc: Document): void {
         repository.updateWallet(walletId, (wallet) => { wallet.catalogProvider = value || null; });
       } else if (kind === 'credential') {
         repository.updateWallet(walletId, (wallet) => { wallet.balance.primaryCredentialId = value || null; });
+      } else if (kind === 'response-cost') {
+        repository.updateWallet(walletId, (wallet) => { wallet.responseCost = value as WalletConfig['responseCost']; });
+      } else if (['balance-provider', 'query-currency', 'query-auth'].includes(kind)) {
+        const current = repository.getWallet(walletId);
+        const changedProvider = kind === 'balance-provider' && (current?.balance.query?.provider || 'auto') !== value;
+        repository.updateWallet(walletId, (wallet) => {
+          const query = normalizeBalanceQuery(wallet.balance.query);
+          if (kind === 'balance-provider') query.provider = value;
+          else if (kind === 'query-currency') query.currency = value;
+          else query.auth = value;
+          wallet.balance.query = normalizeBalanceQuery(query);
+          delete wallet.balance.snapshot;
+          if (changedProvider) wallet.balance.mode = 'manual';
+        });
+        if (changedProvider) {
+          saveWalletApiKey(walletId, '');
+          toast('info', '余额来源已切换，请重新填写对应平台的校准密钥');
+        }
       }
       closeDropdowns();
       renderWalletView();
@@ -681,7 +770,7 @@ function bindWalletView(doc: Document): void {
     (bindWalletView as any)._outsideBound = true;
     doc.addEventListener('click', (event: any) => {
       const target = event.target as HTMLElement;
-      if (!target?.closest?.('[data-wallet-dropdown]') && !target?.closest?.('[data-wallet-currency-btn]') && !target?.closest?.('[data-wallet-catalog-btn]') && !target?.closest?.('[data-wallet-credential-btn]')) {
+      if (!target?.closest?.('[data-wallet-dropdown]') && !target?.closest?.('[data-wallet-query-btn]') && !target?.closest?.('[data-wallet-currency-btn]') && !target?.closest?.('[data-wallet-catalog-btn]') && !target?.closest?.('[data-wallet-credential-btn]')) {
         closeDropdowns();
       }
     });

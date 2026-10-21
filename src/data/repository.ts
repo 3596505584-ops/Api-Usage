@@ -5,6 +5,8 @@
 import { state, getSelectedSave } from '../store/index';
 import { saveHot, loadHot, loadHistoryCold, appendHistoryCold, getAllHistory, saveHistoryCold, clearHistoryCold } from '../store/persistence';
 import { calcCost, isDeepSeekOfficialModel, normalizeModel } from '../services/pricing';
+import { extractReportedCost, reportedCostInCny } from './reported-cost';
+import type { AccountSnapshot } from '../types/wallet';
 import { getWalletExchangeRate } from '../services/currency';
 import { MAX_HISTORY, DETAIL_KEEP, PRICING } from '../constants/pricing';
 import { emit, DataEvents } from './events';
@@ -455,6 +457,8 @@ function recalcAgentRunCost(entry: any): ReturnType<typeof calcCost> | null {
 }
 
 function recalcEntryCost(entry: any, wallet: WalletConfig | null) {
+  const reported = reportedCostInCny(entry.reportedCost, entry.reportedCost?.exchangeRate || getWalletExchangeRate());
+  if (reported !== null) return { input: 0, output: 0, total: reported, priceType: 'api', source: 'api' as const };
   const agentCost = recalcAgentRunCost(entry);
   if (agentCost) return agentCost;
   const legacyWallet = entry?.legacyPricingWalletId
@@ -510,7 +514,7 @@ function applyCostPatch(entry: any, cost: ReturnType<typeof calcCost>): void {
   entry.output_cost = cost.output;
   entry.cost = cost.total;
   entry.priceType = cost.priceType;
-  entry.pricingSource = entry.legacyPricingWalletId ? 'legacy-match' : cost.source;
+  entry.pricingSource = cost.source === 'api' ? 'api' : entry.legacyPricingWalletId ? 'legacy-match' : cost.source;
 }
 
 function applyTotalDelta(previous: { input: number; output: number; total: number }, next: { input: number; output: number; total: number }): void {
@@ -899,6 +903,17 @@ export const repository = {
     });
   },
 
+  setWalletAccountSnapshot(walletId: string, snapshot: AccountSnapshot): WalletConfig | null {
+    return this.updateWallet(walletId, (wallet) => {
+      wallet.balance.snapshot = { ...snapshot, checkedAt: Date.now() };
+      if (snapshot.scope === 'account' && snapshot.amount !== null) {
+        wallet.balance.amount = snapshot.amount;
+        wallet.balance.currency = snapshot.currency;
+        wallet.balance.lastCalibrated = Date.now();
+      }
+    });
+  },
+
   recalcEntryWallet(entry: any): WalletConfig | null {
     return findWalletForHistory(state.wallets, entry);
   },
@@ -1030,6 +1045,18 @@ export const repository = {
               head.walletId = wallet.id;
               changed = true;
             }
+            const reportedCost = extractReportedCost(usage, wallet);
+            if (reportedCost && !head.reportedCost) {
+              const previous = { input: head.input_cost || 0, output: head.output_cost || 0, total: head.cost || 0 };
+              head.reportedCost = { ...reportedCost, exchangeRate: getWalletExchangeRate() };
+              head.raw_usage = usage;
+              const next = recalcEntryCost(head, wallet);
+              applyCostPatch(head, next);
+              applyTotalDelta(previous, next);
+              adjustWalletBalance(head.walletId, next.total - previous.total, 1);
+              if ((state.lastUsage as any)?.requestId === requestId) Object.assign(state.lastUsage!, { reportedCost: head.reportedCost, cost: next.total, input_cost: next.input, output_cost: next.output, pricingSource: 'api', priceType: 'api' });
+              changed = true;
+            }
             if (changed) {
               if ((state.lastUsage as any)?.timestamp === head.timestamp) {
                 if (head.fullResponse) (state.lastUsage as any).fullResponse = head.fullResponse;
@@ -1067,7 +1094,9 @@ export const repository = {
     // 截断检测：非正常 finish_reason（length / content_filter / sensitive 等）
     lu.finishReason = fr; (lu as any).isTruncated = isTruncatedFinish(fr);
     lu.messages = (messages || []).map(clampMessage);
-    const c: any = calcCost({ timestamp: lu.timestamp, model, prompt_cache_hit_tokens: hit, prompt_cache_miss_tokens: miss, completion_tokens: comp }, state.settings as any, wallet);
+    const reportedCost = extractReportedCost(usage, wallet);
+    if (reportedCost) lu.reportedCost = { ...reportedCost, exchangeRate: getWalletExchangeRate() };
+    const c = reportedCost ? recalcEntryCost(lu, wallet) : calcCost({ timestamp: lu.timestamp, model, prompt_cache_hit_tokens: hit, prompt_cache_miss_tokens: miss, completion_tokens: comp }, state.settings as any, wallet);
     lu.cost = c.total; lu.input_cost = c.input; lu.output_cost = c.output; lu.priceType = c.priceType;
     lu.walletId = wallet?.id ?? null;
     lu.pricingSource = c.source;
@@ -1104,6 +1133,7 @@ export const repository = {
       credentialLabel: connection?.credentialLabel ?? null,
       walletId: wallet?.id ?? null,
       pricingSource: c.source,
+      ...(lu.reportedCost ? { reportedCost: lu.reportedCost } : {}),
     };
     log.debug('addEntry 即将写入', { model: entry.model, total: entry.total_tokens });
     state.history.unshift(entry);

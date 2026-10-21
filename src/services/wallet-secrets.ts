@@ -3,6 +3,8 @@ import { saveExtensionSettings, getExtensionSettings } from '../store/persistenc
 import { DEEPSEEK_WALLET_ID } from '../types/wallet';
 
 const SECRETS_KEY = 'walletSecrets';
+const TARGETS_KEY = 'walletSecretTargets';
+const LEGACY_DEEPSEEK_URL = 'https://api.deepseek.com/user/balance';
 
 function readMap(): Record<string, string> {
   try {
@@ -14,9 +16,13 @@ function readMap(): Record<string, string> {
   }
 }
 
-export function getWalletApiKey(walletId: string): string {
+export function getWalletApiKey(walletId: string, targetUrl?: string): string {
   if (!walletId) return '';
   try {
+    if (targetUrl) {
+      const bound = (getExtensionSettings() as any)?.[TARGETS_KEY]?.[walletId];
+      if (bound ? bound !== targetUrl : (walletId !== DEEPSEEK_WALLET_ID || targetUrl !== LEGACY_DEEPSEEK_URL)) return '';
+    }
     const encrypted = readMap()[walletId];
     return encrypted ? decryptKey(encrypted) : '';
   } catch {
@@ -24,14 +30,22 @@ export function getWalletApiKey(walletId: string): string {
   }
 }
 
-export function saveWalletApiKey(walletId: string, key: string): void {
+export function saveWalletApiKey(walletId: string, key: string, targetUrl?: string): void {
   if (!walletId) return;
   const settings: any = getExtensionSettings() || {};
   const map = readMap();
+  const targets = { ...(settings[TARGETS_KEY] || {}) };
   const value = String(key || '').trim();
-  if (value) map[walletId] = encryptKey(value);
-  else delete map[walletId];
-  saveExtensionSettings({ ...settings, [SECRETS_KEY]: map, _updated: Date.now() });
+  if (value) {
+    map[walletId] = encryptKey(value);
+    const target = targetUrl || (walletId === DEEPSEEK_WALLET_ID ? LEGACY_DEEPSEEK_URL : '');
+    if (target) targets[walletId] = target;
+    else delete targets[walletId];
+  } else {
+    delete map[walletId];
+    delete targets[walletId];
+  }
+  saveExtensionSettings({ ...settings, [SECRETS_KEY]: map, [TARGETS_KEY]: targets, _updated: Date.now() });
 }
 
 export function deleteWalletApiKey(walletId: string): void {

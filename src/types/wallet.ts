@@ -3,6 +3,25 @@ import type { PeakHour } from './settings';
 export type WalletCurrency = 'CNY' | 'USD';
 export type WalletKind = 'official' | 'relay';
 export type WalletBalanceMode = 'manual' | 'auto';
+export type BalanceProvider = 'auto' | 'manual' | 'deepseek' | 'openrouter' | 'openrouter-key' | 'siliconflow' | 'moonshot' | 'moonshot-intl' | 'custom';
+export type BalanceQueryConfig = {
+  provider: BalanceProvider;
+  url: string;
+  balancePath: string;
+  usagePath: string;
+  /** 总额度字段；填写后余额为 (总额度 - 已用额度) × multiplier */
+  totalPath: string;
+  multiplier: number;
+  currency: WalletCurrency;
+  auth: 'bearer' | 'x-api-key';
+};
+export type AccountSnapshot = {
+  amount: string | null;
+  currency: WalletCurrency;
+  usage: number | null;
+  scope: 'account' | 'key';
+  keyRemaining?: number | null;
+};
 export type WalletModelSource = 'builtin' | 'manual' | 'sync' | 'discovered';
 export type WalletPriceTier = {
   hit: number;
@@ -21,6 +40,8 @@ export type WalletBalance = {
   currency: WalletCurrency;
   primaryCredentialId: string | null;
   lastCalibrated: number | null;
+  query?: BalanceQueryConfig;
+  snapshot?: AccountSnapshot & { checkedAt: number };
 };
 export type WalletCredentialObservation = {
   id: string;
@@ -52,6 +73,8 @@ export type WalletConfig = {
   endpointLabel: string | null;
   endpointDisplay: string | null;
   catalogProvider: string | null;
+  /** usage.cost 的币种；auto 仅采信已知平台或响应明确提供的币种 */
+  responseCost?: 'auto' | 'off' | WalletCurrency;
   balance: WalletBalance;
   peakHours: PeakHour[];
   weekendOffpeak: boolean;
